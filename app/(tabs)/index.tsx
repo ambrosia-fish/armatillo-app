@@ -17,7 +17,7 @@ export default function HomeScreen() {
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image 
-          source={require('../../assets/images/armatillo-placeholder-logo.svg')} 
+          source={require('../../assets/images/armatillo-placeholder-logo.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
