@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
 interface TriggerOption {
   id: string;
@@ -40,8 +40,7 @@ export default function TriggerScreen() {
       selectedTriggers,
     });
     
-    // Here you would typically navigate to the next screen or pass this data back to a parent component
-    // For now, we'll just go back to the previous screen
+    // Navigate to the next screen or close this one
     router.back();
   };
 
@@ -84,16 +83,26 @@ export default function TriggerScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>About The Urge</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save</Text>
-        </TouchableOpacity>
-      </View>
+    <>
+      <Stack.Screen 
+        options={{
+          title: "trigger-screen",
+          headerShown: true,
+          header: () => (
+            <SafeAreaView style={styles.safeHeader}>
+              <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                  <Ionicons name="arrow-back" size={24} color="#333" />
+                </TouchableOpacity>
+                <Text style={styles.title}>About The Urge</Text>
+                <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          )
+        }} 
+      />
       
       <ScrollView style={styles.content}>
         {/* Urge Strength Section */}
@@ -152,7 +161,7 @@ export default function TriggerScreen() {
           <Text style={styles.sectionTitle}>Do you know what triggered it?</Text>
           <Text style={styles.sectionSubtitle}>Select all that apply</Text>
           <View style={styles.triggersGrid}>
-            {triggerOptions.map((trigger, index) => (
+            {triggerOptions.map((trigger) => (
               <TouchableOpacity
                 key={trigger.id}
                 style={[
@@ -177,11 +186,14 @@ export default function TriggerScreen() {
       </ScrollView>
       
       <StatusBar style="auto" />
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  safeHeader: {
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -214,6 +226,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#f8f9fa',
   },
   section: {
     marginBottom: 24,
