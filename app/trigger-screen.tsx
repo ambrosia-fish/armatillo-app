@@ -4,12 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-interface TriggerOption {
-  id: string;
-  label: string;
-  emoji: string;
-}
+import { OptionItem, triggerOptions } from './constants/optionDictionaries';
 
 export default function TriggerScreen() {
   const router = useRouter();
@@ -18,19 +13,6 @@ export default function TriggerScreen() {
   const [urgeStrength, setUrgeStrength] = useState<number | null>(null);
   const [intentionType, setIntentionType] = useState<string | null>(null);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
-
-  // Trigger options
-  const triggerOptions: TriggerOption[] = [
-    { id: 'anger', label: 'anger', emoji: '😠' },
-    { id: 'sadness', label: 'sadness', emoji: '😢' },
-    { id: 'anxiety', label: 'anxiety', emoji: '😰' },
-    { id: 'tiredness', label: 'tiredness', emoji: '😴' },
-    { id: 'boredom', label: 'boredom', emoji: '🥱' },
-    { id: 'hunger', label: 'hunger', emoji: '🍕' },
-    { id: 'thought', label: 'thought', emoji: '🧠' },
-    { id: 'social', label: 'social', emoji: '👥' },
-    { id: 'tech', label: 'tech', emoji: '📱' },
-  ];
 
   const handleNext = () => {
     // Save the data
@@ -85,8 +67,8 @@ export default function TriggerScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>About the Instance</Text>
         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -183,7 +165,7 @@ export default function TriggerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
@@ -195,7 +177,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
   },
-  backButton: {
+  closeButton: {
     padding: 8,
   },
   title: {
@@ -213,7 +195,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
   },
   section: {
     marginBottom: 24,
