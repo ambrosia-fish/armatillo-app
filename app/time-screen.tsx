@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +16,10 @@ export default function TimeScreen() {
   const [customTime, setCustomTime] = useState(false);
   const [selectedTimeAgo, setSelectedTimeAgo] = useState<number>(0); // Just happened = 0 minutes ago
   const [selectedDuration, setSelectedDuration] = useState<number>(1); // Default 1 minute
-  const [customDuration, setCustomDuration] = useState<string>('');
-  const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [customDate, setCustomDate] = useState(new Date());
+  const [customDurationDate, setCustomDurationDate] = useState(new Date(2023, 0, 1, 0, 15, 0)); // Default to 15 minutes
   
   // Time ago options in 15-minute increments
   const timeAgoOptions: TimeOption[] = [
@@ -48,15 +48,18 @@ export default function TimeScreen() {
       timeAgoValue = Math.round(diffMs / 60000); // Convert ms to minutes
     }
     
-    // If custom duration was selected, use the custom value
-    if (isCustomDuration && customDuration) {
-      finalDuration = parseInt(customDuration);
+    // If custom duration was selected, calculate duration in minutes
+    if (selectedDuration === -1) {
+      const hours = customDurationDate.getHours();
+      const minutes = customDurationDate.getMinutes();
+      finalDuration = (hours * 60) + minutes;
     }
     
     console.log('Saving time data:', { 
       timeAgo: timeAgoValue, 
       duration: finalDuration,
-      customDate: selectedTimeAgo === -1 ? customDate : null
+      customDate: selectedTimeAgo === -1 ? customDate : null,
+      customDurationDate: selectedDuration === -1 ? customDurationDate : null
     });
     
     // Logic to save time info would go here
@@ -75,6 +78,16 @@ export default function TimeScreen() {
     setCustomDate(currentDate);
   };
 
+  const handleDurationChange = (event, selectedDate) => {
+    const currentDate = selectedDate || customDurationDate;
+    
+    if (Platform.OS === 'android') {
+      setShowDurationPicker(false);
+    }
+    
+    setCustomDurationDate(currentDate);
+  };
+
   const formatCustomTime = (date) => {
     let hours = date.getHours();
     const minutes = date.getMinutes();
@@ -88,8 +101,27 @@ export default function TimeScreen() {
     return `${hours}:${minutesStr} ${ampm}`;
   };
 
+  const formatCustomDuration = (date) => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    
+    if (hours === 0) {
+      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    } else if (minutes === 0) {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    } else {
+      return `${hours}h ${minutes}m`;
+    }
+  };
+
   const openTimePicker = () => {
     setShowTimePicker(true);
+    setShowDurationPicker(false);
+  };
+
+  const openDurationPicker = () => {
+    setShowDurationPicker(true);
+    setShowTimePicker(false);
   };
 
   const handleCustomTimeSelection = () => {
@@ -98,20 +130,12 @@ export default function TimeScreen() {
   };
 
   const handleCustomDurationSelection = () => {
-    setIsCustomDuration(true);
     setSelectedDuration(-1);
+    openDurationPicker();
   };
 
   const handleDurationSelection = (duration) => {
     setSelectedDuration(duration);
-    setIsCustomDuration(false);
-  };
-
-  const handleCustomDurationChange = (text) => {
-    // Only allow numeric input
-    if (/^\d*$/.test(text)) {
-      setCustomDuration(text);
-    }
   };
 
   return (
@@ -126,7 +150,7 @@ export default function TimeScreen() {
         </TouchableOpacity>
       </View>
       
-      {!showTimePicker ? (
+      {!showTimePicker && !showDurationPicker ? (
         <ScrollView style={styles.content}>
           <View style={styles.switchContainer}>
             <Text style={styles.switchLabel}>Custom time</Text>
@@ -208,54 +232,28 @@ export default function TimeScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
-                
-                {isCustomDuration ? (
-                  <View
+                <TouchableOpacity
+                  style={[
+                    styles.timeOption,
+                    selectedDuration === -1 && styles.selectedOption,
+                    { minWidth: '45%' }
+                  ]}
+                  onPress={handleCustomDurationSelection}
+                >
+                  <Text
                     style={[
-                      styles.timeOption,
-                      styles.selectedOption,
-                      styles.customDurationContainer,
-                      { minWidth: '45%' }
+                      styles.timeOptionText,
+                      selectedDuration === -1 && styles.selectedOptionText,
                     ]}
                   >
-                    <TextInput
-                      style={styles.customDurationInput}
-                      value={customDuration}
-                      onChangeText={handleCustomDurationChange}
-                      placeholder="Enter minutes"
-                      placeholderTextColor="#e0e0e0"
-                      keyboardType="number-pad"
-                      autoFocus
-                      selectTextOnFocus
-                    />
-                    <Text style={styles.selectedOptionText}>
-                      {customDuration ? `minute${parseInt(customDuration) !== 1 ? 's' : ''}` : ''}
-                    </Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={[
-                      styles.timeOption,
-                      selectedDuration === -1 && styles.selectedOption,
-                      { minWidth: '45%' }
-                    ]}
-                    onPress={handleCustomDurationSelection}
-                  >
-                    <Text
-                      style={[
-                        styles.timeOptionText,
-                        selectedDuration === -1 && styles.selectedOptionText,
-                      ]}
-                    >
-                      Custom duration
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                    {selectedDuration === -1 ? formatCustomDuration(customDurationDate) : 'Custom duration'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </>
           )}
         </ScrollView>
-      ) : (
+      ) : showTimePicker ? (
         // Time Picker View (full screen when active)
         <View style={styles.timePickerFullScreenContainer}>
           <View style={styles.timePickerContent}>
@@ -283,6 +281,40 @@ export default function TimeScreen() {
               <TouchableOpacity 
                 style={styles.timePickerButton} 
                 onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.timePickerDoneButton}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : (
+        // Duration Picker View (full screen when active)
+        <View style={styles.timePickerFullScreenContainer}>
+          <View style={styles.timePickerContent}>
+            <Text style={styles.timePickerTitle}>Select duration</Text>
+            
+            <View style={styles.timePickerWrapper}>
+              <DateTimePicker
+                value={customDurationDate}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDurationChange}
+                style={styles.timePicker}
+                themeVariant="light"
+                textColor="#000"
+              />
+            </View>
+            
+            <View style={styles.timePickerButtonsContainer}>
+              <TouchableOpacity 
+                style={styles.timePickerButton} 
+                onPress={() => setShowDurationPicker(false)}
+              >
+                <Text style={styles.timePickerCancelButton}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.timePickerButton} 
+                onPress={() => setShowDurationPicker(false)}
               >
                 <Text style={styles.timePickerDoneButton}>Done</Text>
               </TouchableOpacity>
@@ -402,20 +434,6 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     color: '#fff',
     fontWeight: 'bold',
-  },
-  customDurationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
-  customDurationInput: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    paddingHorizontal: 5,
-    minWidth: 40,
   },
   // Full screen time picker
   timePickerFullScreenContainer: {
