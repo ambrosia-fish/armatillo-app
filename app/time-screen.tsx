@@ -314,7 +314,7 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.pickerContainer}>
+          <View style={styles.pickerBody}>
             {/* Day Picker - First Row */}
             <View style={styles.dayPickerContainer}>
               <Picker
@@ -558,6 +558,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
+  pickerBody: {
+    backgroundColor: '#333',
+  },
   cancelButton: {
     color: '#666',
     fontSize: 16,
@@ -578,6 +581,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     justifyContent: 'center',
     paddingBottom: 20,
+    paddingTop: 10,
   },
   pickerContent: {
     backgroundColor: '#333',
@@ -612,7 +616,7 @@ const styles = StyleSheet.create({
   },
   dayPickerItem: {
     width: 240,
-    height: 70,
+    height: 100,
     backgroundColor: '#333',
     color: '#fff',
   },
