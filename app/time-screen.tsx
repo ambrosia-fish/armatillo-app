@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   },
   dayPickerItem: {
     width: 240,
-    height: 50,
+    height: 70,
     backgroundColor: '#333',
     color: '#fff',
   },
@@ -636,6 +636,6 @@ const styles = StyleSheet.create({
   pickerItem: {
     color: '#fff',
     fontSize: 22,
-    height: 100,
+    height: 120,
   },
 });
