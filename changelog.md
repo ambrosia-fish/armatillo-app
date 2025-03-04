@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Time selection screen for BFRB incident tracking
+  - When user presses the "+" button, a modal opens that allows selecting when the BFRB incident occurred
+  - Option to record "Just happened" or select a custom time
+  - Custom time selection with 15-minute increments
+  - Duration selection for tracking how long the incident lasted
+  - Next button to proceed to the tracking workflow
+
 ## [0.1.0] - 2025-03-03
 
 ### Added
