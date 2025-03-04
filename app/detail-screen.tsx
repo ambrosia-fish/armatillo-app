@@ -4,8 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { triggerOptions } from './constants/optionDictionaries';
-import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function DetailScreen() {
   const router = useRouter();
@@ -13,29 +11,16 @@ export default function DetailScreen() {
   // UI state
   const [urgeStrength, setUrgeStrength] = useState<number | null>(null);
   const [intentionType, setIntentionType] = useState<string | null>(null);
-  const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
 
   const handleNext = () => {
     // Save the data
-    console.log('Saving trigger data:', { 
+    console.log('Saving detail data:', { 
       urgeStrength,
-      intentionType,
-      selectedTriggers,
+      intentionType
     });
     
     // Navigate to the next screen in the questionnaire flow
     router.push('/environment-screen');
-  };
-
-  const handleTriggerSelection = (triggerId: string) => {
-    setSelectedTriggers(prevSelected => {
-      // If already selected, remove it
-      if (prevSelected.includes(triggerId)) {
-        return prevSelected.filter(id => id !== triggerId);
-      }
-      // Otherwise add it
-      return [...prevSelected, triggerId];
-    });
   };
 
   // Helper function to render strength option buttons (1-10)
@@ -127,17 +112,6 @@ export default function DetailScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
-        
-        {/* Triggers Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Do you know what triggered it?</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <EmojiSelectionGrid 
-            options={triggerOptions}
-            selectedItems={selectedTriggers}
-            onSelect={handleTriggerSelection}
-          />
         </View>
       </ScrollView>
       
