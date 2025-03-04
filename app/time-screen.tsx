@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface TimeOption {
   label: string;
@@ -16,6 +16,8 @@ export default function TimeScreen() {
   const [customTime, setCustomTime] = useState(false);
   const [selectedTimeAgo, setSelectedTimeAgo] = useState<number>(0); // Just happened = 0 minutes ago
   const [selectedDuration, setSelectedDuration] = useState<number>(1); // Default 1 minute
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [customDate, setCustomDate] = useState(new Date());
   
   // Time ago options in 15-minute increments
   const timeAgoOptions: TimeOption[] = [
@@ -26,6 +28,7 @@ export default function TimeScreen() {
     { label: '1 hour ago', value: 60 },
     { label: '1.5 hours ago', value: 90 },
     { label: '2 hours ago', value: 120 },
+    { label: 'Custom', value: -1 },
   ];
   
   // Duration options in minutes
@@ -33,15 +36,56 @@ export default function TimeScreen() {
 
   const handleSave = () => {
     // Save the time data and proceed to the next screen
+    let timeAgoValue = selectedTimeAgo;
+    
+    // If custom time was selected, calculate minutes ago
+    if (selectedTimeAgo === -1) {
+      const now = new Date();
+      const diffMs = now.getTime() - customDate.getTime();
+      timeAgoValue = Math.round(diffMs / 60000); // Convert ms to minutes
+    }
+    
     console.log('Saving time data:', { 
-      timeAgo: selectedTimeAgo, 
-      duration: selectedDuration 
+      timeAgo: timeAgoValue, 
+      duration: selectedDuration,
+      customDate: selectedTimeAgo === -1 ? customDate : null
     });
     
     // Logic to save time info would go here
     
     // Navigate back for now (you can change this to the next screen later)
     router.back();
+  };
+
+  const handleTimeChange = (event, selectedDate) => {
+    const currentDate = selectedDate || customDate;
+    
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+    
+    setCustomDate(currentDate);
+  };
+
+  const formatCustomTime = (date) => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    
+    return `${hours}:${minutesStr} ${ampm}`;
+  };
+
+  const openTimePicker = () => {
+    if (Platform.OS === 'ios') {
+      setShowTimePicker(true);
+    } else {
+      setShowTimePicker(true);
+    }
   };
 
   return (
@@ -85,16 +129,32 @@ export default function TimeScreen() {
                     styles.timeOption,
                     selectedTimeAgo === option.value && styles.selectedOption,
                   ]}
-                  onPress={() => setSelectedTimeAgo(option.value)}
+                  onPress={() => {
+                    setSelectedTimeAgo(option.value);
+                    if (option.value === -1) {
+                      openTimePicker();
+                    }
+                  }}
                 >
-                  <Text
-                    style={[
-                      styles.timeOptionText,
-                      selectedTimeAgo === option.value && styles.selectedOptionText,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
+                  {option.value === -1 && selectedTimeAgo === -1 ? (
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        selectedTimeAgo === option.value && styles.selectedOptionText,
+                      ]}
+                    >
+                      {formatCustomTime(customDate)}
+                    </Text>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        selectedTimeAgo === option.value && styles.selectedOptionText,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -124,6 +184,39 @@ export default function TimeScreen() {
           </>
         )}
       </ScrollView>
+      
+      {/* Time Picker for iOS */}
+      {Platform.OS === 'ios' && showTimePicker && (
+        <View style={styles.timePickerContainer}>
+          <View style={styles.timePickerHeader}>
+            <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+              <Text style={styles.cancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => setShowTimePicker(false)}
+            >
+              <Text style={styles.doneButton}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker
+            value={customDate}
+            mode="time"
+            display="spinner"
+            onChange={handleTimeChange}
+          />
+        </View>
+      )}
+      
+      {/* Time Picker for Android */}
+      {Platform.OS === 'android' && showTimePicker && (
+        <DateTimePicker
+          value={customDate}
+          mode="time"
+          is24Hour={false}
+          display="default"
+          onChange={handleTimeChange}
+        />
+      )}
       
       {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
@@ -235,5 +328,34 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  timePickerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  cancelButton: {
+    color: '#999',
+    fontSize: 16,
+  },
+  doneButton: {
+    color: '#2a9d8f',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
