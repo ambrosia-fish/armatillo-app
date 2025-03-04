@@ -290,56 +290,62 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.pickerContent}>
-            {/* Day Picker */}
-            <Picker
-              selectedValue={selectedDay}
-              style={styles.dayPickerItem}
-              itemStyle={styles.pickerItem}
-              onValueChange={(itemValue) => setSelectedDay(itemValue)}
-            >
-              <Picker.Item key="today" label="Today" value="Today" />
-              <Picker.Item key="yesterday" label="Yesterday" value="Yesterday" />
-            </Picker>
+          <View style={styles.pickerContainer}>
+            {/* Day Picker - First Row */}
+            <View style={styles.dayPickerContainer}>
+              <Text style={styles.dayPickerLabel}>To...</Text>
+              <Picker
+                selectedValue={selectedDay}
+                style={styles.dayPickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedDay(itemValue)}
+              >
+                <Picker.Item key="today" label="Today" value="Today" />
+                <Picker.Item key="yesterday" label="Yesterday" value="Yesterday" />
+              </Picker>
+            </View>
             
-            {/* Hour Picker */}
-            <Picker
-              selectedValue={selectedHour}
-              style={styles.timePickerItem}
-              itemStyle={styles.pickerItem}
-              onValueChange={(itemValue) => setSelectedHour(itemValue)}
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-                <Picker.Item key={`hour-${hour}`} label={String(hour)} value={String(hour)} />
-              ))}
-            </Picker>
-            
-            {/* Minute Picker */}
-            <Picker
-              selectedValue={selectedMinute}
-              style={styles.timePickerItem}
-              itemStyle={styles.pickerItem}
-              onValueChange={(itemValue) => setSelectedMinute(itemValue)}
-            >
-              {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                <Picker.Item 
-                  key={`minute-${minute}`} 
-                  label={minute < 10 ? `0${minute}` : String(minute)} 
-                  value={String(minute)} 
-                />
-              ))}
-            </Picker>
-            
-            {/* AM/PM Picker */}
-            <Picker
-              selectedValue={selectedAmPm}
-              style={styles.amPmPickerItem}
-              itemStyle={styles.pickerItem}
-              onValueChange={(itemValue) => setSelectedAmPm(itemValue)}
-            >
-              <Picker.Item label="AM" value="AM" />
-              <Picker.Item label="PM" value="PM" />
-            </Picker>
+            {/* Time Picker - Second Row */}
+            <View style={styles.timePickerRow}>
+              {/* Hour Picker */}
+              <Picker
+                selectedValue={selectedHour}
+                style={styles.timePickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedHour(itemValue)}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
+                  <Picker.Item key={`hour-${hour}`} label={String(hour)} value={String(hour)} />
+                ))}
+              </Picker>
+              
+              {/* Minute Picker */}
+              <Picker
+                selectedValue={selectedMinute}
+                style={styles.timePickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedMinute(itemValue)}
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                  <Picker.Item 
+                    key={`minute-${minute}`} 
+                    label={minute < 10 ? `0${minute}` : String(minute)} 
+                    value={String(minute)} 
+                  />
+                ))}
+              </Picker>
+              
+              {/* AM/PM Picker */}
+              <Picker
+                selectedValue={selectedAmPm}
+                style={styles.amPmPickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedAmPm(itemValue)}
+              >
+                <Picker.Item label="AM" value="AM" />
+                <Picker.Item label="PM" value="PM" />
+              </Picker>
+            </View>
           </View>
         </View>
       )}
@@ -515,7 +521,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#333',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
   },
@@ -536,6 +542,25 @@ const styles = StyleSheet.create({
     color: '#2a9d8f',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  dayPickerContainer: {
+    padding: 10,
+    backgroundColor: '#333',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dayPickerLabel: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginLeft: 10,
+    width: 70,
+  },
+  timePickerRow: {
+    flexDirection: 'row',
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    paddingBottom: 20,
   },
   pickerContent: {
     backgroundColor: '#333',
@@ -569,13 +594,13 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   dayPickerItem: {
-    width: 100,
-    height: 180,
+    width: 150,
+    height: 50,
     backgroundColor: '#333',
     color: '#fff',
   },
   timePickerItem: {
-    width: 60,
+    width: 80,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
@@ -587,7 +612,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   amPmPickerItem: {
-    width: 60,
+    width: 80,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
