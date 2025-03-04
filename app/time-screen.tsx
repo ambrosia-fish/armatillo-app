@@ -146,7 +146,8 @@ export default function TimeScreen() {
     // Here you would typically pass this data back to the parent component
     // or store it in global state or local database
     
-    router.back();
+    // Navigate to trigger screen instead of going back
+    router.push('/trigger-screen');
   };
 
   const handleCustomTimeSelection = () => {
