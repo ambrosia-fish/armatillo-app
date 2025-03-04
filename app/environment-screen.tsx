@@ -4,21 +4,36 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { environmentOptions } from './constants/optionDictionaries';
+import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function EnvironmentScreen() {
   const router = useRouter();
-  const [environment, setEnvironment] = useState('');
+  const [environmentDetails, setEnvironmentDetails] = useState('');
+  const [selectedEnvironments, setSelectedEnvironments] = useState<string[]>([]);
   
   const handleNext = () => {
-    console.log('Saving environment data:', { environment });
+    console.log('Saving environment data:', { 
+      selectedEnvironments,
+      environmentDetails 
+    });
     router.push('/feelings-screen');
+  };
+
+  const handleEnvironmentSelection = (id: string) => {
+    setSelectedEnvironments(prevSelected => {
+      if (prevSelected.includes(id)) {
+        return prevSelected.filter(item => item !== id);
+      }
+      return [...prevSelected, id];
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Where were you?</Text>
         <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
@@ -28,14 +43,24 @@ export default function EnvironmentScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Where were you / what were you doing?</Text>
+          <Text style={styles.sectionTitle}>Where were you?</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={environmentOptions}
+            selectedItems={selectedEnvironments}
+            onSelect={handleEnvironmentSelection}
+          />
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Additional details</Text>
           <TextInput
             style={styles.textInput}
             multiline
             numberOfLines={4}
-            placeholder="Describe your location and activity..."
-            value={environment}
-            onChangeText={setEnvironment}
+            placeholder="Describe what you were doing or any other context..."
+            value={environmentDetails}
+            onChangeText={setEnvironmentDetails}
           />
         </View>
       </ScrollView>
@@ -93,6 +118,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: '#666',
     marginBottom: 16,
   },
   textInput: {
