@@ -6,30 +6,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-// Define time option interface
 interface TimeOption {
   label: string;
-  value: number; // minutes ago
+  value: number;
 }
 
 export default function TimeScreen() {
   const router = useRouter();
+  const now = new Date();
   
   // UI state
   const [customTime, setCustomTime] = useState(false);
   const [selectedTimeAgo, setSelectedTimeAgo] = useState<number>(0);
   const [selectedDuration, setSelectedDuration] = useState<number>(1);
   
-  // Time picker state
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [customDate, setCustomDate] = useState(new Date());
+  // Custom time picker state
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDate, setCustomDate] = useState(now);
   
   // Duration picker state
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(15);
   
-  // Predefined options
+  // Time options
   const timeAgoOptions: TimeOption[] = [
     { label: 'Just happened', value: 0 },
     { label: '15 minutes ago', value: 15 },
@@ -43,53 +43,41 @@ export default function TimeScreen() {
   
   const durationOptions: number[] = [1, 2, 3, 5, 10, 15, 20];
 
-  // Event handlers
   const handleSave = () => {
     let timeAgoValue = selectedTimeAgo;
     let finalDuration = selectedDuration;
     
-    // Calculate custom time if selected
     if (selectedTimeAgo === -1) {
-      const now = new Date();
       const diffMs = now.getTime() - customDate.getTime();
-      timeAgoValue = Math.round(diffMs / 60000); // Convert ms to minutes
+      timeAgoValue = Math.round(diffMs / 60000); // Minutes
       
-      // If the time is in the future, assume it's from yesterday
       if (timeAgoValue < 0) {
         timeAgoValue += 24 * 60; // Add 24 hours in minutes
       }
     }
     
-    // Calculate custom duration if selected
     if (selectedDuration === -1) {
       finalDuration = (durationHours * 60) + durationMinutes;
     }
     
     console.log('Saving time data:', { 
       timeAgo: timeAgoValue, 
-      duration: finalDuration
+      duration: finalDuration,
+      customDate: selectedTimeAgo === -1 ? customDate : null
     });
     
     router.back();
   };
 
-  const handleTimeChange = (event, selectedDate) => {
+  const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || customDate;
-    setShowTimePicker(Platform.OS === 'ios');
+    setShowDatePicker(Platform.OS === 'ios');
     setCustomDate(currentDate);
-  };
-
-  const handleDurationChange = (field, value) => {
-    if (field === 'hours') {
-      setDurationHours(value);
-    } else {
-      setDurationMinutes(value);
-    }
   };
 
   const handleCustomTimeSelection = () => {
     setSelectedTimeAgo(-1);
-    setShowTimePicker(true);
+    setShowDatePicker(true);
   };
 
   const handleCustomDurationSelection = () => {
@@ -97,22 +85,31 @@ export default function TimeScreen() {
     setShowDurationPicker(true);
   };
 
-  // Formatter functions
-  const formatCustomTime = () => {
+  const formatDateTime = (date) => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    let dateText = '';
-    if (customDate.toDateString() === today.toDateString()) {
-      dateText = 'Today';
-    } else if (customDate.toDateString() === yesterday.toDateString()) {
-      dateText = 'Yesterday';
+    let datePrefix = '';
+    if (date.toDateString() === today.toDateString()) {
+      datePrefix = 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      datePrefix = 'Yesterday';
     } else {
-      dateText = customDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
     }
     
-    return `${dateText} ${customDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    return `${datePrefix} ${date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    })}`;
   };
 
   const formatCustomDuration = () => {
@@ -124,6 +121,50 @@ export default function TimeScreen() {
       return `${durationHours}h ${durationMinutes}m`;
     }
   };
+
+  // Helper function to render time option buttons
+  const renderTimeOption = (option) => (
+    <TouchableOpacity
+      key={option.value}
+      style={[
+        styles.timeOption,
+        selectedTimeAgo === option.value && styles.selectedOption,
+      ]}
+      onPress={() => setSelectedTimeAgo(option.value)}
+    >
+      <Text
+        style={[
+          styles.timeOptionText,
+          selectedTimeAgo === option.value && styles.selectedOptionText,
+        ]}
+      >
+        {option.value === -1 && selectedTimeAgo === -1 
+          ? formatDateTime(customDate) 
+          : option.label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  // Helper function to render duration option buttons
+  const renderDurationOption = (duration) => (
+    <TouchableOpacity
+      key={duration}
+      style={[
+        styles.timeOption,
+        selectedDuration === duration && styles.selectedOption,
+      ]}
+      onPress={() => setSelectedDuration(duration)}
+    >
+      <Text
+        style={[
+          styles.timeOptionText,
+          selectedDuration === duration && styles.selectedOptionText,
+        ]}
+      >
+        {duration} {duration === 1 ? 'minute' : 'minutes'}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -144,7 +185,7 @@ export default function TimeScreen() {
             value={customTime}
             onValueChange={setCustomTime}
             trackColor={{ false: '#ccc', true: '#2a9d8f' }}
-            thumbColor={customTime ? '#fff' : '#fff'}
+            thumbColor="#fff"
           />
         </View>
         
@@ -158,103 +199,102 @@ export default function TimeScreen() {
         ) : (
           <>
             <Text style={styles.sectionTitle}>How long ago?</Text>
-            <View style={styles.optionsContainer}>
-              {timeAgoOptions.slice(0, 7).map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.timeOption,
-                    selectedTimeAgo === option.value && styles.selectedOption,
-                  ]}
-                  onPress={() => setSelectedTimeAgo(option.value)}
-                >
-                  <Text
-                    style={[
-                      styles.timeOptionText,
-                      selectedTimeAgo === option.value && styles.selectedOptionText,
-                    ]}
+            <View style={styles.optionsGrid}>
+              {/* First row: Just happened, 15 minutes */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[0])}
+                {renderTimeOption(timeAgoOptions[1])}
+              </View>
+              
+              {/* Second row: 30 minutes, 45 minutes */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[2])}
+                {renderTimeOption(timeAgoOptions[3])}
+              </View>
+              
+              {/* Third row: 1 hour, 1.5 hours */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[4])}
+                {renderTimeOption(timeAgoOptions[5])}
+              </View>
+              
+              {/* Fourth row: 2 hours, Custom time */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[6])}
+                {selectedTimeAgo === -1 ? (
+                  <TouchableOpacity
+                    style={[styles.timeOption, styles.selectedOption]}
+                    onPress={handleCustomTimeSelection}
                   >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={[
-                  styles.timeOption,
-                  selectedTimeAgo === -1 && styles.selectedOption,
-                  { minWidth: '45%' }
-                ]}
-                onPress={handleCustomTimeSelection}
-              >
-                <Text
-                  style={[
-                    styles.timeOptionText,
-                    selectedTimeAgo === -1 && styles.selectedOptionText,
-                  ]}
-                >
-                  {selectedTimeAgo === -1 ? formatCustomTime() : 'Custom time'}
-                </Text>
-              </TouchableOpacity>
+                    <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
+                      {formatDateTime(customDate)}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.timeOption}
+                    onPress={handleCustomTimeSelection}
+                  >
+                    <Text style={styles.timeOptionText}>Custom time</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
             
             <Text style={styles.sectionTitle}>How long did it last?</Text>
-            <View style={styles.optionsContainer}>
-              {durationOptions.map((duration) => (
-                <TouchableOpacity
-                  key={duration}
-                  style={[
-                    styles.timeOption,
-                    selectedDuration === duration && styles.selectedOption,
-                  ]}
-                  onPress={() => setSelectedDuration(duration)}
-                >
-                  <Text
-                    style={[
-                      styles.timeOptionText,
-                      selectedDuration === duration && styles.selectedOptionText,
-                    ]}
+            <View style={styles.optionsGrid}>
+              {/* First row of duration options */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[0])}
+                {renderDurationOption(durationOptions[1])}
+              </View>
+              
+              {/* Additional rows would go here as needed */}
+              {/* Add a custom duration button */}
+              {selectedDuration === -1 && (
+                <View style={styles.optionsRow}>
+                  <TouchableOpacity
+                    style={[styles.timeOption, styles.selectedOption]}
+                    onPress={handleCustomDurationSelection}
                   >
-                    {duration} {duration === 1 ? 'minute' : 'minutes'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={[
-                  styles.timeOption,
-                  selectedDuration === -1 && styles.selectedOption,
-                  { minWidth: '45%' }
-                ]}
-                onPress={handleCustomDurationSelection}
-              >
-                <Text
-                  style={[
-                    styles.timeOptionText,
-                    selectedDuration === -1 && styles.selectedOptionText,
-                  ]}
-                >
-                  {selectedDuration === -1 ? formatCustomDuration() : 'Custom duration'}
-                </Text>
-              </TouchableOpacity>
+                    <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
+                      {formatCustomDuration()}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </>
         )}
       </ScrollView>
       
-      {/* Native Time Picker */}
-      {showTimePicker && (
-        <DateTimePicker
-          value={customDate}
-          mode="datetime"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleTimeChange}
-          maximumDate={new Date()}
-        />
+      {/* Native DateTime Picker */}
+      {showDatePicker && Platform.OS === 'ios' && (
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
+            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+              <Text style={styles.cancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+              <Text style={styles.doneButton}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <DateTimePicker
+            value={customDate}
+            mode="datetime"
+            display="spinner"
+            onChange={handleDateChange}
+            style={styles.datePicker}
+            maximumDate={now}
+          />
+        </View>
       )}
       
-      {/* Native Duration Picker (iOS only) */}
+      {/* Duration Picker */}
       {showDurationPicker && Platform.OS === 'ios' && (
-        <View style={styles.durationPickerContainer}>
-          <View style={styles.durationPickerHeader}>
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
             <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
               <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
@@ -263,47 +303,37 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.pickerRow}>
-            {/* Hours Picker */}
-            <View style={styles.pickerColumn}>
-              {[...Array(24)].map((_, i) => (
-                <TouchableOpacity 
-                  key={`hour-${i}`}
-                  style={[
-                    styles.pickerItem,
-                    durationHours === i && styles.selectedPickerItem
-                  ]}
-                  onPress={() => handleDurationChange('hours', i)}
-                >
-                  <Text style={styles.pickerText}>{i}</Text>
-                </TouchableOpacity>
-              ))}
+          <View style={styles.durationPickerContent}>
+            <View style={styles.durationPickerColumn}>
+              <DateTimePicker
+                value={new Date(0, 0, 0, durationHours, 0)}
+                mode="time"
+                display="spinner"
+                onChange={(e, date) => {
+                  if (date) setDurationHours(date.getHours());
+                }}
+                style={styles.durationPicker}
+              />
+              <Text style={styles.durationLabel}>h</Text>
             </View>
             
-            <Text style={styles.pickerSeparator}>h</Text>
-            
-            {/* Minutes Picker */}
-            <View style={styles.pickerColumn}>
-              {[...Array(60)].map((_, i) => (
-                <TouchableOpacity 
-                  key={`minute-${i}`}
-                  style={[
-                    styles.pickerItem,
-                    durationMinutes === i && styles.selectedPickerItem
-                  ]}
-                  onPress={() => handleDurationChange('minutes', i)}
-                >
-                  <Text style={styles.pickerText}>{i}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.durationPickerColumn}>
+              <DateTimePicker
+                value={new Date(0, 0, 0, 0, durationMinutes)}
+                mode="time"
+                display="spinner"
+                onChange={(e, date) => {
+                  if (date) setDurationMinutes(date.getMinutes());
+                }}
+                style={styles.durationPicker}
+              />
+              <Text style={styles.durationLabel}>m</Text>
             </View>
-            
-            <Text style={styles.pickerSeparator}>m</Text>
           </View>
         </View>
       )}
       
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
+      <StatusBar style="auto" />
     </SafeAreaView>
   );
 }
@@ -349,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 16,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -363,7 +393,7 @@ const styles = StyleSheet.create({
   justHappenedContainer: {
     padding: 20,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -387,19 +417,22 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
   },
-  optionsContainer: {
+  optionsGrid: {
+    marginBottom: 20,
+  },
+  optionsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -4,
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   timeOption: {
-    padding: 12,
-    margin: 4,
-    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 5,
+    padding: 14,
+    borderRadius: 12,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
-    minWidth: '45%',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -415,7 +448,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  durationPickerContainer: {
+  pickerContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -424,7 +457,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#ddd',
   },
-  durationPickerHeader: {
+  pickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -442,30 +475,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  pickerRow: {
+  datePicker: {
+    height: 200,
+    width: '100%',
+  },
+  durationPickerContent: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  pickerColumn: {
-    flex: 1,
-    height: 150,
-    overflow: 'hidden',
-  },
-  pickerItem: {
-    height: 40,
-    justifyContent: 'center',
+  durationPickerColumn: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  selectedPickerItem: {
-    backgroundColor: '#2a9d8f20',
+  durationPicker: {
+    width: 100,
+    height: 200,
   },
-  pickerText: {
-    fontSize: 18,
-  },
-  pickerSeparator: {
-    fontSize: 24,
+  durationLabel: {
+    fontSize: 22,
     marginHorizontal: 10,
     color: '#666',
   }
