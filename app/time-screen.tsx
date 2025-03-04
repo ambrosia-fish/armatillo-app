@@ -22,14 +22,14 @@ export default function TimeScreen() {
   
   // Custom time picker state
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedHour, setSelectedHour] = useState(now.getHours() % 12 || 12);
-  const [selectedMinute, setSelectedMinute] = useState(now.getMinutes());
+  const [selectedHour, setSelectedHour] = useState<string>(String(now.getHours() % 12 || 12));
+  const [selectedMinute, setSelectedMinute] = useState<string>(String(now.getMinutes()));
   const [selectedAmPm, setSelectedAmPm] = useState(now.getHours() >= 12 ? 'PM' : 'AM');
   
   // Duration picker state
   const [showDurationPicker, setShowDurationPicker] = useState(false);
-  const [durationHours, setDurationHours] = useState(0);
-  const [durationMinutes, setDurationMinutes] = useState(15);
+  const [durationHours, setDurationHours] = useState<string>("0");
+  const [durationMinutes, setDurationMinutes] = useState<string>("15");
   
   // Time options
   const timeAgoOptions: TimeOption[] = [
@@ -51,13 +51,14 @@ export default function TimeScreen() {
     
     if (selectedTimeAgo === -1) {
       // Convert the selected time to a Date object
+      const hour = parseInt(selectedHour, 10);
       const hour24 = selectedAmPm === 'PM' ? 
-        (selectedHour === 12 ? 12 : selectedHour + 12) : 
-        (selectedHour === 12 ? 0 : selectedHour);
+        (hour === 12 ? 12 : hour + 12) : 
+        (hour === 12 ? 0 : hour);
       
       const customTimeDate = new Date();
       customTimeDate.setHours(hour24);
-      customTimeDate.setMinutes(selectedMinute);
+      customTimeDate.setMinutes(parseInt(selectedMinute, 10));
       customTimeDate.setSeconds(0);
       
       const diffMs = now.getTime() - customTimeDate.getTime();
@@ -69,7 +70,7 @@ export default function TimeScreen() {
     }
     
     if (selectedDuration === -1) {
-      finalDuration = (durationHours * 60) + durationMinutes;
+      finalDuration = (parseInt(durationHours, 10) * 60) + parseInt(durationMinutes, 10);
     }
     
     console.log('Saving time data:', { 
@@ -92,17 +93,22 @@ export default function TimeScreen() {
   };
 
   const formatTime = () => {
-    const minuteStr = selectedMinute < 10 ? `0${selectedMinute}` : selectedMinute;
-    return `Today ${selectedHour}:${minuteStr} ${selectedAmPm}`;
+    const hour = parseInt(selectedHour, 10);
+    const minute = parseInt(selectedMinute, 10);
+    const minuteStr = minute < 10 ? `0${minute}` : minute;
+    return `Today ${hour}:${minuteStr} ${selectedAmPm}`;
   };
 
   const formatCustomDuration = () => {
-    if (durationHours === 0) {
-      return `${durationMinutes} ${durationMinutes === 1 ? 'minute' : 'minutes'}`;
-    } else if (durationMinutes === 0) {
-      return `${durationHours} ${durationHours === 1 ? 'hour' : 'hours'}`;
+    const hours = parseInt(durationHours, 10);
+    const minutes = parseInt(durationMinutes, 10);
+    
+    if (hours === 0) {
+      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    } else if (minutes === 0) {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
     } else {
-      return `${durationHours}h ${durationMinutes}m`;
+      return `${hours}h ${minutes}m`;
     }
   };
 
@@ -292,7 +298,7 @@ export default function TimeScreen() {
               onValueChange={(itemValue) => setSelectedHour(itemValue)}
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-                <Picker.Item key={`hour-${hour}`} label={String(hour)} value={hour} />
+                <Picker.Item key={`hour-${hour}`} label={String(hour)} value={String(hour)} />
               ))}
             </Picker>
             
@@ -307,7 +313,7 @@ export default function TimeScreen() {
                 <Picker.Item 
                   key={`minute-${minute}`} 
                   label={minute < 10 ? `0${minute}` : String(minute)} 
-                  value={minute} 
+                  value={String(minute)} 
                 />
               ))}
             </Picker>
@@ -354,7 +360,7 @@ export default function TimeScreen() {
                 onValueChange={(itemValue) => setDurationHours(itemValue)}
               >
                 {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                  <Picker.Item key={`duration-hour-${hour}`} label={String(hour)} value={hour} />
+                  <Picker.Item key={`duration-hour-${hour}`} label={String(hour)} value={String(hour)} />
                 ))}
               </Picker>
               
@@ -369,19 +375,19 @@ export default function TimeScreen() {
                   <Picker.Item 
                     key={`duration-minute-${minute}`} 
                     label={minute < 10 ? `0${minute}` : String(minute)} 
-                    value={minute} 
+                    value={String(minute)} 
                   />
                 ))}
               </Picker>
               
               {/* Seconds Picker (fixed at 0) */}
               <Picker
-                selectedValue={0}
+                selectedValue="0"
                 style={styles.picker}
                 itemStyle={styles.pickerItem}
                 enabled={false}
               >
-                <Picker.Item label="00" value={0} />
+                <Picker.Item label="00" value="0" />
               </Picker>
             </View>
           </View>
