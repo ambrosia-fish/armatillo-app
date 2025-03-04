@@ -84,6 +84,16 @@ export default function TriggerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>About the Instance</Text>
+        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+          <Text style={styles.nextButtonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView style={styles.content}>
         {/* Urge Strength Section */}
         <View style={styles.section}>
@@ -174,6 +184,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  backButton: {
+    padding: 8,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  nextButton: {
+    padding: 8,
+  },
+  nextButtonText: {
+    color: '#2a9d8f',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   content: {
     flex: 1,
