@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface TimeOption {
   label: string;
@@ -18,8 +17,13 @@ export default function TimeScreen() {
   const [selectedDuration, setSelectedDuration] = useState<number>(1); // Default 1 minute
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
-  const [customDate, setCustomDate] = useState(new Date());
-  // Use a duration object to store hours and minutes separately
+  
+  // Custom time picker state
+  const [timeHour, setTimeHour] = useState(new Date().getHours());
+  const [timeMinute, setTimeMinute] = useState(0);
+  const [timeAMPM, setTimeAMPM] = useState(new Date().getHours() >= 12 ? 'PM' : 'AM');
+  
+  // Duration picker state
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(15);
   
@@ -46,8 +50,23 @@ export default function TimeScreen() {
     // If custom time was selected, calculate minutes ago
     if (selectedTimeAgo === -1) {
       const now = new Date();
-      const diffMs = now.getTime() - customDate.getTime();
+      const customTime = new Date();
+      
+      // Set the hours and minutes based on picker values
+      let hours = timeHour;
+      if (timeAMPM === 'PM' && hours < 12) hours += 12;
+      if (timeAMPM === 'AM' && hours === 12) hours = 0;
+      
+      customTime.setHours(hours, timeMinute, 0, 0);
+      
+      // Calculate difference in minutes
+      const diffMs = now.getTime() - customTime.getTime();
       timeAgoValue = Math.round(diffMs / 60000); // Convert ms to minutes
+      
+      // If the time is in the future, assume it's from yesterday
+      if (timeAgoValue < 0) {
+        timeAgoValue += 24 * 60; // Add 24 hours in minutes
+      }
     }
     
     // If custom duration was selected, calculate duration in minutes
@@ -58,7 +77,9 @@ export default function TimeScreen() {
     console.log('Saving time data:', { 
       timeAgo: timeAgoValue, 
       duration: finalDuration,
-      customDate: selectedTimeAgo === -1 ? customDate : null,
+      customTimeHour: selectedTimeAgo === -1 ? timeHour : null,
+      customTimeMinute: selectedTimeAgo === -1 ? timeMinute : null,
+      customTimeAMPM: selectedTimeAgo === -1 ? timeAMPM : null,
       customDurationHours: selectedDuration === -1 ? durationHours : null,
       customDurationMinutes: selectedDuration === -1 ? durationMinutes : null
     });
@@ -69,14 +90,22 @@ export default function TimeScreen() {
     router.back();
   };
 
-  const handleTimeChange = (event, selectedDate) => {
-    const currentDate = selectedDate || customDate;
-    
-    if (Platform.OS === 'android') {
-      setShowTimePicker(false);
-    }
-    
-    setCustomDate(currentDate);
+  const handleTimeHourChange = (value) => {
+    let newHour = value;
+    if (newHour > 12) newHour = 1;
+    if (newHour < 1) newHour = 12;
+    setTimeHour(newHour);
+  };
+
+  const handleTimeMinuteChange = (value) => {
+    let newMinute = value;
+    if (newMinute >= 60) newMinute = 0;
+    if (newMinute < 0) newMinute = 55;
+    setTimeMinute(newMinute);
+  };
+
+  const toggleAMPM = () => {
+    setTimeAMPM(prev => prev === 'AM' ? 'PM' : 'AM');
   };
 
   const handleDurationHourChange = (value) => {
@@ -87,17 +116,10 @@ export default function TimeScreen() {
     setDurationMinutes(Math.max(0, Math.min(59, value)));
   };
 
-  const formatCustomTime = (date) => {
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    
-    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-    
-    return `${hours}:${minutesStr} ${ampm}`;
+  const formatCustomTime = () => {
+    const hourDisplay = timeHour;
+    const minuteDisplay = timeMinute < 10 ? `0${timeMinute}` : timeMinute;
+    return `${hourDisplay}:${minuteDisplay} ${timeAMPM}`;
   };
 
   const formatCustomDuration = () => {
@@ -111,6 +133,19 @@ export default function TimeScreen() {
   };
 
   const openTimePicker = () => {
+    // Initialize time picker with current time
+    const now = new Date();
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    if (hours > 12) hours -= 12;
+    if (hours === 0) hours = 12;
+    
+    setTimeHour(hours);
+    setTimeMinute(now.getMinutes());
+    setTimeAMPM(ampm);
+    
     setShowTimePicker(true);
     setShowDurationPicker(false);
   };
@@ -202,7 +237,7 @@ export default function TimeScreen() {
                       selectedTimeAgo === -1 && styles.selectedOptionText,
                     ]}
                   >
-                    {selectedTimeAgo === -1 ? formatCustomTime(customDate) : 'Custom time'}
+                    {selectedTimeAgo === -1 ? formatCustomTime() : 'Custom time'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -250,21 +285,65 @@ export default function TimeScreen() {
           )}
         </ScrollView>
       ) : showTimePicker ? (
-        // Time Picker View (full screen when active)
+        // Custom Time Picker View
         <View style={styles.timePickerFullScreenContainer}>
           <View style={styles.timePickerContent}>
             <Text style={styles.timePickerTitle}>Select exact time</Text>
             
-            <View style={styles.timePickerWrapper}>
-              <DateTimePicker
-                value={customDate}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleTimeChange}
-                style={styles.timePicker}
-                themeVariant="light"
-                textColor="#000"
-              />
+            <View style={styles.durationPickerContainer}>
+              {/* Hours picker */}
+              <View style={styles.durationPickerColumn}>
+                <TouchableOpacity 
+                  style={styles.durationPickerButton}
+                  onPress={() => handleTimeHourChange(timeHour + 1)}
+                >
+                  <Ionicons name="chevron-up" size={24} color="#ccc" />
+                </TouchableOpacity>
+                <Text style={styles.durationPickerValue}>{timeHour}</Text>
+                <TouchableOpacity 
+                  style={styles.durationPickerButton}
+                  onPress={() => handleTimeHourChange(timeHour - 1)}
+                >
+                  <Ionicons name="chevron-down" size={24} color="#ccc" />
+                </TouchableOpacity>
+                <Text style={styles.durationPickerLabel}>hour</Text>
+              </View>
+              
+              {/* Minutes picker */}
+              <View style={styles.durationPickerColumn}>
+                <TouchableOpacity 
+                  style={styles.durationPickerButton}
+                  onPress={() => handleTimeMinuteChange(timeMinute + 5)}
+                >
+                  <Ionicons name="chevron-up" size={24} color="#ccc" />
+                </TouchableOpacity>
+                <Text style={styles.durationPickerValue}>{timeMinute < 10 ? `0${timeMinute}` : timeMinute}</Text>
+                <TouchableOpacity 
+                  style={styles.durationPickerButton}
+                  onPress={() => handleTimeMinuteChange(timeMinute - 5)}
+                >
+                  <Ionicons name="chevron-down" size={24} color="#ccc" />
+                </TouchableOpacity>
+                <Text style={styles.durationPickerLabel}>minute</Text>
+              </View>
+              
+              {/* AM/PM picker */}
+              <View style={styles.durationPickerColumn}>
+                <TouchableOpacity 
+                  style={styles.durationPickerButton}
+                  onPress={toggleAMPM}
+                >
+                  <Ionicons name="chevron-up" size={24} color="#ccc" />
+                </TouchableOpacity>
+                <Text style={styles.durationPickerValue}>{timeAMPM}</Text>
+                <TouchableOpacity 
+                  style={styles.durationPickerButton}
+                  onPress={toggleAMPM}
+                >
+                  <Ionicons name="chevron-down" size={24} color="#ccc" />
+                </TouchableOpacity>
+                <Text style={styles.durationPickerLabel}></Text>
+              </View>
             </View>
             
             <View style={styles.timePickerButtonsContainer}>
@@ -459,7 +538,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  // Full screen time picker
+  // Picker common styles
   timePickerFullScreenContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -491,20 +570,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#000',
   },
-  timePickerWrapper: {
-    backgroundColor: '#2a9d8f10',
-    borderRadius: 12,
-    padding: 10,
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2a9d8f30',
-  },
-  timePicker: {
-    width: 280,
-    height: 180,
-  },
-  // Duration picker styles
+  // Duration picker styles (used for both time and duration)
   durationPickerContainer: {
     flexDirection: 'row',
     width: '100%',
@@ -517,9 +583,9 @@ const styles = StyleSheet.create({
     borderColor: '#2a9d8f30',
   },
   durationPickerColumn: {
-    width: 100,
+    width: 80,
     alignItems: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: 10,
   },
   durationPickerButton: {
     padding: 12,
