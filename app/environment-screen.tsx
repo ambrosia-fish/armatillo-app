@@ -33,7 +33,7 @@ export default function EnvironmentScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Where were you?</Text>
         <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
