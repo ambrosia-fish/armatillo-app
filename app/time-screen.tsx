@@ -400,7 +400,7 @@ export default function TimeScreen() {
                   style={styles.pickerValueContainer}
                   {...hourPanResponder.panHandlers}
                 >
-                  <Text style={styles.timeValue}>{timeHour}</Text>
+                  <Text style={styles.singleDigitValue}>{timeHour}</Text>
                 </View>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
@@ -423,7 +423,7 @@ export default function TimeScreen() {
                   style={styles.pickerValueContainer}
                   {...minutePanResponder.panHandlers}
                 >
-                  <Text style={styles.timeValue}>
+                  <Text style={styles.doubleDigitValue}>
                     {timeMinute < 10 ? `0${timeMinute}` : timeMinute}
                   </Text>
                 </View>
@@ -495,7 +495,7 @@ export default function TimeScreen() {
                   style={styles.pickerValueContainer}
                   {...durationHoursPanResponder.panHandlers}
                 >
-                  <Text style={styles.timeValue}>{durationHours}</Text>
+                  <Text style={styles.singleDigitValue}>{durationHours}</Text>
                 </View>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
@@ -519,7 +519,7 @@ export default function TimeScreen() {
                   style={styles.pickerValueContainer}
                   {...durationMinutesPanResponder.panHandlers}
                 >
-                  <Text style={styles.timeValue}>{durationMinutes}</Text>
+                  <Text style={styles.doubleDigitValue}>{durationMinutes}</Text>
                 </View>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
@@ -707,33 +707,43 @@ const styles = StyleSheet.create({
     borderColor: '#2a9d8f30',
   },
   durationPickerColumn: {
-    width: 80,
+    width: 90,
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: 8,
   },
   durationPickerButton: {
     padding: 12,
   },
   pickerValueContainer: {
     paddingVertical: 8,
-    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 80,
+    width: '100%',
+    height: 60,
   },
-  timeValue: {
+  singleDigitValue: {
     fontSize: 40,
     fontWeight: '500',
     color: '#333',
     textAlign: 'center',
-    width: '100%',
+    width: 40,
+    letterSpacing: 1,
+  },
+  doubleDigitValue: {
+    fontSize: 40,
+    fontWeight: '500',
+    color: '#333',
+    textAlign: 'center',
+    width: 80,
+    letterSpacing: 1,
   },
   ampmValue: {
     fontSize: 34,
     fontWeight: '500',
     color: '#333',
     textAlign: 'center',
-    width: '100%',
+    width: 60,
+    letterSpacing: 1,
   },
   durationPickerLabel: {
     fontSize: 14,
