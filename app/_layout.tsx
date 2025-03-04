@@ -58,6 +58,11 @@ function RootLayoutNav() {
           animation: 'slide_from_bottom',
           headerShown: false
         }} />
+        <Stack.Screen name="trigger-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
       </Stack>
     </ThemeProvider>
   );
