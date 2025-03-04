@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, PanResponder } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,99 +41,6 @@ export default function TimeScreen() {
   
   // Duration options in minutes
   const durationOptions: number[] = [1, 2, 3, 5, 10, 15, 20];
-
-  // Create Pan Responders for swipe gestures
-  const hourPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        // Detect vertical swipes
-        if (Math.abs(gestureState.dy) > 10) {
-          if (gestureState.dy < 0) {
-            // Swipe up - increment hour
-            handleTimeHourChange(timeHour + 1);
-          } else {
-            // Swipe down - decrement hour
-            handleTimeHourChange(timeHour - 1);
-          }
-          return true;
-        }
-        return false;
-      },
-      onPanResponderRelease: () => {}
-    })
-  ).current;
-
-  const minutePanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        // Detect vertical swipes
-        if (Math.abs(gestureState.dy) > 10) {
-          if (gestureState.dy < 0) {
-            // Swipe up - increment minute
-            handleTimeMinuteChange(timeMinute + 5);
-          } else {
-            // Swipe down - decrement minute
-            handleTimeMinuteChange(timeMinute - 5);
-          }
-          return true;
-        }
-        return false;
-      },
-      onPanResponderRelease: () => {}
-    })
-  ).current;
-
-  const ampmPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        if (Math.abs(gestureState.dy) > 10) {
-          toggleAMPM();
-          return true;
-        }
-        return false;
-      },
-      onPanResponderRelease: () => {}
-    })
-  ).current;
-
-  const durationHoursPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        if (Math.abs(gestureState.dy) > 10) {
-          if (gestureState.dy < 0) {
-            handleDurationHourChange(durationHours + 1);
-          } else {
-            handleDurationHourChange(durationHours - 1);
-          }
-          return true;
-        }
-        return false;
-      },
-      onPanResponderRelease: () => {}
-    })
-  ).current;
-
-  const durationMinutesPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        if (Math.abs(gestureState.dy) > 10) {
-          if (gestureState.dy < 0) {
-            handleDurationMinuteChange(durationMinutes + 5);
-          } else {
-            handleDurationMinuteChange(durationMinutes - 5);
-          }
-          return true;
-        }
-        return false;
-      },
-      onPanResponderRelease: () => {}
-    })
-  ).current;
 
   const handleSave = () => {
     // Save the time data and proceed to the next screen
@@ -392,12 +299,7 @@ export default function TimeScreen() {
                 >
                   <Ionicons name="chevron-up" size={24} color="#ccc" />
                 </TouchableOpacity>
-                <View 
-                  style={styles.pickerValueContainer}
-                  {...hourPanResponder.panHandlers}
-                >
-                  <Text style={styles.durationPickerValue}>{timeHour}</Text>
-                </View>
+                <Text style={styles.durationPickerValue}>{timeHour}</Text>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
                   onPress={() => handleTimeHourChange(timeHour - 1)}
@@ -415,12 +317,7 @@ export default function TimeScreen() {
                 >
                   <Ionicons name="chevron-up" size={24} color="#ccc" />
                 </TouchableOpacity>
-                <View 
-                  style={styles.pickerValueContainer}
-                  {...minutePanResponder.panHandlers}
-                >
-                  <Text style={styles.durationPickerValue}>{timeMinute < 10 ? `0${timeMinute}` : timeMinute}</Text>
-                </View>
+                <Text style={styles.durationPickerValue}>{timeMinute < 10 ? `0${timeMinute}` : timeMinute}</Text>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
                   onPress={() => handleTimeMinuteChange(timeMinute - 5)}
@@ -438,12 +335,7 @@ export default function TimeScreen() {
                 >
                   <Ionicons name="chevron-up" size={24} color="#ccc" />
                 </TouchableOpacity>
-                <View 
-                  style={styles.pickerValueContainer}
-                  {...ampmPanResponder.panHandlers}
-                >
-                  <Text style={styles.durationPickerValue}>{timeAMPM}</Text>
-                </View>
+                <Text style={styles.durationPickerValue}>{timeAMPM}</Text>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
                   onPress={toggleAMPM}
@@ -485,12 +377,7 @@ export default function TimeScreen() {
                 >
                   <Ionicons name="chevron-up" size={24} color="#ccc" />
                 </TouchableOpacity>
-                <View 
-                  style={styles.pickerValueContainer}
-                  {...durationHoursPanResponder.panHandlers}
-                >
-                  <Text style={styles.durationPickerValue}>{durationHours}</Text>
-                </View>
+                <Text style={styles.durationPickerValue}>{durationHours}</Text>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
                   onPress={() => handleDurationHourChange(durationHours - 1)}
@@ -509,12 +396,7 @@ export default function TimeScreen() {
                 >
                   <Ionicons name="chevron-up" size={24} color="#ccc" />
                 </TouchableOpacity>
-                <View 
-                  style={styles.pickerValueContainer}
-                  {...durationMinutesPanResponder.panHandlers}
-                >
-                  <Text style={styles.durationPickerValue}>{durationMinutes}</Text>
-                </View>
+                <Text style={styles.durationPickerValue}>{durationMinutes}</Text>
                 <TouchableOpacity 
                   style={styles.durationPickerButton}
                   onPress={() => handleDurationMinuteChange(durationMinutes - 5)}
@@ -708,15 +590,10 @@ const styles = StyleSheet.create({
   durationPickerButton: {
     padding: 12,
   },
-  pickerValueContainer: {
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   durationPickerValue: {
     fontSize: 40,
     fontWeight: '500',
+    marginVertical: 8,
     color: '#333',
   },
   durationPickerLabel: {
