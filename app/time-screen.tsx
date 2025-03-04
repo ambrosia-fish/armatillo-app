@@ -323,33 +323,45 @@ export default function TimeScreen() {
           </View>
           
           <View style={styles.customDurationContainer}>
-            <View style={styles.durationPickerWrap}>
-              <View style={styles.pickerWithLabel}>
-                <DateTimePicker
-                  value={new Date(0, 0, 0, durationHours, 0)}
-                  mode="time"
-                  display="spinner"
-                  timePickerModeAndroid="spinner"
-                  onChange={(e, date) => {
-                    if (date) setDurationHours(date.getHours());
-                  }}
-                  style={styles.durationPicker}
-                />
-                <Text style={styles.durationLabel}>h</Text>
+            <View style={styles.durationPickerRow}>
+              {/* Hours Column */}
+              <View style={styles.durationPickerColumn}>
+                <View style={styles.durationPickerValueContainer}>
+                  <TouchableOpacity 
+                    style={styles.durationPickerButton}
+                    onPress={() => setDurationHours(prev => Math.min(prev + 1, 23))}
+                  >
+                    <Text style={styles.durationPickerButtonText}>⬆</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.durationPickerValue}>{durationHours}</Text>
+                  <TouchableOpacity 
+                    style={styles.durationPickerButton}
+                    onPress={() => setDurationHours(prev => Math.max(prev - 1, 0))}
+                  >
+                    <Text style={styles.durationPickerButtonText}>⬇</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.durationPickerLabel}>h</Text>
               </View>
-              
-              <View style={styles.pickerWithLabel}>
-                <DateTimePicker
-                  value={new Date(0, 0, 0, 0, durationMinutes)}
-                  mode="time"
-                  display="spinner"
-                  timePickerModeAndroid="spinner"
-                  onChange={(e, date) => {
-                    if (date) setDurationMinutes(date.getMinutes());
-                  }}
-                  style={styles.durationPicker}
-                />
-                <Text style={styles.durationLabel}>m</Text>
+
+              {/* Minutes Column */}
+              <View style={styles.durationPickerColumn}>
+                <View style={styles.durationPickerValueContainer}>
+                  <TouchableOpacity 
+                    style={styles.durationPickerButton}
+                    onPress={() => setDurationMinutes(prev => Math.min(prev + 1, 59))}
+                  >
+                    <Text style={styles.durationPickerButtonText}>⬆</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.durationPickerValue}>{durationMinutes}</Text>
+                  <TouchableOpacity 
+                    style={styles.durationPickerButton}
+                    onPress={() => setDurationMinutes(prev => Math.max(prev - 1, 0))}
+                  >
+                    <Text style={styles.durationPickerButtonText}>⬇</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.durationPickerLabel}>m</Text>
               </View>
             </View>
           </View>
@@ -503,28 +515,42 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   customDurationContainer: {
-    paddingVertical: 10,
+    paddingVertical: 20,
     backgroundColor: '#fff',
   },
-  durationPickerWrap: {
+  durationPickerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  pickerWithLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 150,
-  },
-  durationPicker: {
-    width: 100,
     height: 200,
   },
-  durationLabel: {
+  durationPickerColumn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 20,
+  },
+  durationPickerValueContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationPickerButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  durationPickerButtonText: {
     fontSize: 24,
-    marginLeft: 5,
-    marginRight: 20,
+    color: '#2a9d8f',
+  },
+  durationPickerValue: {
+    fontSize: 40,
+    fontWeight: '500',
+    color: '#333',
+    marginVertical: 15,
+  },
+  durationPickerLabel: {
+    fontSize: 28,
+    marginLeft: 8,
     color: '#333',
   }
 });
