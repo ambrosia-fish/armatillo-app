@@ -22,6 +22,7 @@ export default function TimeScreen() {
   
   // Custom time picker state
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string>("Today");
   const [selectedHour, setSelectedHour] = useState<string>(String(now.getHours() % 12 || 12));
   const [selectedMinute, setSelectedMinute] = useState<string>(String(now.getMinutes()));
   const [selectedAmPm, setSelectedAmPm] = useState(now.getHours() >= 12 ? 'PM' : 'AM');
@@ -76,7 +77,7 @@ export default function TimeScreen() {
     console.log('Saving time data:', { 
       timeAgo: timeAgoValue, 
       duration: finalDuration,
-      customTime: selectedTimeAgo === -1 ? `${selectedHour}:${selectedMinute} ${selectedAmPm}` : null
+      customTime: selectedTimeAgo === -1 ? `${selectedDay} ${selectedHour}:${selectedMinute} ${selectedAmPm}` : null
     });
     
     router.back();
@@ -96,7 +97,7 @@ export default function TimeScreen() {
     const hour = parseInt(selectedHour, 10);
     const minute = parseInt(selectedMinute, 10);
     const minuteStr = minute < 10 ? `0${minute}` : minute;
-    return `Today ${hour}:${minuteStr} ${selectedAmPm}`;
+    return `${selectedDay} ${hour}:${minuteStr} ${selectedAmPm}`;
   };
 
   const formatCustomDuration = () => {
@@ -290,6 +291,18 @@ export default function TimeScreen() {
           </View>
           
           <View style={styles.pickerContent}>
+            {/* Day Picker */}
+            <Picker
+              selectedValue={selectedDay}
+              style={styles.dayPickerItem}
+              itemStyle={styles.pickerItem}
+              onValueChange={(itemValue) => setSelectedDay(itemValue)}
+            >
+              <Picker.Item key="today" label="Today" value="Today" />
+              <Picker.Item key="yesterday" label="Yesterday" value="Yesterday" />
+            </Picker>
+            
+            {/* Hour Picker */}
             <Picker
               selectedValue={selectedHour}
               style={styles.timePickerItem}
@@ -301,6 +314,7 @@ export default function TimeScreen() {
               ))}
             </Picker>
             
+            {/* Minute Picker */}
             <Picker
               selectedValue={selectedMinute}
               style={styles.timePickerItem}
@@ -316,6 +330,7 @@ export default function TimeScreen() {
               ))}
             </Picker>
             
+            {/* AM/PM Picker */}
             <Picker
               selectedValue={selectedAmPm}
               style={styles.amPmPickerItem}
@@ -553,8 +568,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     marginTop: 30,
   },
+  dayPickerItem: {
+    width: 100,
+    height: 180,
+    backgroundColor: '#333',
+    color: '#fff',
+  },
   timePickerItem: {
-    width: 80,
+    width: 60,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
@@ -566,7 +587,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   amPmPickerItem: {
-    width: 70,
+    width: 60,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
