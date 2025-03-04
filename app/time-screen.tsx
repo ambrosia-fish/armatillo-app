@@ -293,7 +293,6 @@ export default function TimeScreen() {
           <View style={styles.pickerContainer}>
             {/* Day Picker - First Row */}
             <View style={styles.dayPickerContainer}>
-              <Text style={styles.dayPickerLabel}>To...</Text>
               <Picker
                 selectedValue={selectedDay}
                 style={styles.dayPickerItem}
@@ -546,15 +545,7 @@ const styles = StyleSheet.create({
   dayPickerContainer: {
     padding: 10,
     backgroundColor: '#333',
-    flexDirection: 'row',
     alignItems: 'center',
-  },
-  dayPickerLabel: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    width: 70,
   },
   timePickerRow: {
     flexDirection: 'row',
@@ -594,7 +585,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   dayPickerItem: {
-    width: 150,
+    width: 180,
     height: 50,
     backgroundColor: '#333',
     color: '#fff',
