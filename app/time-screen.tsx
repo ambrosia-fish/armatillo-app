@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, Picker } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,6 +42,8 @@ export default function TimeScreen() {
   ];
   
   const durationOptions: number[] = [1, 2, 3, 5, 10, 15, 20];
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
+  const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
 
   const handleSave = () => {
     let timeAgoValue = selectedTimeAgo;
@@ -310,7 +312,7 @@ export default function TimeScreen() {
         </View>
       )}
       
-      {/* Duration Picker */}
+      {/* Custom Duration Picker */}
       {showDurationPicker && Platform.OS === 'ios' && (
         <View style={styles.pickerContainer}>
           <View style={styles.pickerHeader}>
@@ -323,29 +325,35 @@ export default function TimeScreen() {
           </View>
           
           <View style={styles.durationPickerContent}>
+            {/* Hours Picker */}
             <View style={styles.durationPickerColumn}>
-              <DateTimePicker
-                value={new Date(0, 0, 0, durationHours, 0)}
-                mode="time"
-                display="spinner"
-                onChange={(e, date) => {
-                  if (date) setDurationHours(date.getHours());
-                }}
-                style={styles.durationPicker}
-              />
+              <View style={styles.pickerWrapper}>
+                <DateTimePicker
+                  value={new Date(2023, 1, 1, durationHours, 0)}
+                  mode="time"
+                  display="spinner"
+                  onChange={(e, date) => {
+                    if (date) setDurationHours(date.getHours());
+                  }}
+                  style={styles.durationPicker}
+                />
+              </View>
               <Text style={styles.durationLabel}>h</Text>
             </View>
             
+            {/* Minutes Picker */}
             <View style={styles.durationPickerColumn}>
-              <DateTimePicker
-                value={new Date(0, 0, 0, 0, durationMinutes)}
-                mode="time"
-                display="spinner"
-                onChange={(e, date) => {
-                  if (date) setDurationMinutes(date.getMinutes());
-                }}
-                style={styles.durationPicker}
-              />
+              <View style={styles.pickerWrapper}>
+                <DateTimePicker
+                  value={new Date(2023, 1, 1, 0, durationMinutes)}
+                  mode="time"
+                  display="spinner"
+                  onChange={(e, date) => {
+                    if (date) setDurationMinutes(date.getMinutes());
+                  }}
+                  style={styles.durationPicker}
+                />
+              </View>
               <Text style={styles.durationLabel}>m</Text>
             </View>
           </View>
@@ -502,10 +510,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 10,
   },
   durationPickerColumn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickerWrapper: {
+    width: 100,
+    overflow: 'hidden',
   },
   durationPicker: {
     width: 100,
