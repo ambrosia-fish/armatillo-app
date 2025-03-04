@@ -4,13 +4,19 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { sensoryOptions } from './constants/optionDictionaries';
+import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function NotesScreen() {
   const router = useRouter();
   const [notes, setNotes] = useState('');
+  const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>([]);
   
   const handleSave = () => {
-    console.log('Saving notes data:', { notes });
+    console.log('Saving final data:', { 
+      selectedSensoryTriggers,
+      notes
+    });
     
     // Show confirmation and return to home
     Alert.alert(
@@ -25,11 +31,20 @@ export default function NotesScreen() {
     );
   };
 
+  const handleSensorySelection = (id: string) => {
+    setSelectedSensoryTriggers(prevSelected => {
+      if (prevSelected.includes(id)) {
+        return prevSelected.filter(item => item !== id);
+      }
+      return [...prevSelected, id];
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Additional Notes</Text>
         <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
@@ -39,11 +54,21 @@ export default function NotesScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Anything else you'd like to add?</Text>
+          <Text style={styles.sectionTitle}>Were there any sensory triggers?</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={sensoryOptions}
+            selectedItems={selectedSensoryTriggers}
+            onSelect={handleSensorySelection}
+          />
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Any additional notes?</Text>
           <TextInput
             style={styles.textInput}
             multiline
-            numberOfLines={8}
+            numberOfLines={6}
             placeholder="Add any additional notes, observations, or context..."
             value={notes}
             onChangeText={setNotes}
@@ -115,13 +140,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
   },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+  },
   textInput: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    minHeight: 180,
+    minHeight: 150,
     textAlignVertical: 'top',
   },
   infoText: {
