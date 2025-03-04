@@ -243,16 +243,28 @@ export default function TimeScreen() {
             
             <Text style={styles.sectionTitle}>How long did it last?</Text>
             <View style={styles.optionsGrid}>
-              {/* First row of duration options */}
+              {/* First row of duration options: 1 minute, 2 minutes */}
               <View style={styles.optionsRow}>
                 {renderDurationOption(durationOptions[0])}
                 {renderDurationOption(durationOptions[1])}
               </View>
               
-              {/* Additional rows would go here as needed */}
-              {/* Add a custom duration button */}
-              {selectedDuration === -1 && (
-                <View style={styles.optionsRow}>
+              {/* Second row of duration options: 3 minutes, 5 minutes */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[2])}
+                {renderDurationOption(durationOptions[3])}
+              </View>
+              
+              {/* Third row of duration options: 10 minutes, 15 minutes */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[4])}
+                {renderDurationOption(durationOptions[5])}
+              </View>
+              
+              {/* Fourth row: 20 minutes, Custom duration */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[6])}
+                {selectedDuration === -1 ? (
                   <TouchableOpacity
                     style={[styles.timeOption, styles.selectedOption]}
                     onPress={handleCustomDurationSelection}
@@ -261,8 +273,15 @@ export default function TimeScreen() {
                       {formatCustomDuration()}
                     </Text>
                   </TouchableOpacity>
-                </View>
-              )}
+                ) : (
+                  <TouchableOpacity
+                    style={styles.timeOption}
+                    onPress={handleCustomDurationSelection}
+                  >
+                    <Text style={styles.timeOptionText}>Custom duration</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           </>
         )}
