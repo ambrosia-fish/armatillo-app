@@ -32,7 +32,7 @@ export default function TriggerScreen() {
     { id: 'tech', label: 'tech', emoji: '📱' },
   ];
 
-  const handleSave = () => {
+  const handleNext = () => {
     // Save the data
     console.log('Saving trigger data:', { 
       urgeStrength,
@@ -40,8 +40,9 @@ export default function TriggerScreen() {
       selectedTriggers,
     });
     
-    // Navigate to the next screen or close this one
-    router.back();
+    // Navigate to the next screen
+    // This would typically be something like router.push('/next-screen')
+    console.log('Navigate to next screen');
   };
 
   const handleTriggerSelection = (triggerId: string) => {
@@ -94,9 +95,9 @@ export default function TriggerScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                   <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.title}>About The Urge</Text>
-                <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-                  <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.title}>About the Instance</Text>
+                <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+                  <Text style={styles.nextButtonText}>Next</Text>
                 </TouchableOpacity>
               </View>
             </SafeAreaView>
@@ -215,10 +216,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  saveButton: {
+  nextButton: {
     padding: 8,
   },
-  saveButtonText: {
+  nextButtonText: {
     color: '#2a9d8f',
     fontWeight: 'bold',
     fontSize: 16,
