@@ -12,16 +12,14 @@ export default function NotesScreen() {
   const handleSave = () => {
     console.log('Saving notes data:', { notes });
     
-    // In a real app, you would save all the data to your database here
-    
-    // Show confirmation and navigate back to main screen
+    // Show confirmation and return to home
     Alert.alert(
       "Instance Saved",
       "Your BFRB instance has been recorded successfully.",
       [
         { 
           text: "OK", 
-          onPress: () => router.navigate('(tabs)') 
+          onPress: () => router.replace('/(tabs)') 
         }
       ]
     );
@@ -54,7 +52,7 @@ export default function NotesScreen() {
         
         <View style={styles.section}>
           <Text style={styles.infoText}>
-            This is the last step. Press "Save" to record this BFRB instance and return to the home screen.
+            This is the last step. Press "Save" to record this BFRB instance.
           </Text>
           <TouchableOpacity style={styles.saveFullButton} onPress={handleSave}>
             <Text style={styles.saveFullButtonText}>Save Instance</Text>
