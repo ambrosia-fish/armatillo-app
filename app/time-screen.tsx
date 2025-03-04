@@ -88,6 +88,9 @@ export default function TimeScreen() {
     }
   };
 
+  // The current time as a button label for the custom option
+  const customTimeLabel = selectedTimeAgo === -1 ? formatCustomTime(customDate) : 'Custom';
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -136,25 +139,14 @@ export default function TimeScreen() {
                     }
                   }}
                 >
-                  {option.value === -1 && selectedTimeAgo === -1 ? (
-                    <Text
-                      style={[
-                        styles.timeOptionText,
-                        selectedTimeAgo === option.value && styles.selectedOptionText,
-                      ]}
-                    >
-                      {formatCustomTime(customDate)}
-                    </Text>
-                  ) : (
-                    <Text
-                      style={[
-                        styles.timeOptionText,
-                        selectedTimeAgo === option.value && styles.selectedOptionText,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  )}
+                  <Text
+                    style={[
+                      styles.timeOptionText,
+                      selectedTimeAgo === option.value && styles.selectedOptionText,
+                    ]}
+                  >
+                    {option.value === -1 ? customTimeLabel : option.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -185,26 +177,33 @@ export default function TimeScreen() {
         )}
       </ScrollView>
       
-      {/* Time Picker for iOS */}
-      {Platform.OS === 'ios' && showTimePicker && (
-        <View style={styles.timePickerContainer}>
-          <View style={styles.timePickerHeader}>
-            <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-              <Text style={styles.cancelButton}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => setShowTimePicker(false)}
-            >
-              <Text style={styles.doneButton}>Done</Text>
-            </TouchableOpacity>
+      {/* Time Picker for iOS as a Modal */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={showTimePicker}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.timePickerHeader}>
+                <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                  <Text style={styles.cancelButton}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.pickerTitle}>Select Time</Text>
+                <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                  <Text style={styles.doneButton}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={customDate}
+                mode="time"
+                display="spinner"
+                onChange={handleTimeChange}
+              />
+            </View>
           </View>
-          <DateTimePicker
-            value={customDate}
-            mode="time"
-            display="spinner"
-            onChange={handleTimeChange}
-          />
-        </View>
+        </Modal>
       )}
       
       {/* Time Picker for Android */}
@@ -329,17 +328,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  timePickerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 20,
   },
   timePickerHeader: {
     flexDirection: 'row',
@@ -349,8 +347,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   cancelButton: {
-    color: '#999',
+    color: '#666',
     fontSize: 16,
   },
   doneButton: {
