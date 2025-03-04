@@ -4,25 +4,49 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { feelingOptions, sensationOptions } from './constants/optionDictionaries';
+import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function FeelingsScreen() {
   const router = useRouter();
   const [physicalFeelings, setPhysicalFeelings] = useState('');
   const [mentalFeelings, setMentalFeelings] = useState('');
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
+  const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
   
   const handleNext = () => {
     console.log('Saving feelings data:', { 
+      selectedEmotions,
+      selectedSensations,
       physicalFeelings,
       mentalFeelings
     });
     router.push('/thoughts-screen');
   };
 
+  const handleEmotionSelection = (id: string) => {
+    setSelectedEmotions(prevSelected => {
+      if (prevSelected.includes(id)) {
+        return prevSelected.filter(item => item !== id);
+      }
+      return [...prevSelected, id];
+    });
+  };
+
+  const handleSensationSelection = (id: string) => {
+    setSelectedSensations(prevSelected => {
+      if (prevSelected.includes(id)) {
+        return prevSelected.filter(item => item !== id);
+      }
+      return [...prevSelected, id];
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>How were you feeling?</Text>
         <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
@@ -32,26 +56,38 @@ export default function FeelingsScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What were you feeling physically?</Text>
+          <Text style={styles.sectionTitle}>Mental/Emotional feelings</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={feelingOptions}
+            selectedItems={selectedEmotions}
+            onSelect={handleEmotionSelection}
+          />
           <TextInput
             style={styles.textInput}
             multiline
-            numberOfLines={4}
-            placeholder="Describe physical sensations..."
-            value={physicalFeelings}
-            onChangeText={setPhysicalFeelings}
+            numberOfLines={3}
+            placeholder="Any additional emotional feelings..."
+            value={mentalFeelings}
+            onChangeText={setMentalFeelings}
           />
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What were you feeling mentally?</Text>
+          <Text style={styles.sectionTitle}>Physical sensations</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={sensationOptions}
+            selectedItems={selectedSensations}
+            onSelect={handleSensationSelection}
+          />
           <TextInput
             style={styles.textInput}
             multiline
-            numberOfLines={4}
-            placeholder="Describe your emotional state..."
-            value={mentalFeelings}
-            onChangeText={setMentalFeelings}
+            numberOfLines={3}
+            placeholder="Any additional physical sensations..."
+            value={physicalFeelings}
+            onChangeText={setPhysicalFeelings}
           />
         </View>
       </ScrollView>
@@ -111,13 +147,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
   },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+  },
   textInput: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    minHeight: 120,
+    minHeight: 80,
     textAlignVertical: 'top',
+    marginTop: 16,
   },
 });
