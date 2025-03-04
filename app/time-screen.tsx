@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +28,7 @@ export default function TimeScreen() {
     { label: '1 hour ago', value: 60 },
     { label: '1.5 hours ago', value: 90 },
     { label: '2 hours ago', value: 120 },
-    { label: 'Custom', value: -1 },
+    { label: 'Custom time', value: -1 },
   ];
   
   // Duration options in minutes
@@ -81,15 +81,13 @@ export default function TimeScreen() {
   };
 
   const openTimePicker = () => {
-    if (Platform.OS === 'ios') {
-      setShowTimePicker(true);
-    } else {
-      setShowTimePicker(true);
-    }
+    setShowTimePicker(true);
   };
 
-  // The current time as a button label for the custom option
-  const customTimeLabel = selectedTimeAgo === -1 ? formatCustomTime(customDate) : 'Custom';
+  const handleCustomTimeSelection = () => {
+    setSelectedTimeAgo(-1);
+    openTimePicker();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -103,121 +101,122 @@ export default function TimeScreen() {
         </TouchableOpacity>
       </View>
       
-      <ScrollView style={styles.content}>
-        <View style={styles.switchContainer}>
-          <Text style={styles.switchLabel}>Custom time</Text>
-          <Switch
-            value={customTime}
-            onValueChange={setCustomTime}
-            trackColor={{ false: '#ccc', true: '#2a9d8f' }}
-            thumbColor={customTime ? '#fff' : '#fff'}
-          />
-        </View>
-        
-        {!customTime ? (
-          <View style={styles.justHappenedContainer}>
-            <Text style={styles.justHappenedText}>Just happened</Text>
-            <Text style={styles.justHappenedSubtext}>
-              Current time will be used for this entry
-            </Text>
+      {!showTimePicker ? (
+        <ScrollView style={styles.content}>
+          <View style={styles.switchContainer}>
+            <Text style={styles.switchLabel}>Custom time</Text>
+            <Switch
+              value={customTime}
+              onValueChange={setCustomTime}
+              trackColor={{ false: '#ccc', true: '#2a9d8f' }}
+              thumbColor={customTime ? '#fff' : '#fff'}
+            />
           </View>
-        ) : (
-          <>
-            <Text style={styles.sectionTitle}>How long ago?</Text>
-            <View style={styles.optionsContainer}>
-              {timeAgoOptions.map((option) => (
+          
+          {!customTime ? (
+            <View style={styles.justHappenedContainer}>
+              <Text style={styles.justHappenedText}>Just happened</Text>
+              <Text style={styles.justHappenedSubtext}>
+                Current time will be used for this entry
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.sectionTitle}>How long ago?</Text>
+              <View style={styles.optionsContainer}>
+                {timeAgoOptions.slice(0, 7).map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.timeOption,
+                      selectedTimeAgo === option.value && styles.selectedOption,
+                    ]}
+                    onPress={() => setSelectedTimeAgo(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        selectedTimeAgo === option.value && styles.selectedOptionText,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
-                  key={option.value}
                   style={[
                     styles.timeOption,
-                    selectedTimeAgo === option.value && styles.selectedOption,
+                    selectedTimeAgo === -1 && styles.selectedOption,
+                    { minWidth: '45%' }
                   ]}
-                  onPress={() => {
-                    setSelectedTimeAgo(option.value);
-                    if (option.value === -1) {
-                      openTimePicker();
-                    }
-                  }}
+                  onPress={handleCustomTimeSelection}
                 >
                   <Text
                     style={[
                       styles.timeOptionText,
-                      selectedTimeAgo === option.value && styles.selectedOptionText,
+                      selectedTimeAgo === -1 && styles.selectedOptionText,
                     ]}
                   >
-                    {option.value === -1 ? customTimeLabel : option.label}
+                    {selectedTimeAgo === -1 ? formatCustomTime(customDate) : 'Custom time'}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            <Text style={styles.sectionTitle}>How long did it last?</Text>
-            <View style={styles.optionsContainer}>
-              {durationOptions.map((duration) => (
-                <TouchableOpacity
-                  key={duration}
-                  style={[
-                    styles.timeOption,
-                    selectedDuration === duration && styles.selectedOption,
-                  ]}
-                  onPress={() => setSelectedDuration(duration)}
-                >
-                  <Text
-                    style={[
-                      styles.timeOptionText,
-                      selectedDuration === duration && styles.selectedOptionText,
-                    ]}
-                  >
-                    {duration} {duration === 1 ? 'minute' : 'minutes'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
-      </ScrollView>
-      
-      {/* Time Picker for iOS as a Modal */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={showTimePicker}
-          transparent={true}
-          animationType="slide"
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.timePickerHeader}>
-                <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                  <Text style={styles.cancelButton}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={styles.pickerTitle}>Select Time</Text>
-                <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                  <Text style={styles.doneButton}>Done</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker
-                value={customDate}
-                mode="time"
-                display="spinner"
-                onChange={handleTimeChange}
-              />
+              
+              <Text style={styles.sectionTitle}>How long did it last?</Text>
+              <View style={styles.optionsContainer}>
+                {durationOptions.map((duration) => (
+                  <TouchableOpacity
+                    key={duration}
+                    style={[
+                      styles.timeOption,
+                      selectedDuration === duration && styles.selectedOption,
+                    ]}
+                    onPress={() => setSelectedDuration(duration)}
+                  >
+                    <Text
+                      style={[
+                        styles.timeOptionText,
+                        selectedDuration === duration && styles.selectedOptionText,
+                      ]}
+                    >
+                      {duration} {duration === 1 ? 'minute' : 'minutes'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+        </ScrollView>
+      ) : (
+        // Time Picker View (full screen when active)
+        <View style={styles.timePickerFullScreenContainer}>
+          <View style={styles.timePickerContent}>
+            <Text style={styles.timePickerTitle}>Select exact time</Text>
+            <DateTimePicker
+              value={customDate}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleTimeChange}
+              style={styles.timePicker}
+            />
+            <View style={styles.timePickerButtonsContainer}>
+              <TouchableOpacity 
+                style={styles.timePickerButton} 
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.timePickerCancelButton}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.timePickerButton} 
+                onPress={() => setShowTimePicker(false)}
+              >
+                <Text style={styles.timePickerDoneButton}>Done</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        </View>
       )}
       
-      {/* Time Picker for Android */}
-      {Platform.OS === 'android' && showTimePicker && (
-        <DateTimePicker
-          value={customDate}
-          mode="time"
-          is24Hour={false}
-          display="default"
-          onChange={handleTimeChange}
-        />
-      )}
-      
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </SafeAreaView>
   );
@@ -315,6 +314,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     minWidth: '45%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectedOption: {
     backgroundColor: '#2a9d8f',
@@ -328,34 +329,54 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  modalContainer: {
+  // Full screen time picker
+  timePickerFullScreenContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 20,
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    backgroundColor: '#f8f9fa',
   },
-  pickerTitle: {
-    fontSize: 16,
+  timePickerContent: {
+    width: '100%',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  timePickerTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
-  cancelButton: {
-    color: '#666',
+  timePicker: {
+    width: 300,
+  },
+  timePickerButtonsContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  timePickerButton: {
+    padding: 10,
+  },
+  timePickerCancelButton: {
+    color: '#999',
     fontSize: 16,
   },
-  doneButton: {
+  timePickerDoneButton: {
     color: '#2a9d8f',
     fontWeight: 'bold',
     fontSize: 16,
