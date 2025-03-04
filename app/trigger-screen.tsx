@@ -4,12 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-interface TriggerOption {
-  id: string;
-  label: string;
-  emoji: string;
-}
+import { triggerOptions } from './constants/optionDictionaries';
+import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function TriggerScreen() {
   const router = useRouter();
@@ -18,19 +14,6 @@ export default function TriggerScreen() {
   const [urgeStrength, setUrgeStrength] = useState<number | null>(null);
   const [intentionType, setIntentionType] = useState<string | null>(null);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
-
-  // Trigger options
-  const triggerOptions: TriggerOption[] = [
-    { id: 'anger', label: 'anger', emoji: '😠' },
-    { id: 'sadness', label: 'sadness', emoji: '😢' },
-    { id: 'anxiety', label: 'anxiety', emoji: '😰' },
-    { id: 'tiredness', label: 'tiredness', emoji: '😴' },
-    { id: 'boredom', label: 'boredom', emoji: '🥱' },
-    { id: 'hunger', label: 'hunger', emoji: '🍕' },
-    { id: 'thought', label: 'thought', emoji: '🧠' },
-    { id: 'social', label: 'social', emoji: '👥' },
-    { id: 'tech', label: 'tech', emoji: '📱' },
-  ];
 
   const handleNext = () => {
     // Save the data
@@ -85,8 +68,8 @@ export default function TriggerScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>About the Instance</Text>
         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -150,28 +133,11 @@ export default function TriggerScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Do you know what triggered it?</Text>
           <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <View style={styles.triggersGrid}>
-            {triggerOptions.map((trigger) => (
-              <TouchableOpacity
-                key={trigger.id}
-                style={[
-                  styles.triggerOption,
-                  selectedTriggers.includes(trigger.id) && styles.selectedTriggerOption,
-                ]}
-                onPress={() => handleTriggerSelection(trigger.id)}
-              >
-                <Text style={styles.triggerEmoji}>{trigger.emoji}</Text>
-                <Text
-                  style={[
-                    styles.triggerText,
-                    selectedTriggers.includes(trigger.id) && styles.selectedTriggerText,
-                  ]}
-                >
-                  {trigger.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <EmojiSelectionGrid 
+            options={triggerOptions}
+            selectedItems={selectedTriggers}
+            onSelect={handleTriggerSelection}
+          />
         </View>
       </ScrollView>
       
@@ -183,7 +149,7 @@ export default function TriggerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
@@ -195,7 +161,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
   },
-  backButton: {
+  closeButton: {
     padding: 8,
   },
   title: {
@@ -213,7 +179,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
   },
   section: {
     marginBottom: 24,
@@ -290,37 +255,5 @@ const styles = StyleSheet.create({
   intentionOptionText: {
     textAlign: 'center',
     fontSize: 16,
-  },
-  triggersGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  triggerOption: {
-    width: '31%',
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTriggerOption: {
-    borderColor: '#2a9d8f',
-    borderWidth: 1,
-  },
-  triggerEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  triggerText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#333',
-  },
-  selectedTriggerText: {
-    color: '#2a9d8f',
-  },
+  }
 });
