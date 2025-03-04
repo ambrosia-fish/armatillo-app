@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, Picker } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import WheelPicker from 'react-native-wheel-picker-ios';
 
 interface TimeOption {
   label: string;
@@ -22,21 +21,14 @@ export default function TimeScreen() {
   
   // Custom time picker state
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [customDate, setCustomDate] = useState(now);
-  const [selectedHour, setSelectedHour] = useState(now.getHours());
+  const [selectedHour, setSelectedHour] = useState(now.getHours() % 12 || 12);
   const [selectedMinute, setSelectedMinute] = useState(now.getMinutes());
-  const [selectedAmPm, setSelectedAmPm] = useState(now.getHours() >= 12 ? 1 : 0);
+  const [selectedAmPm, setSelectedAmPm] = useState(now.getHours() >= 12 ? 'PM' : 'AM');
   
   // Duration picker state
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(15);
-  
-  // Picker data
-  const hours12Format = Array.from({ length: 12 }, (_, i) => String(i === 0 ? 12 : i));
-  const hours24Format = Array.from({ length: 24 }, (_, i) => String(i));
-  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
-  const amPm = ['AM', 'PM'];
   
   // Time options
   const timeAgoOptions: TimeOption[] = [
@@ -58,12 +50,12 @@ export default function TimeScreen() {
     
     if (selectedTimeAgo === -1) {
       // Convert the selected time to a Date object
-      const customHour = selectedAmPm === 1 ? 
+      const hour24 = selectedAmPm === 'PM' ? 
         (selectedHour === 12 ? 12 : selectedHour + 12) : 
         (selectedHour === 12 ? 0 : selectedHour);
       
       const customTimeDate = new Date();
-      customTimeDate.setHours(customHour);
+      customTimeDate.setHours(hour24);
       customTimeDate.setMinutes(selectedMinute);
       customTimeDate.setSeconds(0);
       
@@ -82,7 +74,7 @@ export default function TimeScreen() {
     console.log('Saving time data:', { 
       timeAgo: timeAgoValue, 
       duration: finalDuration,
-      customTime: selectedTimeAgo === -1 ? `${selectedHour}:${selectedMinute} ${amPm[selectedAmPm]}` : null
+      customTime: selectedTimeAgo === -1 ? `${selectedHour}:${selectedMinute} ${selectedAmPm}` : null
     });
     
     router.back();
@@ -99,9 +91,8 @@ export default function TimeScreen() {
   };
 
   const formatTime = () => {
-    const hour12 = selectedHour === 0 ? 12 : (selectedHour > 12 ? selectedHour - 12 : selectedHour);
     const minuteStr = selectedMinute < 10 ? `0${selectedMinute}` : selectedMinute;
-    return `Today ${hour12}:${minuteStr} ${selectedAmPm === 0 ? 'AM' : 'PM'}`;
+    return `Today ${selectedHour}:${minuteStr} ${selectedAmPm}`;
   };
 
   const formatCustomDuration = () => {
@@ -291,46 +282,45 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.wheelPickerContainer}>
+          <View style={styles.pickerContent}>
             {/* Hour Picker */}
-            <View style={styles.wheelPickerColumn}>
-              <WheelPicker
-                style={styles.wheelPicker}
-                selectedValue={selectedHour % 12}
-                itemStyle={styles.wheelPickerItem}
-                lineColor="#ddd"
-                items={hours12Format}
-                onChange={(index) => {
-                  const newHour = index === 0 ? 12 : index;
-                  const hour24 = selectedAmPm === 1 ? (newHour === 12 ? 12 : newHour + 12) : (newHour === 12 ? 0 : newHour);
-                  setSelectedHour(hour24);
-                }}
-              />
-            </View>
+            <Picker
+              selectedValue={selectedHour}
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+              onValueChange={(itemValue) => setSelectedHour(itemValue)}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
+                <Picker.Item key={`hour-${hour}`} label={String(hour)} value={hour} />
+              ))}
+            </Picker>
             
             {/* Minute Picker */}
-            <View style={styles.wheelPickerColumn}>
-              <WheelPicker
-                style={styles.wheelPicker}
-                selectedValue={selectedMinute}
-                itemStyle={styles.wheelPickerItem}
-                lineColor="#ddd"
-                items={minutes}
-                onChange={(index) => setSelectedMinute(index)}
-              />
-            </View>
+            <Picker
+              selectedValue={selectedMinute}
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+              onValueChange={(itemValue) => setSelectedMinute(itemValue)}
+            >
+              {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                <Picker.Item 
+                  key={`minute-${minute}`} 
+                  label={minute < 10 ? `0${minute}` : String(minute)} 
+                  value={minute} 
+                />
+              ))}
+            </Picker>
             
             {/* AM/PM Picker */}
-            <View style={styles.wheelPickerColumn}>
-              <WheelPicker
-                style={styles.wheelPicker}
-                selectedValue={selectedAmPm}
-                itemStyle={styles.wheelPickerItem}
-                lineColor="#ddd"
-                items={amPm}
-                onChange={(index) => setSelectedAmPm(index)}
-              />
-            </View>
+            <Picker
+              selectedValue={selectedAmPm}
+              style={styles.amPmPicker}
+              itemStyle={styles.pickerItem}
+              onValueChange={(itemValue) => setSelectedAmPm(itemValue)}
+            >
+              <Picker.Item label="AM" value="AM" />
+              <Picker.Item label="PM" value="PM" />
+            </Picker>
           </View>
         </View>
       )}
@@ -347,44 +337,51 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.wheelPickerContainer}>
-            {/* Hours Picker */}
-            <View style={styles.wheelPickerColumn}>
-              <WheelPicker
-                style={styles.wheelPicker}
+          <View style={styles.pickerContent}>
+            <View style={styles.pickerLabelContainer}>
+              <Text style={styles.pickerColumnLabel}>hours</Text>
+              <Text style={styles.pickerColumnLabel}>min</Text>
+              <Text style={styles.pickerColumnLabel}>sec</Text>
+            </View>
+            
+            <View style={styles.pickerRowContent}>
+              {/* Hours Picker */}
+              <Picker
                 selectedValue={durationHours}
-                itemStyle={styles.wheelPickerItem}
-                lineColor="#ddd"
-                items={hours24Format}
-                onChange={(index) => setDurationHours(index)}
-              />
-              <Text style={styles.wheelPickerLabel}>h</Text>
-            </View>
-            
-            {/* Minutes Picker */}
-            <View style={styles.wheelPickerColumn}>
-              <WheelPicker
-                style={styles.wheelPicker}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setDurationHours(itemValue)}
+              >
+                {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                  <Picker.Item key={`duration-hour-${hour}`} label={String(hour)} value={hour} />
+                ))}
+              </Picker>
+              
+              {/* Minutes Picker */}
+              <Picker
                 selectedValue={durationMinutes}
-                itemStyle={styles.wheelPickerItem}
-                lineColor="#ddd"
-                items={minutes}
-                onChange={(index) => setDurationMinutes(index)}
-              />
-              <Text style={styles.wheelPickerLabel}>m</Text>
-            </View>
-            
-            {/* Seconds Picker (disabled, always 0) */}
-            <View style={styles.wheelPickerColumn}>
-              <WheelPicker
-                style={styles.wheelPicker}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setDurationMinutes(itemValue)}
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                  <Picker.Item 
+                    key={`duration-minute-${minute}`} 
+                    label={minute < 10 ? `0${minute}` : String(minute)} 
+                    value={minute} 
+                  />
+                ))}
+              </Picker>
+              
+              {/* Seconds Picker (fixed at 0) */}
+              <Picker
                 selectedValue={0}
-                itemStyle={styles.wheelPickerItem}
-                lineColor="#ddd"
-                items={['00']}
-                onChange={() => {}}
-              />
-              <Text style={styles.wheelPickerLabel}>s</Text>
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+                enabled={false}
+              >
+                <Picker.Item label="00" value={0} />
+              </Picker>
             </View>
           </View>
         </View>
@@ -532,30 +529,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  wheelPickerContainer: {
+  pickerContent: {
+    backgroundColor: '#333',
+    paddingBottom: 20,
+  },
+  pickerLabelContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 200,
-    backgroundColor: '#fff',
+    justifyContent: 'space-around',
+    backgroundColor: '#333',
+    paddingTop: 10,
   },
-  wheelPickerColumn: {
+  pickerColumnLabel: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    width: 100,
+    textAlign: 'center',
+  },
+  pickerRowContent: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#333',
   },
-  wheelPicker: {
-    width: 90,
-    height: 200,
+  picker: {
+    width: 100,
+    height: 180,
+    backgroundColor: '#333',
+    color: '#fff',
   },
-  wheelPickerItem: {
-    color: '#333',
-    fontSize: 20,
+  amPmPicker: {
+    width: 80,
+    height: 180,
+    backgroundColor: '#333',
+    color: '#fff',
   },
-  wheelPickerLabel: {
-    fontSize: 20,
-    marginLeft: 8,
-    marginRight: 20,
-    color: '#333',
+  pickerItem: {
+    color: '#fff',
+    fontSize: 22,
+    height: 100,
   },
 });
