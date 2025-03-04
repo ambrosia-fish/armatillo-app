@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform, Picker } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,8 +42,6 @@ export default function TimeScreen() {
   ];
   
   const durationOptions: number[] = [1, 2, 3, 5, 10, 15, 20];
-  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
-  const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
 
   const handleSave = () => {
     let timeAgoValue = selectedTimeAgo;
@@ -324,37 +322,35 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.durationPickerContent}>
-            {/* Hours Picker */}
-            <View style={styles.durationPickerColumn}>
-              <View style={styles.pickerWrapper}>
+          <View style={styles.customDurationContainer}>
+            <View style={styles.durationPickerWrap}>
+              <View style={styles.pickerWithLabel}>
                 <DateTimePicker
-                  value={new Date(2023, 1, 1, durationHours, 0)}
+                  value={new Date(0, 0, 0, durationHours, 0)}
                   mode="time"
                   display="spinner"
+                  timePickerModeAndroid="spinner"
                   onChange={(e, date) => {
                     if (date) setDurationHours(date.getHours());
                   }}
                   style={styles.durationPicker}
                 />
+                <Text style={styles.durationLabel}>h</Text>
               </View>
-              <Text style={styles.durationLabel}>h</Text>
-            </View>
-            
-            {/* Minutes Picker */}
-            <View style={styles.durationPickerColumn}>
-              <View style={styles.pickerWrapper}>
+              
+              <View style={styles.pickerWithLabel}>
                 <DateTimePicker
-                  value={new Date(2023, 1, 1, 0, durationMinutes)}
+                  value={new Date(0, 0, 0, 0, durationMinutes)}
                   mode="time"
                   display="spinner"
+                  timePickerModeAndroid="spinner"
                   onChange={(e, date) => {
                     if (date) setDurationMinutes(date.getMinutes());
                   }}
                   style={styles.durationPicker}
                 />
+                <Text style={styles.durationLabel}>m</Text>
               </View>
-              <Text style={styles.durationLabel}>m</Text>
             </View>
           </View>
         </View>
@@ -480,7 +476,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
   },
@@ -506,28 +502,29 @@ const styles = StyleSheet.create({
     height: 200,
     width: '100%',
   },
-  durationPickerContent: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  customDurationContainer: {
     paddingVertical: 10,
+    backgroundColor: '#fff',
   },
-  durationPickerColumn: {
+  durationPickerWrap: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerWithLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  pickerWrapper: {
-    width: 100,
-    overflow: 'hidden',
+    width: 150,
   },
   durationPicker: {
     width: 100,
     height: 200,
   },
   durationLabel: {
-    fontSize: 22,
-    marginHorizontal: 10,
-    color: '#666',
+    fontSize: 24,
+    marginLeft: 5,
+    marginRight: 20,
+    color: '#333',
   }
 });
