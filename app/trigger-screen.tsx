@@ -4,7 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { OptionItem, triggerOptions } from './constants/optionDictionaries';
+import { triggerOptions } from './constants/optionDictionaries';
+import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function TriggerScreen() {
   const router = useRouter();
@@ -132,28 +133,11 @@ export default function TriggerScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Do you know what triggered it?</Text>
           <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <View style={styles.triggersGrid}>
-            {triggerOptions.map((trigger) => (
-              <TouchableOpacity
-                key={trigger.id}
-                style={[
-                  styles.triggerOption,
-                  selectedTriggers.includes(trigger.id) && styles.selectedTriggerOption,
-                ]}
-                onPress={() => handleTriggerSelection(trigger.id)}
-              >
-                <Text style={styles.triggerEmoji}>{trigger.emoji}</Text>
-                <Text
-                  style={[
-                    styles.triggerText,
-                    selectedTriggers.includes(trigger.id) && styles.selectedTriggerText,
-                  ]}
-                >
-                  {trigger.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <EmojiSelectionGrid 
+            options={triggerOptions}
+            selectedItems={selectedTriggers}
+            onSelect={handleTriggerSelection}
+          />
         </View>
       </ScrollView>
       
@@ -271,37 +255,5 @@ const styles = StyleSheet.create({
   intentionOptionText: {
     textAlign: 'center',
     fontSize: 16,
-  },
-  triggersGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  triggerOption: {
-    width: '31%',
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTriggerOption: {
-    borderColor: '#2a9d8f',
-    borderWidth: 1,
-  },
-  triggerEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  triggerText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#333',
-  },
-  selectedTriggerText: {
-    color: '#2a9d8f',
-  },
+  }
 });
