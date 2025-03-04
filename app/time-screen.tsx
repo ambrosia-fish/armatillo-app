@@ -68,39 +68,83 @@ export default function TimeScreen() {
     return days;
   };
 
-  const handleSave = () => {
-    let timeAgoValue = selectedTimeAgo;
-    let finalDuration = selectedDuration;
+  // Convert selected day string to an actual date offset
+  const getDateFromSelectedDay = (dayString: string): Date => {
+    const date = new Date();
     
-    if (selectedTimeAgo === -1) {
-      // Convert the selected time to a Date object
+    if (dayString === "Today") {
+      // Keep current date
+    } else if (dayString === "Yesterday") {
+      date.setDate(date.getDate() - 1);
+    } else {
+      // Parse date from format like "Mar 2"
+      const parts = dayString.split(' ');
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthIndex = monthNames.indexOf(parts[0]);
+      const day = parseInt(parts[1], 10);
+      
+      if (monthIndex >= 0 && !isNaN(day)) {
+        date.setMonth(monthIndex);
+        date.setDate(day);
+        
+        // Check if the date is in the future (next year), and adjust to previous year if needed
+        if (date > new Date()) {
+          date.setFullYear(date.getFullYear() - 1);
+        }
+      }
+    }
+    
+    return date;
+  };
+
+  const handleSave = () => {
+    let finalTime: Date;
+    let finalDuration: number;
+    
+    // Calculate final time based on selection method
+    if (!customTime || selectedTimeAgo !== -1) {
+      // User selected a preset time ago option
+      finalTime = new Date();
+      finalTime.setMinutes(finalTime.getMinutes() - selectedTimeAgo);
+    } else {
+      // User selected custom time
+      // First get the base date from selected day
+      finalTime = getDateFromSelectedDay(selectedDay);
+      
+      // Then set the time components
       const hour = parseInt(selectedHour, 10);
+      const minute = parseInt(selectedMinute, 10);
+      
+      // Convert 12hr to 24hr format
       const hour24 = selectedAmPm === 'PM' ? 
         (hour === 12 ? 12 : hour + 12) : 
         (hour === 12 ? 0 : hour);
       
-      const customTimeDate = new Date();
-      customTimeDate.setHours(hour24);
-      customTimeDate.setMinutes(parseInt(selectedMinute, 10));
-      customTimeDate.setSeconds(0);
-      
-      const diffMs = now.getTime() - customTimeDate.getTime();
-      timeAgoValue = Math.round(diffMs / 60000); // Minutes
-      
-      if (timeAgoValue < 0) {
-        timeAgoValue += 24 * 60; // Add 24 hours in minutes
-      }
+      finalTime.setHours(hour24);
+      finalTime.setMinutes(minute);
+      finalTime.setSeconds(0);
+      finalTime.setMilliseconds(0);
     }
     
-    if (selectedDuration === -1) {
+    // Calculate final duration
+    if (selectedDuration !== -1) {
+      // User selected a preset duration
+      finalDuration = selectedDuration;
+    } else {
+      // User selected custom duration
       finalDuration = (parseInt(durationHours, 10) * 60) + parseInt(durationMinutes, 10);
     }
     
+    // Save the data
     console.log('Saving time data:', { 
-      timeAgo: timeAgoValue, 
+      time: finalTime,
+      timeISOString: finalTime.toISOString(),
+      timeFormatted: finalTime.toLocaleString(),
       duration: finalDuration,
-      customTime: selectedTimeAgo === -1 ? `${selectedDay} ${selectedHour}:${selectedMinute} ${selectedAmPm}` : null
     });
+    
+    // Here you would typically pass this data back to the parent component
+    // or store it in global state or local database
     
     router.back();
   };
