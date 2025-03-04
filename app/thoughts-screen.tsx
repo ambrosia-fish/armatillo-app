@@ -4,21 +4,36 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { thoughtOptions } from './constants/optionDictionaries';
+import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 
 export default function ThoughtsScreen() {
   const router = useRouter();
   const [thoughts, setThoughts] = useState('');
+  const [selectedThoughts, setSelectedThoughts] = useState<string[]>([]);
   
   const handleNext = () => {
-    console.log('Saving thoughts data:', { thoughts });
+    console.log('Saving thoughts data:', { 
+      selectedThoughts,
+      thoughts 
+    });
     router.push('/notes-screen');
+  };
+
+  const handleThoughtSelection = (id: string) => {
+    setSelectedThoughts(prevSelected => {
+      if (prevSelected.includes(id)) {
+        return prevSelected.filter(item => item !== id);
+      }
+      return [...prevSelected, id];
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>What were you thinking?</Text>
         <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
@@ -28,12 +43,22 @@ export default function ThoughtsScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What thoughts were you having?</Text>
+          <Text style={styles.sectionTitle}>Common thought patterns</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={thoughtOptions}
+            selectedItems={selectedThoughts}
+            onSelect={handleThoughtSelection}
+          />
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Any specific thoughts?</Text>
           <TextInput
             style={styles.textInput}
             multiline
             numberOfLines={6}
-            placeholder="Describe your thoughts at the time..."
+            placeholder="Describe what you were thinking about..."
             value={thoughts}
             onChangeText={setThoughts}
           />
@@ -93,6 +118,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: '#666',
     marginBottom: 16,
   },
   textInput: {
