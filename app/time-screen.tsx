@@ -348,14 +348,13 @@ export default function TimeScreen() {
             <View style={styles.pickerLabelContainer}>
               <Text style={styles.pickerColumnLabel}>hours</Text>
               <Text style={styles.pickerColumnLabel}>min</Text>
-              <Text style={styles.pickerColumnLabel}>sec</Text>
             </View>
             
             <View style={styles.pickerRowContent}>
               {/* Hours Picker */}
               <Picker
                 selectedValue={durationHours}
-                style={styles.picker}
+                style={[styles.picker, styles.durationPicker]}
                 itemStyle={styles.pickerItem}
                 onValueChange={(itemValue) => setDurationHours(itemValue)}
               >
@@ -367,7 +366,7 @@ export default function TimeScreen() {
               {/* Minutes Picker */}
               <Picker
                 selectedValue={durationMinutes}
-                style={styles.picker}
+                style={[styles.picker, styles.durationPicker]}
                 itemStyle={styles.pickerItem}
                 onValueChange={(itemValue) => setDurationMinutes(itemValue)}
               >
@@ -378,16 +377,6 @@ export default function TimeScreen() {
                     value={String(minute)} 
                   />
                 ))}
-              </Picker>
-              
-              {/* Seconds Picker (fixed at 0) */}
-              <Picker
-                selectedValue="0"
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-                enabled={false}
-              >
-                <Picker.Item label="00" value="0" />
               </Picker>
             </View>
           </View>
@@ -542,7 +531,7 @@ const styles = StyleSheet.create({
   },
   pickerLabelContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     backgroundColor: '#333',
     paddingTop: 10,
   },
@@ -550,20 +539,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    width: 100,
+    width: 150,
     textAlign: 'center',
   },
   pickerRowContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#333',
   },
   picker: {
-    width: 100,
+    width: 120,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
+  },
+  durationPicker: {
+    width: 150,
   },
   amPmPicker: {
     width: 80,
