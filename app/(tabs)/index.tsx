@@ -2,11 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  
   const addNewEntry = () => {
-    // Logic for adding a new entry
-    console.log('Add new entry');
+    // Navigate to the time screen
+    router.push('/time-screen');
   };
 
   return (
