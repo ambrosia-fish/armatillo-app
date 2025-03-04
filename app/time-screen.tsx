@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import WheelPicker from 'react-native-wheel-picker-ios';
 
 interface TimeOption {
   label: string;
@@ -21,13 +21,22 @@ export default function TimeScreen() {
   const [selectedDuration, setSelectedDuration] = useState<number>(1);
   
   // Custom time picker state
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [customDate, setCustomDate] = useState(now);
+  const [selectedHour, setSelectedHour] = useState(now.getHours());
+  const [selectedMinute, setSelectedMinute] = useState(now.getMinutes());
+  const [selectedAmPm, setSelectedAmPm] = useState(now.getHours() >= 12 ? 1 : 0);
   
   // Duration picker state
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [durationHours, setDurationHours] = useState(0);
   const [durationMinutes, setDurationMinutes] = useState(15);
+  
+  // Picker data
+  const hours12Format = Array.from({ length: 12 }, (_, i) => String(i === 0 ? 12 : i));
+  const hours24Format = Array.from({ length: 24 }, (_, i) => String(i));
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+  const amPm = ['AM', 'PM'];
   
   // Time options
   const timeAgoOptions: TimeOption[] = [
@@ -48,7 +57,17 @@ export default function TimeScreen() {
     let finalDuration = selectedDuration;
     
     if (selectedTimeAgo === -1) {
-      const diffMs = now.getTime() - customDate.getTime();
+      // Convert the selected time to a Date object
+      const customHour = selectedAmPm === 1 ? 
+        (selectedHour === 12 ? 12 : selectedHour + 12) : 
+        (selectedHour === 12 ? 0 : selectedHour);
+      
+      const customTimeDate = new Date();
+      customTimeDate.setHours(customHour);
+      customTimeDate.setMinutes(selectedMinute);
+      customTimeDate.setSeconds(0);
+      
+      const diffMs = now.getTime() - customTimeDate.getTime();
       timeAgoValue = Math.round(diffMs / 60000); // Minutes
       
       if (timeAgoValue < 0) {
@@ -63,33 +82,15 @@ export default function TimeScreen() {
     console.log('Saving time data:', { 
       timeAgo: timeAgoValue, 
       duration: finalDuration,
-      customDate: selectedTimeAgo === -1 ? customDate : null
+      customTime: selectedTimeAgo === -1 ? `${selectedHour}:${selectedMinute} ${amPm[selectedAmPm]}` : null
     });
     
     router.back();
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || customDate;
-    setShowDatePicker(Platform.OS === 'ios');
-    setCustomDate(currentDate);
-  };
-
-  const handleDurationHoursChange = (event, selectedDate) => {
-    if (selectedDate) {
-      setDurationHours(selectedDate.getHours());
-    }
-  };
-
-  const handleDurationMinutesChange = (event, selectedDate) => {
-    if (selectedDate) {
-      setDurationMinutes(selectedDate.getMinutes());
-    }
-  };
-
   const handleCustomTimeSelection = () => {
     setSelectedTimeAgo(-1);
-    setShowDatePicker(true);
+    setShowTimePicker(true);
   };
 
   const handleCustomDurationSelection = () => {
@@ -97,31 +98,10 @@ export default function TimeScreen() {
     setShowDurationPicker(true);
   };
 
-  const formatDateTime = (date) => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    let datePrefix = '';
-    if (date.toDateString() === today.toDateString()) {
-      datePrefix = 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      datePrefix = 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-    }
-    
-    return `${datePrefix} ${date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    })}`;
+  const formatTime = () => {
+    const hour12 = selectedHour === 0 ? 12 : (selectedHour > 12 ? selectedHour - 12 : selectedHour);
+    const minuteStr = selectedMinute < 10 ? `0${selectedMinute}` : selectedMinute;
+    return `Today ${hour12}:${minuteStr} ${selectedAmPm === 0 ? 'AM' : 'PM'}`;
   };
 
   const formatCustomDuration = () => {
@@ -151,7 +131,7 @@ export default function TimeScreen() {
         ]}
       >
         {option.value === -1 && selectedTimeAgo === -1 
-          ? formatDateTime(customDate) 
+          ? formatTime() 
           : option.label}
       </Text>
     </TouchableOpacity>
@@ -239,7 +219,7 @@ export default function TimeScreen() {
                     onPress={handleCustomTimeSelection}
                   >
                     <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
-                      {formatDateTime(customDate)}
+                      {formatTime()}
                     </Text>
                   </TouchableOpacity>
                 ) : (
@@ -299,26 +279,59 @@ export default function TimeScreen() {
         )}
       </ScrollView>
       
-      {/* Native DateTime Picker */}
-      {showDatePicker && Platform.OS === 'ios' && (
+      {/* Custom Time Picker */}
+      {showTimePicker && Platform.OS === 'ios' && (
         <View style={styles.pickerContainer}>
           <View style={styles.pickerHeader}>
-            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+            <TouchableOpacity onPress={() => setShowTimePicker(false)}>
               <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+            <TouchableOpacity onPress={() => setShowTimePicker(false)}>
               <Text style={styles.doneButton}>Done</Text>
             </TouchableOpacity>
           </View>
           
-          <DateTimePicker
-            value={customDate}
-            mode="datetime"
-            display="spinner"
-            onChange={handleDateChange}
-            style={styles.datePicker}
-            maximumDate={now}
-          />
+          <View style={styles.wheelPickerContainer}>
+            {/* Hour Picker */}
+            <View style={styles.wheelPickerColumn}>
+              <WheelPicker
+                style={styles.wheelPicker}
+                selectedValue={selectedHour % 12}
+                itemStyle={styles.wheelPickerItem}
+                lineColor="#ddd"
+                items={hours12Format}
+                onChange={(index) => {
+                  const newHour = index === 0 ? 12 : index;
+                  const hour24 = selectedAmPm === 1 ? (newHour === 12 ? 12 : newHour + 12) : (newHour === 12 ? 0 : newHour);
+                  setSelectedHour(hour24);
+                }}
+              />
+            </View>
+            
+            {/* Minute Picker */}
+            <View style={styles.wheelPickerColumn}>
+              <WheelPicker
+                style={styles.wheelPicker}
+                selectedValue={selectedMinute}
+                itemStyle={styles.wheelPickerItem}
+                lineColor="#ddd"
+                items={minutes}
+                onChange={(index) => setSelectedMinute(index)}
+              />
+            </View>
+            
+            {/* AM/PM Picker */}
+            <View style={styles.wheelPickerColumn}>
+              <WheelPicker
+                style={styles.wheelPicker}
+                selectedValue={selectedAmPm}
+                itemStyle={styles.wheelPickerItem}
+                lineColor="#ddd"
+                items={amPm}
+                onChange={(index) => setSelectedAmPm(index)}
+              />
+            </View>
+          </View>
         </View>
       )}
       
@@ -334,35 +347,44 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.durationPickerContent}>
+          <View style={styles.wheelPickerContainer}>
             {/* Hours Picker */}
-            <View style={styles.durationPickerColumn}>
-              <View style={styles.pickerWrapper}>
-                <DateTimePicker
-                  testID="hourPicker"
-                  value={new Date(2023, 1, 1, durationHours)}
-                  mode="time"
-                  display="spinner"
-                  onChange={handleDurationHoursChange}
-                  style={styles.durationPicker}
-                />
-              </View>
-              <Text style={styles.durationLabel}>h</Text>
+            <View style={styles.wheelPickerColumn}>
+              <WheelPicker
+                style={styles.wheelPicker}
+                selectedValue={durationHours}
+                itemStyle={styles.wheelPickerItem}
+                lineColor="#ddd"
+                items={hours24Format}
+                onChange={(index) => setDurationHours(index)}
+              />
+              <Text style={styles.wheelPickerLabel}>h</Text>
             </View>
             
             {/* Minutes Picker */}
-            <View style={styles.durationPickerColumn}>
-              <View style={styles.pickerWrapper}>
-                <DateTimePicker
-                  testID="minutePicker"
-                  value={new Date(2023, 1, 1, 0, durationMinutes)}
-                  mode="time"
-                  display="spinner"
-                  onChange={handleDurationMinutesChange}
-                  style={styles.durationPicker}
-                />
-              </View>
-              <Text style={styles.durationLabel}>m</Text>
+            <View style={styles.wheelPickerColumn}>
+              <WheelPicker
+                style={styles.wheelPicker}
+                selectedValue={durationMinutes}
+                itemStyle={styles.wheelPickerItem}
+                lineColor="#ddd"
+                items={minutes}
+                onChange={(index) => setDurationMinutes(index)}
+              />
+              <Text style={styles.wheelPickerLabel}>m</Text>
+            </View>
+            
+            {/* Seconds Picker (disabled, always 0) */}
+            <View style={styles.wheelPickerColumn}>
+              <WheelPicker
+                style={styles.wheelPicker}
+                selectedValue={0}
+                itemStyle={styles.wheelPickerItem}
+                lineColor="#ddd"
+                items={['00']}
+                onChange={() => {}}
+              />
+              <Text style={styles.wheelPickerLabel}>s</Text>
             </View>
           </View>
         </View>
@@ -488,7 +510,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
   },
@@ -497,7 +519,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#f8f8f8',
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
@@ -510,35 +532,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  datePicker: {
-    height: 200,
-    width: '100%',
-  },
-  durationPickerContent: {
+  wheelPickerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 10,
+    height: 200,
+    backgroundColor: '#fff',
   },
-  durationPickerColumn: {
+  wheelPickerColumn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 120,
   },
-  pickerWrapper: {
-    width: 80,
-    height: 200,
-    overflow: 'hidden',
-  },
-  durationPicker: {
-    width: 80,
+  wheelPicker: {
+    width: 90,
     height: 200,
   },
-  durationLabel: {
-    fontSize: 24,
-    marginLeft: 5,
-    marginRight: 10,
+  wheelPickerItem: {
     color: '#333',
-  }
+    fontSize: 20,
+  },
+  wheelPickerLabel: {
+    fontSize: 20,
+    marginLeft: 8,
+    marginRight: 20,
+    color: '#333',
+  },
 });
