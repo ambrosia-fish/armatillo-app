@@ -40,9 +40,8 @@ export default function TriggerScreen() {
       selectedTriggers,
     });
     
-    // Navigate to the next screen
-    // This would typically be something like router.push('/next-screen')
-    console.log('Navigate to next screen');
+    // Navigate to the next screen in the questionnaire flow
+    router.push('/environment-screen');
   };
 
   const handleTriggerSelection = (triggerId: string) => {
