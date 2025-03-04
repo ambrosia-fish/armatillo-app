@@ -571,6 +571,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#333',
     alignItems: 'center',
+    paddingBottom: 20
   },
   timePickerRow: {
     flexDirection: 'row',
