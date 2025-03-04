@@ -75,6 +75,18 @@ export default function TimeScreen() {
     setCustomDate(currentDate);
   };
 
+  const handleDurationHoursChange = (event, selectedDate) => {
+    if (selectedDate) {
+      setDurationHours(selectedDate.getHours());
+    }
+  };
+
+  const handleDurationMinutesChange = (event, selectedDate) => {
+    if (selectedDate) {
+      setDurationMinutes(selectedDate.getMinutes());
+    }
+  };
+
   const handleCustomTimeSelection = () => {
     setSelectedTimeAgo(-1);
     setShowDatePicker(true);
@@ -310,7 +322,7 @@ export default function TimeScreen() {
         </View>
       )}
       
-      {/* Custom Duration Picker */}
+      {/* Duration Picker */}
       {showDurationPicker && Platform.OS === 'ios' && (
         <View style={styles.pickerContainer}>
           <View style={styles.pickerHeader}>
@@ -322,47 +334,35 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
           
-          <View style={styles.customDurationContainer}>
-            <View style={styles.durationPickerRow}>
-              {/* Hours Column */}
-              <View style={styles.durationPickerColumn}>
-                <View style={styles.durationPickerValueContainer}>
-                  <TouchableOpacity 
-                    style={styles.durationPickerButton}
-                    onPress={() => setDurationHours(prev => Math.min(prev + 1, 23))}
-                  >
-                    <Text style={styles.durationPickerButtonText}>⬆</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.durationPickerValue}>{durationHours}</Text>
-                  <TouchableOpacity 
-                    style={styles.durationPickerButton}
-                    onPress={() => setDurationHours(prev => Math.max(prev - 1, 0))}
-                  >
-                    <Text style={styles.durationPickerButtonText}>⬇</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.durationPickerLabel}>h</Text>
+          <View style={styles.durationPickerContent}>
+            {/* Hours Picker */}
+            <View style={styles.durationPickerColumn}>
+              <View style={styles.pickerWrapper}>
+                <DateTimePicker
+                  testID="hourPicker"
+                  value={new Date(2023, 1, 1, durationHours)}
+                  mode="time"
+                  display="spinner"
+                  onChange={handleDurationHoursChange}
+                  style={styles.durationPicker}
+                />
               </View>
-
-              {/* Minutes Column */}
-              <View style={styles.durationPickerColumn}>
-                <View style={styles.durationPickerValueContainer}>
-                  <TouchableOpacity 
-                    style={styles.durationPickerButton}
-                    onPress={() => setDurationMinutes(prev => Math.min(prev + 1, 59))}
-                  >
-                    <Text style={styles.durationPickerButtonText}>⬆</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.durationPickerValue}>{durationMinutes}</Text>
-                  <TouchableOpacity 
-                    style={styles.durationPickerButton}
-                    onPress={() => setDurationMinutes(prev => Math.max(prev - 1, 0))}
-                  >
-                    <Text style={styles.durationPickerButtonText}>⬇</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.durationPickerLabel}>m</Text>
+              <Text style={styles.durationLabel}>h</Text>
+            </View>
+            
+            {/* Minutes Picker */}
+            <View style={styles.durationPickerColumn}>
+              <View style={styles.pickerWrapper}>
+                <DateTimePicker
+                  testID="minutePicker"
+                  value={new Date(2023, 1, 1, 0, durationMinutes)}
+                  mode="time"
+                  display="spinner"
+                  onChange={handleDurationMinutesChange}
+                  style={styles.durationPicker}
+                />
               </View>
+              <Text style={styles.durationLabel}>m</Text>
             </View>
           </View>
         </View>
@@ -514,43 +514,31 @@ const styles = StyleSheet.create({
     height: 200,
     width: '100%',
   },
-  customDurationContainer: {
-    paddingVertical: 20,
-    backgroundColor: '#fff',
-  },
-  durationPickerRow: {
+  durationPickerContent: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    height: 200,
+    paddingVertical: 10,
   },
   durationPickerColumn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 20,
+    width: 120,
   },
-  durationPickerValueContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  pickerWrapper: {
+    width: 80,
+    height: 200,
+    overflow: 'hidden',
   },
-  durationPickerButton: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+  durationPicker: {
+    width: 80,
+    height: 200,
   },
-  durationPickerButtonText: {
+  durationLabel: {
     fontSize: 24,
-    color: '#2a9d8f',
-  },
-  durationPickerValue: {
-    fontSize: 40,
-    fontWeight: '500',
-    color: '#333',
-    marginVertical: 15,
-  },
-  durationPickerLabel: {
-    fontSize: 28,
-    marginLeft: 8,
+    marginLeft: 5,
+    marginRight: 10,
     color: '#333',
   }
 });
