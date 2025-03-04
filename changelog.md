@@ -12,8 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When user presses the "+" button, a modal opens that allows selecting when the BFRB incident occurred
   - Option to record "Just happened" or select a custom time
   - Custom time selection with 15-minute increments
+  - Added "Custom" option with native time picker for precise time selection
   - Duration selection for tracking how long the incident lasted
   - Next button to proceed to the tracking workflow
+- Added @react-native-community/datetimepicker dependency for native time selection
 
 ## [0.1.0] - 2025-03-03
 
