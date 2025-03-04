@@ -290,10 +290,9 @@ export default function TimeScreen() {
           </View>
           
           <View style={styles.pickerContent}>
-            {/* Hour Picker */}
             <Picker
               selectedValue={selectedHour}
-              style={styles.picker}
+              style={styles.timePickerItem}
               itemStyle={styles.pickerItem}
               onValueChange={(itemValue) => setSelectedHour(itemValue)}
             >
@@ -302,10 +301,9 @@ export default function TimeScreen() {
               ))}
             </Picker>
             
-            {/* Minute Picker */}
             <Picker
               selectedValue={selectedMinute}
-              style={styles.picker}
+              style={styles.timePickerItem}
               itemStyle={styles.pickerItem}
               onValueChange={(itemValue) => setSelectedMinute(itemValue)}
             >
@@ -318,10 +316,9 @@ export default function TimeScreen() {
               ))}
             </Picker>
             
-            {/* AM/PM Picker */}
             <Picker
               selectedValue={selectedAmPm}
-              style={styles.amPmPicker}
+              style={styles.amPmPickerItem}
               itemStyle={styles.pickerItem}
               onValueChange={(itemValue) => setSelectedAmPm(itemValue)}
             >
@@ -354,7 +351,7 @@ export default function TimeScreen() {
               {/* Hours Picker */}
               <Picker
                 selectedValue={durationHours}
-                style={[styles.picker, styles.durationPicker]}
+                style={styles.durationPickerItem}
                 itemStyle={styles.pickerItem}
                 onValueChange={(itemValue) => setDurationHours(itemValue)}
               >
@@ -366,7 +363,7 @@ export default function TimeScreen() {
               {/* Minutes Picker */}
               <Picker
                 selectedValue={durationMinutes}
-                style={[styles.picker, styles.durationPicker]}
+                style={styles.durationPickerItem}
                 itemStyle={styles.pickerItem}
                 onValueChange={(itemValue) => setDurationMinutes(itemValue)}
               >
@@ -528,18 +525,25 @@ const styles = StyleSheet.create({
   pickerContent: {
     backgroundColor: '#333',
     paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pickerLabelContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     backgroundColor: '#333',
     paddingTop: 10,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   pickerColumnLabel: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    width: 150,
+    width: 120,
     textAlign: 'center',
   },
   pickerRowContent: {
@@ -547,18 +551,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#333',
+    marginTop: 30,
   },
-  picker: {
+  timePickerItem: {
+    width: 80,
+    height: 180,
+    backgroundColor: '#333',
+    color: '#fff',
+  },
+  durationPickerItem: {
     width: 120,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
   },
-  durationPicker: {
-    width: 150,
-  },
-  amPmPicker: {
-    width: 80,
+  amPmPickerItem: {
+    width: 70,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
