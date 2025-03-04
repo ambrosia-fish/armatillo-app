@@ -192,13 +192,19 @@ export default function TimeScreen() {
         <View style={styles.timePickerFullScreenContainer}>
           <View style={styles.timePickerContent}>
             <Text style={styles.timePickerTitle}>Select exact time</Text>
-            <DateTimePicker
-              value={customDate}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleTimeChange}
-              style={styles.timePicker}
-            />
+            
+            <View style={styles.timePickerWrapper}>
+              <DateTimePicker
+                value={customDate}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleTimeChange}
+                style={styles.timePicker}
+                themeVariant="light"
+                textColor="#000"
+              />
+            </View>
+            
             <View style={styles.timePickerButtonsContainer}>
               <TouchableOpacity 
                 style={styles.timePickerButton} 
@@ -337,10 +343,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   timePickerContent: {
-    width: '100%',
+    width: '90%',
     padding: 20,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     ...Platform.select({
       ios: {
@@ -355,26 +361,39 @@ const styles = StyleSheet.create({
     }),
   },
   timePickerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#000',
+  },
+  timePickerWrapper: {
+    backgroundColor: '#2a9d8f10',
+    borderRadius: 12,
+    padding: 10,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2a9d8f30',
   },
   timePicker: {
-    width: 300,
+    width: 280,
+    height: 180,
   },
   timePickerButtonsContainer: {
     flexDirection: 'row',
     width: '100%',
     justifyContent: 'space-between',
     marginTop: 20,
+    paddingHorizontal: 10,
   },
   timePickerButton: {
-    padding: 10,
+    padding: 12,
   },
   timePickerCancelButton: {
-    color: '#999',
+    color: '#666',
     fontSize: 16,
+    fontWeight: '500',
   },
   timePickerDoneButton: {
     color: '#2a9d8f',
