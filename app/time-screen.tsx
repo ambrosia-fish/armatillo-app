@@ -46,6 +46,28 @@ export default function TimeScreen() {
   
   const durationOptions: number[] = [1, 2, 3, 5, 10, 15, 20];
 
+  // Get date strings for the previous 7 days for the day picker
+  const getPreviousDays = () => {
+    const days = [];
+    const today = new Date();
+    
+    // Add "Today"
+    days.push({ label: "Today", value: "Today" });
+    
+    // Add "Yesterday"
+    days.push({ label: "Yesterday", value: "Yesterday" });
+    
+    // Add previous 5 days with formatted dates
+    for (let i = 2; i < 7; i++) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      days.push({ label: formattedDate, value: formattedDate });
+    }
+    
+    return days;
+  };
+
   const handleSave = () => {
     let timeAgoValue = selectedTimeAgo;
     let finalDuration = selectedDuration;
@@ -156,6 +178,8 @@ export default function TimeScreen() {
       </Text>
     </TouchableOpacity>
   );
+
+  const previousDays = getPreviousDays();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -299,8 +323,9 @@ export default function TimeScreen() {
                 itemStyle={styles.pickerItem}
                 onValueChange={(itemValue) => setSelectedDay(itemValue)}
               >
-                <Picker.Item key="today" label="Today" value="Today" />
-                <Picker.Item key="yesterday" label="Yesterday" value="Yesterday" />
+                {previousDays.map((day, index) => (
+                  <Picker.Item key={`day-${index}`} label={day.label} value={day.value} />
+                ))}
               </Picker>
             </View>
             
@@ -585,13 +610,13 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   dayPickerItem: {
-    width: 180,
+    width: 240,
     height: 50,
     backgroundColor: '#333',
     color: '#fff',
   },
   timePickerItem: {
-    width: 80,
+    width: 100,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
@@ -603,7 +628,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   amPmPickerItem: {
-    width: 80,
+    width: 100,
     height: 180,
     backgroundColor: '#333',
     color: '#fff',
