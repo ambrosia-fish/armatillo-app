@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { environmentOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
-import SwipeDownToHome from './components/SwipeDownToHome';
 
 export default function EnvironmentScreen() {
   const router = useRouter();
@@ -31,45 +30,43 @@ export default function EnvironmentScreen() {
   };
 
   return (
-    <SwipeDownToHome>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Where were you?</Text>
-          <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>Next</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Where were you?</Text>
+        <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView style={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Where were you?</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={environmentOptions}
+            selectedItems={selectedEnvironments}
+            onSelect={handleEnvironmentSelection}
+          />
         </View>
         
-        <ScrollView style={styles.content}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Where were you?</Text>
-            <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-            <EmojiSelectionGrid
-              options={environmentOptions}
-              selectedItems={selectedEnvironments}
-              onSelect={handleEnvironmentSelection}
-            />
-          </View>
-          
-          {/* <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Additional details</Text>
-            <TextInput
-              style={styles.textInput}
-              multiline
-              numberOfLines={4}
-              placeholder="Describe what you were doing or any other context..."
-              value={environmentDetails}
-              onChangeText={setEnvironmentDetails}
-            />
-          </View> */}
-        </ScrollView>
-        
-        <StatusBar style="auto" />
-      </SafeAreaView>
-    </SwipeDownToHome>
+        {/* <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Additional details</Text>
+          <TextInput
+            style={styles.textInput}
+            multiline
+            numberOfLines={4}
+            placeholder="Describe what you were doing or any other context..."
+            value={environmentDetails}
+            onChangeText={setEnvironmentDetails}
+          />
+        </View> */}
+      </ScrollView>
+      
+      <StatusBar style="auto" />
+    </SafeAreaView>
   );
 }
 

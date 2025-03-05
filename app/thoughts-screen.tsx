@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { thoughtOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
-import SwipeDownToHome from './components/SwipeDownToHome';
 
 export default function ThoughtsScreen() {
   const router = useRouter();
@@ -31,33 +30,31 @@ export default function ThoughtsScreen() {
   };
 
   return (
-    <SwipeDownToHome>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>What were you thinking?</Text>
-          <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>Next</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>What were you thinking?</Text>
+        <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView style={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Common thought patterns</Text>
+          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+          <EmojiSelectionGrid
+            options={thoughtOptions}
+            selectedItems={selectedThoughts}
+            onSelect={handleThoughtSelection}
+          />
         </View>
-        
-        <ScrollView style={styles.content}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Common thought patterns</Text>
-            <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-            <EmojiSelectionGrid
-              options={thoughtOptions}
-              selectedItems={selectedThoughts}
-              onSelect={handleThoughtSelection}
-            />
-          </View>
-        </ScrollView>
-        
-        <StatusBar style="auto" />
-      </SafeAreaView>
-    </SwipeDownToHome>
+      </ScrollView>
+      
+      <StatusBar style="auto" />
+    </SafeAreaView>
   );
 }
 

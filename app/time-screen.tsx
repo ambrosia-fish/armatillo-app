@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
-import SwipeDownToHome from './components/SwipeDownToHome';
 
 interface TimeOption {
   label: string;
@@ -227,255 +226,252 @@ export default function TimeScreen() {
 
   const previousDays = getPreviousDays();
 
-  // Wrap the entire screen with SwipeDownToHome component
   return (
-    <SwipeDownToHome>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>When did it happen?</Text>
-          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>Next</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>When did it happen?</Text>
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView style={styles.content}>
+        <View style={styles.switchContainer}>
+          <Text style={styles.switchLabel}>Custom time</Text>
+          <Switch
+            value={customTime}
+            onValueChange={setCustomTime}
+            trackColor={{ false: '#ccc', true: '#2a9d8f' }}
+            thumbColor="#fff"
+          />
         </View>
         
-        <ScrollView style={styles.content}>
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Custom time</Text>
-            <Switch
-              value={customTime}
-              onValueChange={setCustomTime}
-              trackColor={{ false: '#ccc', true: '#2a9d8f' }}
-              thumbColor="#fff"
-            />
+        {!customTime ? (
+          <View style={styles.justHappenedContainer}>
+            <Text style={styles.justHappenedText}>Just happened</Text>
+            <Text style={styles.justHappenedSubtext}>
+              Current time will be used for this entry
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>How long ago?</Text>
+            <View style={styles.optionsGrid}>
+              {/* First row: Just happened, 15 minutes */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[0])}
+                {renderTimeOption(timeAgoOptions[1])}
+              </View>
+              
+              {/* Second row: 30 minutes, 45 minutes */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[2])}
+                {renderTimeOption(timeAgoOptions[3])}
+              </View>
+              
+              {/* Third row: 1 hour, 1.5 hours */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[4])}
+                {renderTimeOption(timeAgoOptions[5])}
+              </View>
+              
+              {/* Fourth row: 2 hours, Custom time */}
+              <View style={styles.optionsRow}>
+                {renderTimeOption(timeAgoOptions[6])}
+                {selectedTimeAgo === -1 ? (
+                  <TouchableOpacity
+                    style={[styles.timeOption, styles.selectedOption]}
+                    onPress={handleCustomTimeSelection}
+                  >
+                    <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
+                      {formatTime()}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.timeOption}
+                    onPress={handleCustomTimeSelection}
+                  >
+                    <Text style={styles.timeOptionText}>Custom time</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+            
+            <Text style={styles.sectionTitle}>How long did it last?</Text>
+            <View style={styles.optionsGrid}>
+              {/* First row of duration options: 1 minute, 2 minutes */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[0])}
+                {renderDurationOption(durationOptions[1])}
+              </View>
+              
+              {/* Second row of duration options: 3 minutes, 5 minutes */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[2])}
+                {renderDurationOption(durationOptions[3])}
+              </View>
+              
+              {/* Third row of duration options: 10 minutes, 15 minutes */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[4])}
+                {renderDurationOption(durationOptions[5])}
+              </View>
+              
+              {/* Fourth row: 20 minutes, Custom duration */}
+              <View style={styles.optionsRow}>
+                {renderDurationOption(durationOptions[6])}
+                {selectedDuration === -1 ? (
+                  <TouchableOpacity
+                    style={[styles.timeOption, styles.selectedOption]}
+                    onPress={handleCustomDurationSelection}
+                  >
+                    <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
+                      {formatCustomDuration()}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.timeOption}
+                    onPress={handleCustomDurationSelection}
+                  >
+                    <Text style={styles.timeOptionText}>Custom duration</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </>
+        )}
+      </ScrollView>
+      
+      {/* Custom Time Picker */}
+      {showTimePicker && Platform.OS === 'ios' && (
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
+            <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+              <Text style={styles.cancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+              <Text style={styles.doneButton}>Done</Text>
+            </TouchableOpacity>
           </View>
           
-          {!customTime ? (
-            <View style={styles.justHappenedContainer}>
-              <Text style={styles.justHappenedText}>Just happened</Text>
-              <Text style={styles.justHappenedSubtext}>
-                Current time will be used for this entry
-              </Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.sectionTitle}>How long ago?</Text>
-              <View style={styles.optionsGrid}>
-                {/* First row: Just happened, 15 minutes */}
-                <View style={styles.optionsRow}>
-                  {renderTimeOption(timeAgoOptions[0])}
-                  {renderTimeOption(timeAgoOptions[1])}
-                </View>
-                
-                {/* Second row: 30 minutes, 45 minutes */}
-                <View style={styles.optionsRow}>
-                  {renderTimeOption(timeAgoOptions[2])}
-                  {renderTimeOption(timeAgoOptions[3])}
-                </View>
-                
-                {/* Third row: 1 hour, 1.5 hours */}
-                <View style={styles.optionsRow}>
-                  {renderTimeOption(timeAgoOptions[4])}
-                  {renderTimeOption(timeAgoOptions[5])}
-                </View>
-                
-                {/* Fourth row: 2 hours, Custom time */}
-                <View style={styles.optionsRow}>
-                  {renderTimeOption(timeAgoOptions[6])}
-                  {selectedTimeAgo === -1 ? (
-                    <TouchableOpacity
-                      style={[styles.timeOption, styles.selectedOption]}
-                      onPress={handleCustomTimeSelection}
-                    >
-                      <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
-                        {formatTime()}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.timeOption}
-                      onPress={handleCustomTimeSelection}
-                    >
-                      <Text style={styles.timeOptionText}>Custom time</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-              
-              <Text style={styles.sectionTitle}>How long did it last?</Text>
-              <View style={styles.optionsGrid}>
-                {/* First row of duration options: 1 minute, 2 minutes */}
-                <View style={styles.optionsRow}>
-                  {renderDurationOption(durationOptions[0])}
-                  {renderDurationOption(durationOptions[1])}
-                </View>
-                
-                {/* Second row of duration options: 3 minutes, 5 minutes */}
-                <View style={styles.optionsRow}>
-                  {renderDurationOption(durationOptions[2])}
-                  {renderDurationOption(durationOptions[3])}
-                </View>
-                
-                {/* Third row of duration options: 10 minutes, 15 minutes */}
-                <View style={styles.optionsRow}>
-                  {renderDurationOption(durationOptions[4])}
-                  {renderDurationOption(durationOptions[5])}
-                </View>
-                
-                {/* Fourth row: 20 minutes, Custom duration */}
-                <View style={styles.optionsRow}>
-                  {renderDurationOption(durationOptions[6])}
-                  {selectedDuration === -1 ? (
-                    <TouchableOpacity
-                      style={[styles.timeOption, styles.selectedOption]}
-                      onPress={handleCustomDurationSelection}
-                    >
-                      <Text style={[styles.timeOptionText, styles.selectedOptionText]}>
-                        {formatCustomDuration()}
-                      </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.timeOption}
-                      onPress={handleCustomDurationSelection}
-                    >
-                      <Text style={styles.timeOptionText}>Custom duration</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </>
-          )}
-        </ScrollView>
-        
-        {/* Custom Time Picker */}
-        {showTimePicker && Platform.OS === 'ios' && (
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <Text style={styles.cancelButton}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <Text style={styles.doneButton}>Done</Text>
-              </TouchableOpacity>
+          <View style={styles.pickerBody}>
+            {/* Day Picker - First Row */}
+            <View style={styles.dayPickerContainer}>
+              <Picker
+                selectedValue={selectedDay}
+                style={styles.dayPickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedDay(itemValue)}
+              >
+                {previousDays.map((day, index) => (
+                  <Picker.Item key={`day-${index}`} label={day.label} value={day.value} />
+                ))}
+              </Picker>
             </View>
             
-            <View style={styles.pickerBody}>
-              {/* Day Picker - First Row */}
-              <View style={styles.dayPickerContainer}>
-                <Picker
-                  selectedValue={selectedDay}
-                  style={styles.dayPickerItem}
-                  itemStyle={styles.pickerItem}
-                  onValueChange={(itemValue) => setSelectedDay(itemValue)}
-                >
-                  {previousDays.map((day, index) => (
-                    <Picker.Item key={`day-${index}`} label={day.label} value={day.value} />
-                  ))}
-                </Picker>
-              </View>
+            {/* Time Picker - Second Row */}
+            <View style={styles.timePickerRow}>
+              {/* Hour Picker */}
+              <Picker
+                selectedValue={selectedHour}
+                style={styles.timePickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedHour(itemValue)}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
+                  <Picker.Item key={`hour-${hour}`} label={String(hour)} value={String(hour)} />
+                ))}
+              </Picker>
               
-              {/* Time Picker - Second Row */}
-              <View style={styles.timePickerRow}>
-                {/* Hour Picker */}
-                <Picker
-                  selectedValue={selectedHour}
-                  style={styles.timePickerItem}
-                  itemStyle={styles.pickerItem}
-                  onValueChange={(itemValue) => setSelectedHour(itemValue)}
-                >
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-                    <Picker.Item key={`hour-${hour}`} label={String(hour)} value={String(hour)} />
-                  ))}
-                </Picker>
-                
-                {/* Minute Picker */}
-                <Picker
-                  selectedValue={selectedMinute}
-                  style={styles.timePickerItem}
-                  itemStyle={styles.pickerItem}
-                  onValueChange={(itemValue) => setSelectedMinute(itemValue)}
-                >
-                  {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                    <Picker.Item 
-                      key={`minute-${minute}`} 
-                      label={minute < 10 ? `0${minute}` : String(minute)} 
-                      value={String(minute)} 
-                    />
-                  ))}
-                </Picker>
-                
-                {/* AM/PM Picker */}
-                <Picker
-                  selectedValue={selectedAmPm}
-                  style={styles.amPmPickerItem}
-                  itemStyle={styles.pickerItem}
-                  onValueChange={(itemValue) => setSelectedAmPm(itemValue)}
-                >
-                  <Picker.Item label="AM" value="AM" />
-                  <Picker.Item label="PM" value="PM" />
-                </Picker>
-              </View>
+              {/* Minute Picker */}
+              <Picker
+                selectedValue={selectedMinute}
+                style={styles.timePickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedMinute(itemValue)}
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                  <Picker.Item 
+                    key={`minute-${minute}`} 
+                    label={minute < 10 ? `0${minute}` : String(minute)} 
+                    value={String(minute)} 
+                  />
+                ))}
+              </Picker>
+              
+              {/* AM/PM Picker */}
+              <Picker
+                selectedValue={selectedAmPm}
+                style={styles.amPmPickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setSelectedAmPm(itemValue)}
+              >
+                <Picker.Item label="AM" value="AM" />
+                <Picker.Item label="PM" value="PM" />
+              </Picker>
             </View>
           </View>
-        )}
-        
-        {/* Duration Picker */}
-        {showDurationPicker && Platform.OS === 'ios' && (
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
-                <Text style={styles.cancelButton}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
-                <Text style={styles.doneButton}>Done</Text>
-              </TouchableOpacity>
+        </View>
+      )}
+      
+      {/* Duration Picker */}
+      {showDurationPicker && Platform.OS === 'ios' && (
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
+            <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
+              <Text style={styles.cancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
+              <Text style={styles.doneButton}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.pickerContent}>
+            <View style={styles.pickerLabelContainer}>
+              <Text style={styles.pickerColumnLabel}>hours</Text>
+              <Text style={styles.pickerColumnLabel}>min</Text>
             </View>
             
-            <View style={styles.pickerContent}>
-              <View style={styles.pickerLabelContainer}>
-                <Text style={styles.pickerColumnLabel}>hours</Text>
-                <Text style={styles.pickerColumnLabel}>min</Text>
-              </View>
+            <View style={styles.pickerRowContent}>
+              {/* Hours Picker */}
+              <Picker
+                selectedValue={durationHours}
+                style={styles.durationPickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setDurationHours(itemValue)}
+              >
+                {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                  <Picker.Item key={`duration-hour-${hour}`} label={String(hour)} value={String(hour)} />
+                ))}
+              </Picker>
               
-              <View style={styles.pickerRowContent}>
-                {/* Hours Picker */}
-                <Picker
-                  selectedValue={durationHours}
-                  style={styles.durationPickerItem}
-                  itemStyle={styles.pickerItem}
-                  onValueChange={(itemValue) => setDurationHours(itemValue)}
-                >
-                  {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                    <Picker.Item key={`duration-hour-${hour}`} label={String(hour)} value={String(hour)} />
-                  ))}
-                </Picker>
-                
-                {/* Minutes Picker */}
-                <Picker
-                  selectedValue={durationMinutes}
-                  style={styles.durationPickerItem}
-                  itemStyle={styles.pickerItem}
-                  onValueChange={(itemValue) => setDurationMinutes(itemValue)}
-                >
-                  {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                    <Picker.Item 
-                      key={`duration-minute-${minute}`} 
-                      label={minute < 10 ? `0${minute}` : String(minute)} 
-                      value={String(minute)} 
-                    />
-                  ))}
-                </Picker>
-              </View>
+              {/* Minutes Picker */}
+              <Picker
+                selectedValue={durationMinutes}
+                style={styles.durationPickerItem}
+                itemStyle={styles.pickerItem}
+                onValueChange={(itemValue) => setDurationMinutes(itemValue)}
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                  <Picker.Item 
+                    key={`duration-minute-${minute}`} 
+                    label={minute < 10 ? `0${minute}` : String(minute)} 
+                    value={String(minute)} 
+                  />
+                ))}
+              </Picker>
             </View>
           </View>
-        )}
-        
-        <StatusBar style="auto" />
-      </SafeAreaView>
-    </SwipeDownToHome>
+        </View>
+      )}
+      
+      <StatusBar style="auto" />
+    </SafeAreaView>
   );
 }
 
