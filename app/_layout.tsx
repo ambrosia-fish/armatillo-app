@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -47,43 +47,42 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const router = useRouter();
-
-  // Handler for when a screen is dismissed with a swipe
-  const handleSwipeDown = () => {
-    // Navigate to home tab instead of previous screen
-    router.replace('/(tabs)');
-    return true; // Prevent default behavior
-  };
-
-  // Common screen options for flow screens
-  const flowScreenOptions = {
-    presentation: 'modal',
-    animation: 'slide_from_bottom',
-    headerShown: false,
-    gestureEnabled: true,
-    gestureDirection: 'vertical',
-    gestureResponseDistance: 100, // How far you need to swipe (in pixels)
-  };
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenListeners={{
-        // Listen for gesture-based dismissal and handle it
-        transitionEnd: (e) => {
-          if (e.data.closing) {
-            handleSwipeDown();
-          }
-        }
-      }}>
+      <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="time-screen" options={flowScreenOptions} />
-        <Stack.Screen name="detail-screen" options={flowScreenOptions} />
-        <Stack.Screen name="environment-screen" options={flowScreenOptions} />
-        <Stack.Screen name="feelings-screen" options={flowScreenOptions} />
-        <Stack.Screen name="thoughts-screen" options={flowScreenOptions} />
-        <Stack.Screen name="notes-screen" options={flowScreenOptions} />
+        <Stack.Screen name="time-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="detail-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="environment-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="feelings-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="thoughts-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="notes-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
       </Stack>
     </ThemeProvider>
   );
