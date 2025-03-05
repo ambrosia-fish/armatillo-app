@@ -51,18 +51,6 @@ export default function ThoughtsScreen() {
             onSelect={handleThoughtSelection}
           />
         </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Any specific thoughts?</Text>
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={6}
-            placeholder="Describe what you were thinking about..."
-            value={thoughts}
-            onChangeText={setThoughts}
-          />
-        </View>
       </ScrollView>
       
       <StatusBar style="auto" />

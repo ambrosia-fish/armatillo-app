@@ -63,14 +63,6 @@ export default function FeelingsScreen() {
             selectedItems={selectedEmotions}
             onSelect={handleEmotionSelection}
           />
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={3}
-            placeholder="Any additional emotional feelings..."
-            value={mentalFeelings}
-            onChangeText={setMentalFeelings}
-          />
         </View>
         
         <View style={styles.section}>
@@ -80,14 +72,6 @@ export default function FeelingsScreen() {
             options={sensationOptions}
             selectedItems={selectedSensations}
             onSelect={handleSensationSelection}
-          />
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={3}
-            placeholder="Any additional physical sensations..."
-            value={physicalFeelings}
-            onChangeText={setPhysicalFeelings}
           />
         </View>
       </ScrollView>
