@@ -52,7 +52,7 @@ export default function EnvironmentScreen() {
           />
         </View>
         
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Additional details</Text>
           <TextInput
             style={styles.textInput}
@@ -62,7 +62,7 @@ export default function EnvironmentScreen() {
             value={environmentDetails}
             onChangeText={setEnvironmentDetails}
           />
-        </View>
+        </View> */}
       </ScrollView>
       
       <StatusBar style="auto" />
