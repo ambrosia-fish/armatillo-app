@@ -7,17 +7,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { thoughtOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
 
 export default function ThoughtsScreen() {
   const router = useRouter();
-  const [thoughts, setThoughts] = useState('');
-  const [selectedThoughts, setSelectedThoughts] = useState<string[]>([]);
+  const { formData, updateFormData } = useFormContext();
+  
+  // Initialize state from context if available
+  const [thoughts, setThoughts] = useState(
+    formData.thoughts || ''
+  );
+  const [selectedThoughts, setSelectedThoughts] = useState<string[]>(
+    formData.selectedThoughts || []
+  );
   
   const handleNext = () => {
-    console.log('Saving thoughts data:', { 
+    // Save data to context
+    updateFormData({ 
       selectedThoughts,
       thoughts 
     });
+    
     router.push('/notes-screen');
   };
 
