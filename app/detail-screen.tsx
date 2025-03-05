@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import CancelFooter from './components/CancelFooter';
 
 export default function DetailScreen() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function DetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -114,6 +115,9 @@ export default function DetailScreen() {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Add Cancel Footer */}
+      <CancelFooter />
       
       <StatusBar style="auto" />
     </SafeAreaView>

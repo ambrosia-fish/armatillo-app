@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { feelingOptions, sensationOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
+import CancelFooter from './components/CancelFooter';
 
 export default function FeelingsScreen() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function FeelingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -63,14 +64,6 @@ export default function FeelingsScreen() {
             selectedItems={selectedEmotions}
             onSelect={handleEmotionSelection}
           />
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={3}
-            placeholder="Any additional emotional feelings..."
-            value={mentalFeelings}
-            onChangeText={setMentalFeelings}
-          />
         </View>
         
         <View style={styles.section}>
@@ -81,16 +74,11 @@ export default function FeelingsScreen() {
             selectedItems={selectedSensations}
             onSelect={handleSensationSelection}
           />
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={3}
-            placeholder="Any additional physical sensations..."
-            value={physicalFeelings}
-            onChangeText={setPhysicalFeelings}
-          />
         </View>
       </ScrollView>
+      
+      {/* Add Cancel Footer */}
+      <CancelFooter />
       
       <StatusBar style="auto" />
     </SafeAreaView>

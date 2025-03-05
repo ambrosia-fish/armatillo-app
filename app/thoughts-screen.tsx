@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { thoughtOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
+import CancelFooter from './components/CancelFooter';
 
 export default function ThoughtsScreen() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function ThoughtsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -51,19 +52,10 @@ export default function ThoughtsScreen() {
             onSelect={handleThoughtSelection}
           />
         </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Any specific thoughts?</Text>
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={6}
-            placeholder="Describe what you were thinking about..."
-            value={thoughts}
-            onChangeText={setThoughts}
-          />
-        </View>
       </ScrollView>
+      
+      {/* Add Cancel Footer */}
+      <CancelFooter />
       
       <StatusBar style="auto" />
     </SafeAreaView>

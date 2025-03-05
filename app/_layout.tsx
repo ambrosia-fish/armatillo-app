@@ -48,41 +48,61 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
+  // Screen options for BFRB tracking flow
+  // This hides previous screens when a new screen is displayed
+  const screenOptions = {
+    presentation: 'card',
+    animation: 'slide_from_bottom',
+    headerShown: false,
+    cardStyle: { 
+      backgroundColor: '#fff' 
+    },
+    cardOverlayEnabled: true,
+    cardStyleInterpolator: ({ current: { progress } }) => ({
+      cardStyle: {
+        opacity: progress,
+      },
+    }),
+    gestureEnabled: false // Disable swipe down gesture since we want screens to stack visually
+  };
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="time-screen" options={{ 
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          headerShown: false
-        }} />
-        <Stack.Screen name="detail-screen" options={{ 
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          headerShown: false
-        }} />
-        <Stack.Screen name="environment-screen" options={{ 
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          headerShown: false
-        }} />
-        <Stack.Screen name="feelings-screen" options={{ 
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          headerShown: false
-        }} />
-        <Stack.Screen name="thoughts-screen" options={{ 
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          headerShown: false
-        }} />
-        <Stack.Screen name="notes-screen" options={{ 
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-          headerShown: false
-        }} />
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="modal" 
+          options={{ presentation: 'modal' }} 
+        />
+        
+        {/* BFRB Tracking Flow Screens */}
+        <Stack.Screen 
+          name="time-screen" 
+          options={screenOptions} 
+        />
+        <Stack.Screen 
+          name="detail-screen" 
+          options={screenOptions} 
+        />
+        <Stack.Screen 
+          name="environment-screen" 
+          options={screenOptions} 
+        />
+        <Stack.Screen 
+          name="feelings-screen" 
+          options={screenOptions} 
+        />
+        <Stack.Screen 
+          name="thoughts-screen" 
+          options={screenOptions} 
+        />
+        <Stack.Screen 
+          name="notes-screen" 
+          options={screenOptions} 
+        />
       </Stack>
     </ThemeProvider>
   );

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
+import CancelFooter from './components/CancelFooter';
 
 export default function NotesScreen() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function NotesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -53,16 +54,6 @@ export default function NotesScreen() {
       </View>
       
       <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Were there any sensory triggers?</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <EmojiSelectionGrid
-            options={sensoryOptions}
-            selectedItems={selectedSensoryTriggers}
-            onSelect={handleSensorySelection}
-          />
-        </View>
-        
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Any additional notes?</Text>
           <TextInput
@@ -84,6 +75,9 @@ export default function NotesScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      
+      {/* Add Cancel Footer */}
+      <CancelFooter />
       
       <StatusBar style="auto" />
     </SafeAreaView>
