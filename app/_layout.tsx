@@ -1,12 +1,10 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { TransitionPresets } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import { Platform } from 'react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -50,53 +48,60 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
-  // Custom transition options that hide previous screens
-  const customTransitionOptions = {
+  // Screen options for BFRB tracking flow
+  // This hides previous screens when a new screen is displayed
+  const screenOptions = {
     presentation: 'card',
     animation: 'slide_from_bottom',
     headerShown: false,
-    cardStyle: { backgroundColor: '#fff' },
+    cardStyle: { 
+      backgroundColor: '#fff' 
+    },
     cardOverlayEnabled: true,
-    // Add custom animation without relying on TransitionPresets
     cardStyleInterpolator: ({ current: { progress } }) => ({
       cardStyle: {
         opacity: progress,
       },
     }),
+    gestureEnabled: false // Disable swipe down gesture since we want screens to stack visually
   };
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      <Stack>
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="modal" 
+          options={{ presentation: 'modal' }} 
+        />
+        
+        {/* BFRB Tracking Flow Screens */}
         <Stack.Screen 
           name="time-screen" 
-          options={customTransitionOptions} 
+          options={screenOptions} 
         />
         <Stack.Screen 
           name="detail-screen" 
-          options={customTransitionOptions} 
+          options={screenOptions} 
         />
         <Stack.Screen 
           name="environment-screen" 
-          options={customTransitionOptions} 
+          options={screenOptions} 
         />
         <Stack.Screen 
           name="feelings-screen" 
-          options={customTransitionOptions} 
+          options={screenOptions} 
         />
         <Stack.Screen 
           name="thoughts-screen" 
-          options={customTransitionOptions} 
+          options={screenOptions} 
         />
         <Stack.Screen 
           name="notes-screen" 
-          options={customTransitionOptions} 
+          options={screenOptions} 
         />
       </Stack>
     </ThemeProvider>
