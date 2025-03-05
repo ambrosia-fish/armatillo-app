@@ -1,7 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { TransitionPresets } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
-import { Stack, TransitionPresets } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -56,30 +57,10 @@ function RootLayoutNav() {
     headerShown: false,
     cardStyle: { backgroundColor: '#fff' },
     cardOverlayEnabled: true,
-    ...Platform.select({
-      ios: {
-        // Use iOS-specific transition preset with modifications
-        ...TransitionPresets.ModalSlideFromBottomIOS,
-        cardStyleInterpolator: ({ current: { progress } }) => ({
-          cardStyle: {
-            opacity: progress,
-          },
-          overlayStyle: {
-            opacity: progress.interpolate({
-              inputRange: [0, 0.5, 0.9, 1],
-              outputRange: [0, 0.1, 0.3, 0.4],
-            }),
-          },
-        }),
-      },
-      android: {
-        // Use Android-specific transition preset with modifications
-        ...TransitionPresets.RevealFromBottomAndroid,
-        cardStyleInterpolator: ({ current: { progress } }) => ({
-          cardStyle: {
-            opacity: progress,
-          },
-        }),
+    // Add custom animation without relying on TransitionPresets
+    cardStyleInterpolator: ({ current: { progress } }) => ({
+      cardStyle: {
+        opacity: progress,
       },
     }),
   };
