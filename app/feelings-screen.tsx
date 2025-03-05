@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { feelingOptions, sensationOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
+import SwipeDownToHome from './components/SwipeDownToHome';
 
 export default function FeelingsScreen() {
   const router = useRouter();
@@ -43,41 +44,43 @@ export default function FeelingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>How were you feeling?</Text>
-        <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mental/Emotional feelings</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <EmojiSelectionGrid
-            options={feelingOptions}
-            selectedItems={selectedEmotions}
-            onSelect={handleEmotionSelection}
-          />
+    <SwipeDownToHome>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.title}>How were you feeling?</Text>
+          <TouchableOpacity onPress={handleNext} style={styles.saveButton}>
+            <Text style={styles.saveButtonText}>Next</Text>
+          </TouchableOpacity>
         </View>
         
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Physical sensations</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <EmojiSelectionGrid
-            options={sensationOptions}
-            selectedItems={selectedSensations}
-            onSelect={handleSensationSelection}
-          />
-        </View>
-      </ScrollView>
-      
-      <StatusBar style="auto" />
-    </SafeAreaView>
+        <ScrollView style={styles.content}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Mental/Emotional feelings</Text>
+            <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+            <EmojiSelectionGrid
+              options={feelingOptions}
+              selectedItems={selectedEmotions}
+              onSelect={handleEmotionSelection}
+            />
+          </View>
+          
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Physical sensations</Text>
+            <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+            <EmojiSelectionGrid
+              options={sensationOptions}
+              selectedItems={selectedSensations}
+              onSelect={handleSensationSelection}
+            />
+          </View>
+        </ScrollView>
+        
+        <StatusBar style="auto" />
+      </SafeAreaView>
+    </SwipeDownToHome>
   );
 }
 

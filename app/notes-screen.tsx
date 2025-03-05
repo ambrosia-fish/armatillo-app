@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
+import SwipeDownToHome from './components/SwipeDownToHome';
 
 export default function NotesScreen() {
   const router = useRouter();
@@ -41,42 +42,44 @@ export default function NotesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Additional Notes</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Any additional notes?</Text>
-          <TextInput
-            style={styles.textInput}
-            multiline
-            numberOfLines={6}
-            placeholder="Add any additional notes, observations, or context..."
-            value={notes}
-            onChangeText={setNotes}
-          />
-        </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.infoText}>
-            This is the last step. Press "Save" to record this BFRB instance.
-          </Text>
-          <TouchableOpacity style={styles.saveFullButton} onPress={handleSave}>
-            <Text style={styles.saveFullButtonText}>Save Instance</Text>
+    <SwipeDownToHome>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Additional Notes</Text>
+          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+            <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-      
-      <StatusBar style="auto" />
-    </SafeAreaView>
+        
+        <ScrollView style={styles.content}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Any additional notes?</Text>
+            <TextInput
+              style={styles.textInput}
+              multiline
+              numberOfLines={6}
+              placeholder="Add any additional notes, observations, or context..."
+              value={notes}
+              onChangeText={setNotes}
+            />
+          </View>
+          
+          <View style={styles.section}>
+            <Text style={styles.infoText}>
+              This is the last step. Press "Save" to record this BFRB instance.
+            </Text>
+            <TouchableOpacity style={styles.saveFullButton} onPress={handleSave}>
+              <Text style={styles.saveFullButtonText}>Save Instance</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+        
+        <StatusBar style="auto" />
+      </SafeAreaView>
+    </SwipeDownToHome>
   );
 }
 

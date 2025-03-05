@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import SwipeDownToHome from './components/SwipeDownToHome';
 
 export default function DetailScreen() {
   const router = useRouter();
@@ -51,72 +52,74 @@ export default function DetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>About the Instance</Text>
-        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <ScrollView style={styles.content}>
-        {/* Urge Strength Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How strong was the urge?</Text>
-          <View style={styles.strengthOptionsContainer}>
-            {renderStrengthOptions()}
-          </View>
-          <View style={styles.strengthLabelsContainer}>
-            <Text style={styles.strengthLabel}>Mild</Text>
-            <Text style={styles.strengthLabel}>Strong</Text>
-          </View>
+    <SwipeDownToHome>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.title}>About the Instance</Text>
+          <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+            <Text style={styles.nextButtonText}>Next</Text>
+          </TouchableOpacity>
         </View>
         
-        {/* Intention Type Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Was it intentional or automatic?</Text>
-          <View style={styles.intentionOptionsContainer}>
-            <TouchableOpacity
-              style={[
-                styles.intentionOption,
-                intentionType === 'intentional' && styles.selectedOption,
-              ]}
-              onPress={() => setIntentionType('intentional')}
-            >
-              <Text
-                style={[
-                  styles.intentionOptionText,
-                  intentionType === 'intentional' && styles.selectedOptionText,
-                ]}
-              >
-                Intentional
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.intentionOption,
-                intentionType === 'automatic' && styles.selectedOption,
-              ]}
-              onPress={() => setIntentionType('automatic')}
-            >
-              <Text
-                style={[
-                  styles.intentionOptionText,
-                  intentionType === 'automatic' && styles.selectedOptionText,
-                ]}
-              >
-                Automatic
-              </Text>
-            </TouchableOpacity>
+        <ScrollView style={styles.content}>
+          {/* Urge Strength Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>How strong was the urge?</Text>
+            <View style={styles.strengthOptionsContainer}>
+              {renderStrengthOptions()}
+            </View>
+            <View style={styles.strengthLabelsContainer}>
+              <Text style={styles.strengthLabel}>Mild</Text>
+              <Text style={styles.strengthLabel}>Strong</Text>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-      
-      <StatusBar style="auto" />
-    </SafeAreaView>
+          
+          {/* Intention Type Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Was it intentional or automatic?</Text>
+            <View style={styles.intentionOptionsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.intentionOption,
+                  intentionType === 'intentional' && styles.selectedOption,
+                ]}
+                onPress={() => setIntentionType('intentional')}
+              >
+                <Text
+                  style={[
+                    styles.intentionOptionText,
+                    intentionType === 'intentional' && styles.selectedOptionText,
+                  ]}
+                >
+                  Intentional
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.intentionOption,
+                  intentionType === 'automatic' && styles.selectedOption,
+                ]}
+                onPress={() => setIntentionType('automatic')}
+              >
+                <Text
+                  style={[
+                    styles.intentionOptionText,
+                    intentionType === 'automatic' && styles.selectedOptionText,
+                  ]}
+                >
+                  Automatic
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+        
+        <StatusBar style="auto" />
+      </SafeAreaView>
+    </SwipeDownToHome>
   );
 }
 
