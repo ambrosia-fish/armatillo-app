@@ -54,16 +54,6 @@ export default function NotesScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Were there any sensory triggers?</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <EmojiSelectionGrid
-            options={sensoryOptions}
-            selectedItems={selectedSensoryTriggers}
-            onSelect={handleSensorySelection}
-          />
-        </View>
-        
-        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Any additional notes?</Text>
           <TextInput
             style={styles.textInput}
