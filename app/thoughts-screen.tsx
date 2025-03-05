@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { thoughtOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
+import CancelFooter from './components/CancelFooter';
 
 export default function ThoughtsScreen() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function ThoughtsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -52,6 +53,9 @@ export default function ThoughtsScreen() {
           />
         </View>
       </ScrollView>
+      
+      {/* Add Cancel Footer */}
+      <CancelFooter />
       
       <StatusBar style="auto" />
     </SafeAreaView>
