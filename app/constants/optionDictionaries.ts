@@ -6,15 +6,6 @@ export interface OptionItem {
 
 // Dictionary for trigger options
 export const triggerOptions: OptionItem[] = [
-  { id: 'anger', label: 'anger', emoji: '😠' },
-  { id: 'sadness', label: 'sadness', emoji: '😢' },
-  { id: 'anxiety', label: 'anxiety', emoji: '😰' },
-  { id: 'tiredness', label: 'tiredness', emoji: '😴' },
-  { id: 'boredom', label: 'boredom', emoji: '🥱' },
-  { id: 'hunger', label: 'hunger', emoji: '🍕' },
-  { id: 'thought', label: 'thought', emoji: '🧠' },
-  { id: 'social', label: 'social', emoji: '👥' },
-  { id: 'tech', label: 'tech', emoji: '📱' },
 ];
 
 // Dictionary for environment options
@@ -22,12 +13,24 @@ export const environmentOptions: OptionItem[] = [
   { id: 'home', label: 'home', emoji: '🏠' },
   { id: 'work', label: 'work', emoji: '💼' },
   { id: 'school', label: 'school', emoji: '🏫' },
-  { id: 'transit', label: 'transit', emoji: '🚗' },
-  { id: 'outdoors', label: 'outdoors', emoji: '🌳' },
-  { id: 'shopping', label: 'shopping', emoji: '🛒' },
-  { id: 'restaurant', label: 'restaurant', emoji: '🍽️' },
   { id: 'bathroom', label: 'bathroom', emoji: '🚿' },
   { id: 'bedroom', label: 'bedroom', emoji: '🛏️' },
+  { id: 'living_room', label: 'living room', emoji: '🛋️' },
+  { id: 'kitchen', label: 'kitchen', emoji: '🍳' },
+  { id: 'office', label: 'office', emoji: '🖥️' },
+  { id: 'car', label: 'car', emoji: '🚘' },
+  { id: 'bus', label: 'bus', emoji: '🚌' },
+  { id: 'train', label: 'train', emoji: '🚆' },
+  { id: 'airplane', label: 'airplane', emoji: '🛩️' },
+  { id: 'gym', label: 'gym', emoji: '🏋️' },
+  { id: 'restaurant', label: 'restaurant', emoji: '🍽️' },
+  { id: 'cafe', label: 'cafe', emoji: '☕' },
+  { id: 'store', label: 'store', emoji: '🛒' },
+  { id: 'outdoors', label: 'outdoors', emoji: '🌳' },
+  { id: 'library', label: 'library', emoji: '📚' },
+  { id: 'theater', label: 'theater', emoji: '🎭' },
+  { id: 'hospital', label: 'hospital', emoji: '🩺' },
+  { id: 'salon', label: 'salon', emoji: '💇' }
 ];
 
 // Dictionary for feeling options
