@@ -58,6 +58,31 @@ function RootLayoutNav() {
           animation: 'slide_from_bottom',
           headerShown: false
         }} />
+        <Stack.Screen name="detail-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="environment-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="feelings-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="thoughts-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
+        <Stack.Screen name="notes-screen" options={{ 
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false
+        }} />
       </Stack>
     </ThemeProvider>
   );
