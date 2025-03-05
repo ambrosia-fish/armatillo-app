@@ -7,17 +7,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
 
 export default function NotesScreen() {
   const router = useRouter();
-  const [notes, setNotes] = useState('');
-  const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>([]);
+  const { formData, updateFormData, resetFormData } = useFormContext();
+  
+  // Initialize state from context if available
+  const [notes, setNotes] = useState(
+    formData.notes || ''
+  );
+  const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>(
+    formData.selectedSensoryTriggers || []
+  );
   
   const handleSave = () => {
-    console.log('Saving final data:', { 
+    // Save final data to context
+    updateFormData({
       selectedSensoryTriggers,
       notes
     });
+    
+    // Here you would typically send this data to your API
+    console.log('Submitting data to API:', formData);
     
     // Show confirmation and return to home
     Alert.alert(
@@ -26,7 +38,11 @@ export default function NotesScreen() {
       [
         { 
           text: "OK", 
-          onPress: () => router.replace('/(tabs)') 
+          onPress: () => {
+            // Reset form data after successful submission
+            resetFormData();
+            router.replace('/(tabs)');
+          }
         }
       ]
     );
@@ -76,8 +92,11 @@ export default function NotesScreen() {
         </View>
       </ScrollView>
       
-      {/* Add Cancel Footer */}
-      <CancelFooter />
+      {/* Add Cancel Footer with reset */}
+      <CancelFooter onCancel={() => {
+        // Reset form data when cancelling
+        resetFormData();
+      }} />
       
       <StatusBar style="auto" />
     </SafeAreaView>
