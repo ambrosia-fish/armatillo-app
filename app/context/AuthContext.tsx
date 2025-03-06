@@ -88,26 +88,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // It will clear any existing sessions, preventing cached states
       await WebBrowser.warmUpAsync();
       
-      // Get device info to use in the OAuth request
-      let deviceName = 'Armatillo Device';
-      let deviceId = 'armatillo_dev_device';
-      
-      try {
-        // Get device model and brand information
-        const model = Device.modelName || 'Unknown Model';
-        const brand = Device.brandName || 'Unknown Brand';
-        deviceName = `${brand} ${model}`;
-        
-        // Create a unique device ID using available device info
-        deviceId = `${Device.osName}_${Device.osVersion}_${Device.deviceYearClass || '2023'}`;
-      } catch (deviceError) {
-        console.warn('Could not get device info:', deviceError);
-      }
-      
-      console.log('Using device info:', { deviceName, deviceId });
-      
-      // Construct the OAuth URL to your server (NOT directly to Google)
-      // The server will handle the redirect URI mismatch
+      // Construct the OAuth URL to go directly to Google
+      // The URL redirects directly to Google's OAuth page
       const authUrl = `${API_URL}/auth/google-mobile`;
       
       console.log('Opening auth URL:', authUrl);
