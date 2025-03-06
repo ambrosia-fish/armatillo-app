@@ -75,11 +75,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       
       // Get device info to use in the OAuth request
-      const deviceName = await Device.getDeviceNameAsync() || 'Armatillo Device';
-      const deviceId = Device.deviceName || Device.modelName || 'unknown_device';
+      // Use the correct methods available in expo-device
+      let deviceName = 'Armatillo Device';
+      let deviceId = 'armatillo_dev_device';
+      
+      try {
+        // Get device model and brand information
+        const model = Device.modelName || 'Unknown Model';
+        const brand = Device.brandName || 'Unknown Brand';
+        deviceName = `${brand} ${model}`;
+        
+        // Create a unique device ID using available device info
+        deviceId = `${Device.osName}_${Device.osVersion}_${Device.deviceYearClass || '2023'}`;
+      } catch (deviceError) {
+        console.warn('Could not get device info:', deviceError);
+      }
+      
+      console.log('Using device info:', { deviceName, deviceId });
       
       // Construct the OAuth URL with explicit device parameters
       const authUrl = `${API_URL}/auth/google?device_id=${encodeURIComponent(deviceId)}&device_name=${encodeURIComponent(deviceName)}`;
+      
+      console.log('Opening auth URL:', authUrl);
       
       // Open the browser for authentication
       const result = await WebBrowser.openAuthSessionAsync(
@@ -87,11 +104,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         'armatillo://auth/callback'
       );
       
+      console.log('Auth session result:', result);
+      
       if (result.type === 'success' && result.url) {
         await handleOAuthCallback(result.url);
       } else {
         // User cancelled or flow was interrupted
-        console.log('Auth session result:', result);
+        console.log('Auth flow interrupted or cancelled');
         setIsLoading(false);
       }
     } catch (error) {
@@ -106,6 +125,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
+      console.log('Handling OAuth callback URL:', url);
+      
       // Extract token from URL
       const urlParams = new URLSearchParams(url.split('?')[1]);
       const newToken = urlParams.get('token');
@@ -114,11 +135,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('No token received from authentication');
       }
       
+      console.log('Token received from OAuth callback');
+      
       // Save token to storage
       await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
       setToken(newToken);
       
       // Fetch user data with the token
+      console.log('Fetching user data from API');
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: {
           Authorization: `Bearer ${newToken}`,
@@ -126,16 +150,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       
       if (!response.ok) {
+        console.error('API response not OK:', await response.text());
         throw new Error('Failed to fetch user data');
       }
       
       const userData = await response.json();
+      console.log('User data received');
       
       // Save user data to storage
       await storage.setObject(STORAGE_KEYS.USER, userData.user);
       setUser(userData.user);
       
       // Navigate to home screen
+      console.log('Authentication complete, navigating to home');
       router.replace('/(tabs)');
     } catch (error) {
       console.error('OAuth callback error:', error);
