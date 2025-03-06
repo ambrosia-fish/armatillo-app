@@ -3,7 +3,6 @@ import { Alert, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Device from 'expo-device';
-import * as Random from 'expo-crypto';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 
 // Define the type for user data
@@ -46,11 +45,6 @@ const getApiUrl = () => {
 
 // API URL
 const API_URL = getApiUrl();
-
-// Add a listener for URL events (for handling deep linking)
-const handleRedirectAsync = (url: string): Promise<{ type: string; url: string }> => {
-  return Promise.resolve({ type: 'success', url });
-};
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
