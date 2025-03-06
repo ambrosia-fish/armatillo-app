@@ -50,81 +50,106 @@ const getApiUrl = () => {
 // API URL
 const API_URL = getApiUrl();
 
-// Google Expo auth configuration
-const GOOGLE_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com'; // Use your actual Client ID
-const GOOGLE_EXPO_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com'; // Use your iOS Client ID for Expo
-const GOOGLE_ANDROID_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com'; // Use your Android Client ID
+// Replace these with your actual values
+// You can get these from your Google OAuth console
+const EXPO_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com';
+const IOS_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com';
+const ANDROID_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com';
+const WEB_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com';
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Configure Google Auth Request with correct client IDs
+  // This uses Expo's AuthSession which supports auth.expo.io redirects
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: EXPO_CLIENT_ID,
+    iosClientId: IOS_CLIENT_ID,
+    androidClientId: ANDROID_CLIENT_ID,
+    webClientId: WEB_CLIENT_ID,
+    scopes: ['profile', 'email'],
+    // Use auth.expo.io proxy for seamless auth in development
+    selectAccount: true,
+  });
+
   // Computed property to check if user is authenticated
   const isAuthenticated = !!token && !!user;
-
-  // Configure Google Auth Request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: GOOGLE_EXPO_CLIENT_ID,
-    iosClientId: GOOGLE_EXPO_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    webClientId: GOOGLE_CLIENT_ID,
-    scopes: ['profile', 'email'],
-    responseType: 'code',
-  });
 
   // Handle the response from Google Auth
   useEffect(() => {
     const handleGoogleResponse = async () => {
       if (response?.type === 'success') {
         setIsLoading(true);
-        const { code } = response.params;
-        
         try {
-          console.log('Got authorization code from Google:', code);
+          console.log('Google auth response received:', response);
           
-          // Exchange the authorization code for tokens with your backend
-          const tokenResponse = await fetch(`${API_URL}/auth/google-token-exchange`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ code }),
-          });
-          
-          if (!tokenResponse.ok) {
-            const errorText = await tokenResponse.text();
-            console.error('Token exchange failed:', errorText);
-            throw new Error('Failed to exchange authorization code for token');
+          // For auth code flow
+          if (response.authentication?.accessToken) {
+            // We received the token directly from Google
+            const { accessToken } = response.authentication;
+            console.log('Received access token from Google:', accessToken);
+            
+            // Verify the token with our server
+            const verifyResponse = await fetch(`${API_URL}/auth/verify-google-token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ credential: accessToken }),
+            });
+            
+            if (!verifyResponse.ok) {
+              throw new Error('Failed to verify token with server');
+            }
+            
+            const data = await verifyResponse.json();
+            const newToken = data.token;
+            
+            // Save token and fetch user data
+            await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
+            setToken(newToken);
+            
+            // Get user profile from our server
+            await fetchUserProfile(newToken);
+          } 
+          // For auth code flow
+          else if (response.params?.code) {
+            const { code } = response.params;
+            console.log('Received authorization code from Google');
+            
+            // Get the redirect URI that was used
+            const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
+            
+            // Exchange the code for a token with our server
+            const tokenResponse = await fetch(`${API_URL}/auth/google-token-exchange`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                code,
+                redirectUri
+              }),
+            });
+            
+            if (!tokenResponse.ok) {
+              const errorText = await tokenResponse.text();
+              console.error('Token exchange failed:', errorText);
+              throw new Error('Failed to exchange authorization code for token');
+            }
+            
+            const data = await tokenResponse.json();
+            const newToken = data.token;
+            
+            // Save token and fetch user data
+            await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
+            setToken(newToken);
+            
+            // Get user profile from our server
+            await fetchUserProfile(newToken);
           }
-          
-          const data = await tokenResponse.json();
-          const newToken = data.token;
-          
-          // Save token to storage
-          await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
-          setToken(newToken);
-          
-          // Fetch user data with the token
-          const userResponse = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${newToken}`,
-            },
-          });
-          
-          if (!userResponse.ok) {
-            console.error('Failed to fetch user data');
-            throw new Error('Failed to fetch user data');
-          }
-          
-          const userData = await userResponse.json();
-          
-          // Save user data to storage
-          await storage.setObject(STORAGE_KEYS.USER, userData.user);
-          setUser(userData.user);
-          
-          // Navigate to home screen
-          router.replace('/(tabs)');
         } catch (error) {
           console.error('Authentication error:', error);
           Alert.alert('Authentication Failed', 'Failed to complete the login process. Please try again.');
@@ -142,6 +167,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
       handleGoogleResponse();
     }
   }, [response]);
+
+  // Helper function to fetch user profile
+  const fetchUserProfile = async (authToken: string) => {
+    try {
+      const userResponse = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      
+      if (!userResponse.ok) {
+        console.error('Failed to fetch user data');
+        throw new Error('Failed to fetch user data');
+      }
+      
+      const userData = await userResponse.json();
+      
+      // Save user data to storage
+      await storage.setObject(STORAGE_KEYS.USER, userData.user);
+      setUser(userData.user);
+      
+      // Navigate to home screen
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      throw error;
+    }
+  };
 
   // Load the user's authentication state on app start
   useEffect(() => {
@@ -177,9 +230,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       console.log('Starting Google authentication flow');
+      console.log('Using redirect URI:', AuthSession.makeRedirectUri({ useProxy: true }));
       
-      // The Expo AuthSession handles browser opening and redirect automatically
-      await promptAsync();
+      // Prompt the user to authenticate
+      await promptAsync({ useProxy: true, showInRecents: false });
       
     } catch (error) {
       console.error('Login error:', error);
