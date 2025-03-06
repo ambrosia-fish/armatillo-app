@@ -34,8 +34,16 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// API URL - should be moved to env config
-const API_URL = 'http://192.168.0.101:3000/api'; // Replace with your API URL
+// API URLs for different environments
+const getApiUrl = () => {
+  if (__DEV__) {
+    return 'http://192.168.0.101:3000/api';
+  }
+  return 'https://api.armatillo.com/api';
+};
+
+// API URL
+const API_URL = getApiUrl();
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -74,8 +82,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
+      // This performs an important step to handle the Google OAuth correctly
+      // It will clear any existing sessions, preventing cached states
+      await WebBrowser.warmUpAsync();
+      
       // Get device info to use in the OAuth request
-      // Use the correct methods available in expo-device
       let deviceName = 'Armatillo Device';
       let deviceId = 'armatillo_dev_device';
       
@@ -98,10 +109,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Opening auth URL:', authUrl);
       
-      // Open the browser for authentication
+      // Open the browser for authentication with proper return URL
+      // Note: the redirect URL must be registered in Google OAuth console
+      const redirectUrl = 'armatillo://auth/callback';
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
-        'armatillo://auth/callback'
+        redirectUrl,
+        {
+          // Prevent reusing previous session
+          createTask: true,
+          showInRecents: false
+        }
       );
       
       console.log('Auth session result:', result);
@@ -117,6 +135,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Login error:', error);
       setIsLoading(false);
       Alert.alert('Login Failed', 'Failed to authenticate with Google. Please try again.');
+    } finally {
+      // Clean up browser sessions
+      await WebBrowser.coolDownAsync();
     }
   };
 
