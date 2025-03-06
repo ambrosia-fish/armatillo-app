@@ -1,16 +1,55 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/app/context/AuthContext';
 
 export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
+  const { user, logout, isLoading } = useAuth();
+
+  // Handle logout with confirmation
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: logout,
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <Text style={styles.title}>Account & Settings</Text>
+        
+        {/* User profile section */}
+        {user && (
+          <View style={styles.profileSection}>
+            {user.image ? (
+              <Image source={{ uri: user.image }} style={styles.profileImage} />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileInitials}>
+                  {user.displayName?.charAt(0) || user.email?.charAt(0) || '?'}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.profileName}>{user.displayName || 'User'}</Text>
+            <Text style={styles.profileEmail}>{user.email}</Text>
+          </View>
+        )}
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>General</Text>
@@ -44,10 +83,20 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={24} color="#ccc" />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.settingRow}>
-              <Ionicons name="log-out-outline" size={24} color="#333" />
-              <Text style={styles.settingText}>Sign Out</Text>
-              <Ionicons name="chevron-forward" size={24} color="#ccc" />
+            <TouchableOpacity 
+              style={styles.settingRow} 
+              onPress={handleLogout}
+              disabled={isLoading}
+            >
+              <Ionicons name="log-out-outline" size={24} color="#e63946" />
+              <Text style={[styles.settingText, { color: '#e63946' }]}>
+                {isLoading ? 'Signing Out...' : 'Sign Out'}
+              </Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#e63946" />
+              ) : (
+                <Ionicons name="chevron-forward" size={24} color="#ccc" />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -83,6 +132,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 24,
     textAlign: 'center',
+  },
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+  },
+  profileImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#2a9d8f',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  profileInitials: {
+    fontSize: 32,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 16,
+    color: '#666',
   },
   section: {
     marginBottom: 20,
