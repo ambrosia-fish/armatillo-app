@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as WebBrowser from 'expo-web-browser';
 import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import storage, { STORAGE_KEYS } from '../utils/storage';
-import * as Device from 'expo-device';
+
+// Register for the auth callback
+WebBrowser.maybeCompleteAuthSession();
 
 // Define the type for user data
 interface User {
@@ -23,7 +27,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  handleOAuthCallback: (url: string) => Promise<void>;
 }
 
 // Create the context with a default undefined value
@@ -47,6 +50,11 @@ const getApiUrl = () => {
 // API URL
 const API_URL = getApiUrl();
 
+// Google Expo auth configuration
+const GOOGLE_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com'; // Use your actual Client ID
+const GOOGLE_EXPO_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com'; // Use your iOS Client ID for Expo
+const GOOGLE_ANDROID_CLIENT_ID = '825926621030-0a8jnp22pfk1ehejp04pap3q21a4emlu.apps.googleusercontent.com'; // Use your Android Client ID
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -54,6 +62,86 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Computed property to check if user is authenticated
   const isAuthenticated = !!token && !!user;
+
+  // Configure Google Auth Request
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: GOOGLE_EXPO_CLIENT_ID,
+    iosClientId: GOOGLE_EXPO_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: GOOGLE_CLIENT_ID,
+    scopes: ['profile', 'email'],
+    responseType: 'code',
+  });
+
+  // Handle the response from Google Auth
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (response?.type === 'success') {
+        setIsLoading(true);
+        const { code } = response.params;
+        
+        try {
+          console.log('Got authorization code from Google:', code);
+          
+          // Exchange the authorization code for tokens with your backend
+          const tokenResponse = await fetch(`${API_URL}/auth/google-token-exchange`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+          });
+          
+          if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('Token exchange failed:', errorText);
+            throw new Error('Failed to exchange authorization code for token');
+          }
+          
+          const data = await tokenResponse.json();
+          const newToken = data.token;
+          
+          // Save token to storage
+          await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
+          setToken(newToken);
+          
+          // Fetch user data with the token
+          const userResponse = await fetch(`${API_URL}/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+            },
+          });
+          
+          if (!userResponse.ok) {
+            console.error('Failed to fetch user data');
+            throw new Error('Failed to fetch user data');
+          }
+          
+          const userData = await userResponse.json();
+          
+          // Save user data to storage
+          await storage.setObject(STORAGE_KEYS.USER, userData.user);
+          setUser(userData.user);
+          
+          // Navigate to home screen
+          router.replace('/(tabs)');
+        } catch (error) {
+          console.error('Authentication error:', error);
+          Alert.alert('Authentication Failed', 'Failed to complete the login process. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (response?.type === 'error') {
+        console.error('Google authentication error:', response.error);
+        Alert.alert('Authentication Failed', response.error?.message || 'Failed to authenticate with Google');
+        setIsLoading(false);
+      }
+    };
+    
+    if (response) {
+      handleGoogleResponse();
+    }
+  }, [response]);
 
   // Load the user's authentication state on app start
   useEffect(() => {
@@ -84,96 +172,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // This performs an important step to handle the Google OAuth correctly
-      // It will clear any existing sessions, preventing cached states
-      await WebBrowser.warmUpAsync();
-      
-      // Construct the OAuth URL to go directly to Google
-      // The URL redirects directly to Google's OAuth page
-      const authUrl = `${API_URL}/auth/google-mobile`;
-      
-      console.log('Opening auth URL:', authUrl);
-      
-      // Open the browser for authentication with proper return URL
-      const redirectUrl = 'armatillo://auth/callback';
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        redirectUrl,
-        {
-          // Prevent reusing previous session
-          createTask: true,
-          showInRecents: false
-        }
-      );
-      
-      console.log('Auth session result:', result);
-      
-      if (result.type === 'success' && result.url) {
-        await handleOAuthCallback(result.url);
-      } else {
-        // User cancelled or flow was interrupted
-        console.log('Auth flow interrupted or cancelled');
-        setIsLoading(false);
+      if (!request) {
+        throw new Error('Google Auth request object is not ready');
       }
+      
+      console.log('Starting Google authentication flow');
+      
+      // The Expo AuthSession handles browser opening and redirect automatically
+      await promptAsync();
+      
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
-      Alert.alert('Login Failed', 'Failed to authenticate with Google. Please try again.');
-    } finally {
-      // Clean up browser sessions
-      await WebBrowser.coolDownAsync();
-    }
-  };
-
-  // Function to handle OAuth callback URL
-  const handleOAuthCallback = async (url: string) => {
-    try {
-      setIsLoading(true);
-      
-      console.log('Handling OAuth callback URL:', url);
-      
-      // Extract token from URL
-      const urlParams = new URLSearchParams(url.split('?')[1]);
-      const newToken = urlParams.get('token');
-      
-      if (!newToken) {
-        throw new Error('No token received from authentication');
-      }
-      
-      console.log('Token received from OAuth callback');
-      
-      // Save token to storage
-      await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
-      setToken(newToken);
-      
-      // Fetch user data with the token
-      console.log('Fetching user data from API');
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${newToken}`,
-        },
-      });
-      
-      if (!response.ok) {
-        console.error('API response not OK:', await response.text());
-        throw new Error('Failed to fetch user data');
-      }
-      
-      const userData = await response.json();
-      console.log('User data received');
-      
-      // Save user data to storage
-      await storage.setObject(STORAGE_KEYS.USER, userData.user);
-      setUser(userData.user);
-      
-      // Navigate to home screen
-      console.log('Authentication complete, navigating to home');
-      router.replace('/(tabs)');
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      Alert.alert('Authentication Failed', 'Failed to complete the login process. Please try again.');
-    } finally {
-      setIsLoading(false);
+      Alert.alert('Login Failed', 'Failed to start authentication process. Please try again.');
     }
   };
 
@@ -193,12 +204,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       
       // Call API to invalidate session
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      try {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.warn('Error calling logout endpoint:', error);
+        // Continue with local logout even if the API call fails
+      }
       
       // Navigate to login
       router.replace('/login');
@@ -218,7 +234,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     login,
     logout,
-    handleOAuthCallback,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
