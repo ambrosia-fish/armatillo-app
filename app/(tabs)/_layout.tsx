@@ -4,7 +4,7 @@ import { Tabs } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-import AuthGuard from '@/components/AuthGuard';
+import AuthGuard from '../components/AuthGuard';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
