@@ -37,10 +37,9 @@ interface AuthProviderProps {
 // API URLs for different environments
 const getApiUrl = () => {
   if (__DEV__) {
-    // Use localhost for development, which is supported by Google OAuth
-    return 'http://localhost:3000/api';
-    // If you need to use IP instead, you will need a proper domain or ngrok
-    // return 'http://192.168.0.101:3000/api';
+    // Use IP address from mobile device
+    // "localhost" on a phone means the phone itself, not your computer
+    return 'http://192.168.0.101:3000/api';
   }
   return 'https://api.armatillo.com/api';
 };
@@ -107,13 +106,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Using device info:', { deviceName, deviceId });
       
-      // Construct the OAuth URL with explicit device parameters
-      const authUrl = `${API_URL}/auth/google?device_id=${encodeURIComponent(deviceId)}&device_name=${encodeURIComponent(deviceName)}`;
+      // Construct the OAuth URL to your server (NOT directly to Google)
+      // The server will handle the redirect URI mismatch
+      const authUrl = `${API_URL}/auth/google-mobile`;
       
       console.log('Opening auth URL:', authUrl);
       
       // Open the browser for authentication with proper return URL
-      // Note: the redirect URL must be registered in Google OAuth console
       const redirectUrl = 'armatillo://auth/callback';
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
