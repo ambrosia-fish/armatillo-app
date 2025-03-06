@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { FormProvider } from './context/FormContext';
+import { AuthProvider } from './context/AuthContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -68,45 +69,53 @@ function RootLayoutNav() {
   };
 
   return (
-    <FormProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen 
-            name="(tabs)" 
-            options={{ headerShown: false }} 
-          />
-          <Stack.Screen 
-            name="modal" 
-            options={{ presentation: 'modal' }} 
-          />
-          
-          {/* BFRB Tracking Flow Screens */}
-          <Stack.Screen 
-            name="time-screen" 
-            options={screenOptions} 
-          />
-          <Stack.Screen 
-            name="detail-screen" 
-            options={screenOptions} 
-          />
-          <Stack.Screen 
-            name="environment-screen" 
-            options={screenOptions} 
-          />
-          <Stack.Screen 
-            name="feelings-screen" 
-            options={screenOptions} 
-          />
-          <Stack.Screen 
-            name="thoughts-screen" 
-            options={screenOptions} 
-          />
-          <Stack.Screen 
-            name="notes-screen" 
-            options={screenOptions} 
-          />
-        </Stack>
-      </ThemeProvider>
-    </FormProvider>
+    <AuthProvider>
+      <FormProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen 
+              name="(tabs)" 
+              options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="modal" 
+              options={{ presentation: 'modal' }} 
+            />
+            
+            {/* Authentication Screens */}
+            <Stack.Screen
+              name="login"
+              options={{ headerShown: false }}
+            />
+            
+            {/* BFRB Tracking Flow Screens */}
+            <Stack.Screen 
+              name="time-screen" 
+              options={screenOptions} 
+            />
+            <Stack.Screen 
+              name="detail-screen" 
+              options={screenOptions} 
+            />
+            <Stack.Screen 
+              name="environment-screen" 
+              options={screenOptions} 
+            />
+            <Stack.Screen 
+              name="feelings-screen" 
+              options={screenOptions} 
+            />
+            <Stack.Screen 
+              name="thoughts-screen" 
+              options={screenOptions} 
+            />
+            <Stack.Screen 
+              name="notes-screen" 
+              options={screenOptions} 
+            />
+          </Stack>
+        </ThemeProvider>
+      </FormProvider>
+    </AuthProvider>
   );
 }
