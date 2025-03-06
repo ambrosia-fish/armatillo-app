@@ -1,9 +1,8 @@
 // API service to manage all API calls
-import * as SecureStore from 'expo-secure-store';
+import storage, { STORAGE_KEYS } from '../utils/storage';
 
 // Configuration
 const API_URL = 'http://192.168.0.101:3000/api'; // Replace with your API URL
-const TOKEN_KEY = 'auth_token';
 
 // Base headers for all requests
 const baseHeaders = {
@@ -13,7 +12,7 @@ const baseHeaders = {
 
 // Helper to get authentication token
 async function getAuthToken(): Promise<string | null> {
-  return await SecureStore.getItemAsync(TOKEN_KEY);
+  return await storage.getItem(STORAGE_KEYS.TOKEN);
 }
 
 // Helper to create authenticated headers
@@ -55,7 +54,7 @@ async function apiRequest<T>(
       // Handle authentication errors
       if (response.status === 401) {
         // Clear token on authentication error
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await storage.removeItem(STORAGE_KEYS.TOKEN);
         throw new Error('Authentication required');
       }
 
@@ -82,7 +81,7 @@ export const authApi = {
   // Logout
   logout: async () => {
     await apiRequest('/auth/logout', 'GET');
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await storage.removeItem(STORAGE_KEYS.TOKEN);
   },
 
   // Verify token is valid
