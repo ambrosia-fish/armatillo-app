@@ -10,7 +10,7 @@ import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
 
 // The API URL - should be set in environment config
-const API_URL = 'http://192.168.1.100:5000/api/instances'; // Replace with your local IP
+const API_URL = 'http://192.168.0.101:3000/api/instances'; // Replace with your local IP
 
 export default function NotesScreen() {
   const router = useRouter();
