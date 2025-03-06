@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import storage, { STORAGE_KEYS } from '../utils/storage';
+import * as Device from 'expo-device';
 
 // Define the type for user data
 interface User {
@@ -73,8 +74,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // Construct the OAuth URL for Google
-      const authUrl = `${API_URL}/auth/google`;
+      // Get device info to use in the OAuth request
+      const deviceName = await Device.getDeviceNameAsync() || 'Armatillo Device';
+      const deviceId = Device.deviceName || Device.modelName || 'unknown_device';
+      
+      // Construct the OAuth URL with explicit device parameters
+      const authUrl = `${API_URL}/auth/google?device_id=${encodeURIComponent(deviceId)}&device_name=${encodeURIComponent(deviceName)}`;
       
       // Open the browser for authentication
       const result = await WebBrowser.openAuthSessionAsync(
@@ -86,6 +91,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await handleOAuthCallback(result.url);
       } else {
         // User cancelled or flow was interrupted
+        console.log('Auth session result:', result);
         setIsLoading(false);
       }
     } catch (error) {
