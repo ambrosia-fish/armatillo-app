@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
+import storage, { STORAGE_KEYS } from '../utils/storage';
 
 // Define the type for user data
 interface User {
@@ -36,10 +36,6 @@ interface AuthProviderProps {
 // API URL - should be moved to env config
 const API_URL = 'http://192.168.0.101:3000/api'; // Replace with your API URL
 
-// Constants for secure storage keys
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'user_data';
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -52,14 +48,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const loadAuthState = async () => {
       try {
-        const [storedToken, storedUser] = await Promise.all([
-          SecureStore.getItemAsync(TOKEN_KEY),
-          SecureStore.getItemAsync(USER_KEY),
-        ]);
+        // Load token from storage
+        const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
+        
+        // Load user data from storage
+        const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
 
         if (storedToken && storedUser) {
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          setUser(storedUser);
         }
       } catch (error) {
         console.error('Failed to load authentication state:', error);
@@ -111,8 +108,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('No token received from authentication');
       }
       
-      // Save token to secure storage
-      await SecureStore.setItemAsync(TOKEN_KEY, newToken);
+      // Save token to storage
+      await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
       setToken(newToken);
       
       // Fetch user data with the token
@@ -128,8 +125,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const userData = await response.json();
       
-      // Save user data to secure storage
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData.user));
+      // Save user data to storage
+      await storage.setObject(STORAGE_KEYS.USER, userData.user);
       setUser(userData.user);
       
       // Navigate to home screen
@@ -149,8 +146,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Clear stored data
       await Promise.all([
-        SecureStore.deleteItemAsync(TOKEN_KEY),
-        SecureStore.deleteItemAsync(USER_KEY),
+        storage.removeItem(STORAGE_KEYS.TOKEN),
+        storage.removeItem(STORAGE_KEYS.USER),
       ]);
       
       // Reset state
