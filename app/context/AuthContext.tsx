@@ -106,15 +106,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Using device info:', { deviceName, deviceId });
       
-      // IMPORTANT: Use the mobile-specific endpoint that uses Google One Tap sign-in
+      // Construct the OAuth URL to your server (NOT directly to Google)
+      // The server will handle the redirect URI mismatch
       const authUrl = `${API_URL}/auth/google-mobile`;
       
       console.log('Opening auth URL:', authUrl);
-      
-      // DEBUGGING - alert the user about the URL we're trying to open
-      Alert.alert('Connecting to', authUrl, [
-        { text: 'OK', onPress: () => console.log('OK Pressed') }
-      ]);
       
       // Open the browser for authentication with proper return URL
       const redirectUrl = 'armatillo://auth/callback';
@@ -124,30 +120,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         {
           // Prevent reusing previous session
           createTask: true,
-          showInRecents: false,
-          // Add additional browser options
-          browserPackage: Platform.OS === 'android' ? 'com.android.chrome' : undefined,
-          prefersEphemeralWebBrowserSession: true,
+          showInRecents: false
         }
       );
       
       console.log('Auth session result:', result);
-      
-      // DEBUGGING - Show the result
-      Alert.alert('Result type', `${result.type}`);
       
       if (result.type === 'success' && result.url) {
         await handleOAuthCallback(result.url);
       } else {
         // User cancelled or flow was interrupted
         console.log('Auth flow interrupted or cancelled');
-        Alert.alert('Sign-in cancelled', 'Authentication was cancelled or interrupted.');
         setIsLoading(false);
       }
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
-      Alert.alert('Login Failed', 'Failed to authenticate with Google. Please try again.\n\nError: ' + (error instanceof Error ? error.message : String(error)));
+      Alert.alert('Login Failed', 'Failed to authenticate with Google. Please try again.');
     } finally {
       // Clean up browser sessions
       await WebBrowser.coolDownAsync();
