@@ -8,9 +8,7 @@ import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
-
-// The API URL - should be set in environment config
-const API_URL = 'http://192.168.0.101:3000/api/instances'; // Replace with your local IP
+import { instancesApi } from './services/api';
 
 export default function NotesScreen() {
   const router = useRouter();
@@ -47,21 +45,8 @@ export default function NotesScreen() {
         notes
       };
       
-      // Send data to API
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(completeData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      
-      // Get the response data
-      const responseData = await response.json();
+      // Send data to API using our API service
+      const responseData = await instancesApi.createInstance(completeData);
       console.log('API response:', responseData);
       
       // Show success message and return to home
