@@ -36,9 +36,8 @@ interface AuthProviderProps {
 // API URLs for different environments
 const getApiUrl = () => {
   if (__DEV__) {
-    // Use IP address from mobile device
-    // "localhost" on a phone means the phone itself, not your computer
-    return 'http://192.168.0.101:3000/api';
+    // Use ngrok URL for development
+    return 'https://4936-2600-8805-9080-c100-194-2b43-363-335a.ngrok-free.app/api';
   }
   return 'https://api.armatillo.com/api';
 };
