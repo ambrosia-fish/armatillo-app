@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import CancelFooter from './components/CancelFooter';
-
+import { useFormContext } from './context/FormContext';
 
 interface TimeOption {
   label: string;
@@ -15,24 +15,43 @@ interface TimeOption {
 
 export default function TimeScreen() {
   const router = useRouter();
+  const { formData, updateFormData } = useFormContext();
   const now = new Date();
   
-  // UI state
-  const [customTime, setCustomTime] = useState(false);
-  const [selectedTimeAgo, setSelectedTimeAgo] = useState<number>(0);
-  const [selectedDuration, setSelectedDuration] = useState<number>(1);
+  // UI state initialized from context if available
+  const [customTime, setCustomTime] = useState(
+    formData.customTime || false
+  );
+  const [selectedTimeAgo, setSelectedTimeAgo] = useState<number>(
+    formData.selectedTimeAgo || 0
+  );
+  const [selectedDuration, setSelectedDuration] = useState<number>(
+    formData.selectedDuration || 1
+  );
   
   // Custom time picker state
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<string>("Today");
-  const [selectedHour, setSelectedHour] = useState<string>(String(now.getHours() % 12 || 12));
-  const [selectedMinute, setSelectedMinute] = useState<string>(String(now.getMinutes()));
-  const [selectedAmPm, setSelectedAmPm] = useState(now.getHours() >= 12 ? 'PM' : 'AM');
+  const [selectedDay, setSelectedDay] = useState<string>(
+    formData.selectedDay || "Today"
+  );
+  const [selectedHour, setSelectedHour] = useState<string>(
+    formData.selectedHour || String(now.getHours() % 12 || 12)
+  );
+  const [selectedMinute, setSelectedMinute] = useState<string>(
+    formData.selectedMinute || String(now.getMinutes())
+  );
+  const [selectedAmPm, setSelectedAmPm] = useState(
+    formData.selectedAmPm || (now.getHours() >= 12 ? 'PM' : 'AM')
+  );
   
   // Duration picker state
   const [showDurationPicker, setShowDurationPicker] = useState(false);
-  const [durationHours, setDurationHours] = useState<string>("0");
-  const [durationMinutes, setDurationMinutes] = useState<string>("15");
+  const [durationHours, setDurationHours] = useState<string>(
+    formData.durationHours || "0"
+  );
+  const [durationMinutes, setDurationMinutes] = useState<string>(
+    formData.durationMinutes || "15"
+  );
   
   // Time options
   const timeAgoOptions: TimeOption[] = [
@@ -137,18 +156,25 @@ export default function TimeScreen() {
       finalDuration = (parseInt(durationHours, 10) * 60) + parseInt(durationMinutes, 10);
     }
     
-    // Save the data
-    console.log('Saving time data:', { 
+    // Save all time-related data to context
+    updateFormData({
+      // Main form data
       time: finalTime,
-      timeISOString: finalTime.toISOString(),
-      timeFormatted: finalTime.toLocaleString(),
       duration: finalDuration,
+      
+      // Form UI state (for returning to this screen)
+      customTime,
+      selectedTimeAgo,
+      selectedDuration,
+      selectedDay,
+      selectedHour,
+      selectedMinute,
+      selectedAmPm,
+      durationHours, 
+      durationMinutes
     });
     
-    // Here you would typically pass this data back to the parent component
-    // or store it in global state or local database
-    
-    // Navigate to detail screen instead of trigger screen
+    // Navigate to detail screen
     router.push('/detail-screen');
   };
 
@@ -474,7 +500,14 @@ export default function TimeScreen() {
       
       <StatusBar style="auto" />
 
-      <CancelFooter />
+      {/* Add Cancel Footer with reset */}
+      <CancelFooter onCancel={() => {
+        // Reset form data when cancelling
+        updateFormData({
+          time: undefined,
+          duration: undefined
+        });
+      }} />
     </SafeAreaView>
   );
 }

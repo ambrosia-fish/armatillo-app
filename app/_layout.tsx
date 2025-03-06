@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { FormProvider } from './context/FormContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -67,43 +68,45 @@ function RootLayoutNav() {
   };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="modal" 
-          options={{ presentation: 'modal' }} 
-        />
-        
-        {/* BFRB Tracking Flow Screens */}
-        <Stack.Screen 
-          name="time-screen" 
-          options={screenOptions} 
-        />
-        <Stack.Screen 
-          name="detail-screen" 
-          options={screenOptions} 
-        />
-        <Stack.Screen 
-          name="environment-screen" 
-          options={screenOptions} 
-        />
-        <Stack.Screen 
-          name="feelings-screen" 
-          options={screenOptions} 
-        />
-        <Stack.Screen 
-          name="thoughts-screen" 
-          options={screenOptions} 
-        />
-        <Stack.Screen 
-          name="notes-screen" 
-          options={screenOptions} 
-        />
-      </Stack>
-    </ThemeProvider>
+    <FormProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen 
+            name="(tabs)" 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="modal" 
+            options={{ presentation: 'modal' }} 
+          />
+          
+          {/* BFRB Tracking Flow Screens */}
+          <Stack.Screen 
+            name="time-screen" 
+            options={screenOptions} 
+          />
+          <Stack.Screen 
+            name="detail-screen" 
+            options={screenOptions} 
+          />
+          <Stack.Screen 
+            name="environment-screen" 
+            options={screenOptions} 
+          />
+          <Stack.Screen 
+            name="feelings-screen" 
+            options={screenOptions} 
+          />
+          <Stack.Screen 
+            name="thoughts-screen" 
+            options={screenOptions} 
+          />
+          <Stack.Screen 
+            name="notes-screen" 
+            options={screenOptions} 
+          />
+        </Stack>
+      </ThemeProvider>
+    </FormProvider>
   );
 }

@@ -7,29 +7,90 @@ import { Ionicons } from '@expo/vector-icons';
 import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
+
+// The API URL - should be set in environment config
+const API_URL = 'http://192.168.0.101:3000/api/instances'; // Replace with your local IP
 
 export default function NotesScreen() {
   const router = useRouter();
-  const [notes, setNotes] = useState('');
-  const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>([]);
+  const { formData, updateFormData, resetFormData } = useFormContext();
   
-  const handleSave = () => {
-    console.log('Saving final data:', { 
-      selectedSensoryTriggers,
-      notes
-    });
+  // Track loading state for API calls
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Initialize state from context if available
+  const [notes, setNotes] = useState(
+    formData.notes || ''
+  );
+  const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>(
+    formData.selectedSensoryTriggers || []
+  );
+  
+  const handleSave = async () => {
+    // Prevent double submission
+    if (isSubmitting) return;
     
-    // Show confirmation and return to home
-    Alert.alert(
-      "Instance Saved",
-      "Your BFRB instance has been recorded successfully.",
-      [
-        { 
-          text: "OK", 
-          onPress: () => router.replace('/(tabs)') 
-        }
-      ]
-    );
+    try {
+      setIsSubmitting(true);
+      
+      // Save final data to context
+      updateFormData({
+        selectedSensoryTriggers,
+        notes
+      });
+      
+      // Prepare complete data to send to API
+      const completeData = {
+        ...formData,
+        selectedSensoryTriggers,
+        notes
+      };
+      
+      // Send data to API
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(completeData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      // Get the response data
+      const responseData = await response.json();
+      console.log('API response:', responseData);
+      
+      // Show success message and return to home
+      Alert.alert(
+        "Instance Saved",
+        "Your BFRB instance has been recorded successfully.",
+        [
+          { 
+            text: "OK", 
+            onPress: () => {
+              // Reset form data after successful submission
+              resetFormData();
+              router.replace('/(tabs)');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      // Handle errors
+      console.error('Error saving instance:', error);
+      
+      Alert.alert(
+        "Error Saving",
+        "There was a problem saving your data. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSensorySelection = (id: string) => {
@@ -48,8 +109,14 @@ export default function NotesScreen() {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Additional Notes</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        <TouchableOpacity 
+          onPress={handleSave} 
+          style={[styles.saveButton, isSubmitting && styles.disabledButton]} 
+          disabled={isSubmitting}
+        >
+          <Text style={styles.saveButtonText}>
+            {isSubmitting ? 'Saving...' : 'Save'}
+          </Text>
         </TouchableOpacity>
       </View>
       
@@ -70,14 +137,23 @@ export default function NotesScreen() {
           <Text style={styles.infoText}>
             This is the last step. Press "Save" to record this BFRB instance.
           </Text>
-          <TouchableOpacity style={styles.saveFullButton} onPress={handleSave}>
-            <Text style={styles.saveFullButtonText}>Save Instance</Text>
+          <TouchableOpacity 
+            style={[styles.saveFullButton, isSubmitting && styles.disabledButton]} 
+            onPress={handleSave}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.saveFullButtonText}>
+              {isSubmitting ? 'Saving...' : 'Save Instance'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
       
-      {/* Add Cancel Footer */}
-      <CancelFooter />
+      {/* Add Cancel Footer with reset */}
+      <CancelFooter onCancel={() => {
+        // Reset form data when cancelling
+        resetFormData();
+      }} />
       
       <StatusBar style="auto" />
     </SafeAreaView>
@@ -113,6 +189,9 @@ const styles = StyleSheet.create({
     color: '#2a9d8f',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   content: {
     flex: 1,

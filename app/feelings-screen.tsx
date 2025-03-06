@@ -7,21 +7,35 @@ import { Ionicons } from '@expo/vector-icons';
 import { feelingOptions, sensationOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
 
 export default function FeelingsScreen() {
   const router = useRouter();
-  const [physicalFeelings, setPhysicalFeelings] = useState('');
-  const [mentalFeelings, setMentalFeelings] = useState('');
-  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
-  const [selectedSensations, setSelectedSensations] = useState<string[]>([]);
+  const { formData, updateFormData } = useFormContext();
+  
+  // Initialize state from context if available
+  const [physicalFeelings, setPhysicalFeelings] = useState(
+    formData.physicalFeelings || ''
+  );
+  const [mentalFeelings, setMentalFeelings] = useState(
+    formData.mentalFeelings || ''
+  );
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(
+    formData.selectedEmotions || []
+  );
+  const [selectedSensations, setSelectedSensations] = useState<string[]>(
+    formData.selectedSensations || []
+  );
   
   const handleNext = () => {
-    console.log('Saving feelings data:', { 
+    // Save data to context
+    updateFormData({ 
       selectedEmotions,
       selectedSensations,
       physicalFeelings,
       mentalFeelings
     });
+    
     router.push('/thoughts-screen');
   };
 

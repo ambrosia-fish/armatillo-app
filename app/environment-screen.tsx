@@ -7,17 +7,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { environmentOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
 
 export default function EnvironmentScreen() {
   const router = useRouter();
-  const [environmentDetails, setEnvironmentDetails] = useState('');
-  const [selectedEnvironments, setSelectedEnvironments] = useState<string[]>([]);
+  const { formData, updateFormData } = useFormContext();
+  
+  // Initialize state from context if available
+  const [environmentDetails, setEnvironmentDetails] = useState(
+    formData.environmentDetails || ''
+  );
+  const [selectedEnvironments, setSelectedEnvironments] = useState<string[]>(
+    formData.selectedEnvironments || []
+  );
   
   const handleNext = () => {
-    console.log('Saving environment data:', { 
+    // Save data to context
+    updateFormData({
       selectedEnvironments,
-      environmentDetails 
+      environmentDetails
     });
+    
     router.push('/feelings-screen');
   };
 

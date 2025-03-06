@@ -1,23 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
 
 export default function DetailScreen() {
   const router = useRouter();
+  const { formData, updateFormData } = useFormContext();
   
-  // UI state
-  const [urgeStrength, setUrgeStrength] = useState<number | null>(null);
-  const [intentionType, setIntentionType] = useState<string | null>(null);
+  // Initialize state from context if available
+  const [urgeStrength, setUrgeStrength] = useState<number | null>(
+    formData.urgeStrength || null
+  );
+  const [intentionType, setIntentionType] = useState<string | null>(
+    formData.intentionType || null
+  );
 
   const handleNext = () => {
-    // Save the data
-    console.log('Saving detail data:', { 
-      urgeStrength,
-      intentionType
+    // Save the data to context
+    updateFormData({
+      urgeStrength: urgeStrength || undefined,
+      intentionType: intentionType || undefined
     });
     
     // Navigate to the next screen in the questionnaire flow
@@ -117,7 +123,13 @@ export default function DetailScreen() {
       </ScrollView>
       
       {/* Add Cancel Footer */}
-      <CancelFooter />
+      <CancelFooter onCancel={() => {
+        // Reset form data when cancelling
+        updateFormData({
+          urgeStrength: undefined,
+          intentionType: undefined
+        });
+      }} />
       
       <StatusBar style="auto" />
     </SafeAreaView>
