@@ -37,7 +37,10 @@ interface AuthProviderProps {
 // API URLs for different environments
 const getApiUrl = () => {
   if (__DEV__) {
-    return 'http://192.168.0.101:3000/api';
+    // Use localhost for development, which is supported by Google OAuth
+    return 'http://localhost:3000/api';
+    // If you need to use IP instead, you will need a proper domain or ngrok
+    // return 'http://192.168.0.101:3000/api';
   }
   return 'https://api.armatillo.com/api';
 };
