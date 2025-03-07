@@ -37,7 +37,7 @@ interface AuthProviderProps {
 const getApiUrl = () => {
   if (__DEV__) {
     // Use ngrok URL for development
-    return 'https://4936-2600-8805-9080-c100-194-2b43-363-335a.ngrok-free.app/api';
+    return 'https://ba0b-2600-8805-9080-c100-d8b5-4fb6-3bac-1de1.ngrok-free.app';
   }
   return 'https://api.armatillo.com/api';
 };
@@ -180,7 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Construct the OAuth URL to go directly to Google
       // The URL redirects directly to Google's OAuth page
-      const authUrl = `${API_URL}/auth/google-mobile`;
+      const authUrl = `${API_URL}/api/auth/google-mobile`;
       
       console.log('Opening auth URL:', authUrl);
       
