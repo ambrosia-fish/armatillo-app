@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Implemented Google OAuth authentication for user accounts
+  - Added login screen with "Continue with Google" option
+  - Created AuthContext for managing authentication state
+  - Implemented secure token storage using expo-secure-store
+  - Added authentication callback handler for OAuth flow
 - Time selection screen for BFRB incident tracking
   - When user presses the "+" button, a modal opens that allows selecting when the BFRB incident occurred
   - Option to record "Just happened" or select a custom time
@@ -16,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Duration selection for tracking how long the incident lasted
   - Next button to proceed to the tracking workflow
 - Added @react-native-community/datetimepicker dependency for native time selection
+- Added expo-secure-store for secure authentication data storage
+
+### Changed
+- Enhanced storage utility to use SecureStore for sensitive data (auth tokens and user info)
+- Improved security of OAuth implementation
 
 ## [0.1.0] - 2025-03-03
 
