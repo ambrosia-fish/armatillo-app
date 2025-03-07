@@ -3,7 +3,6 @@ import { Alert, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Device from 'expo-device';
-import * as AuthSession from 'expo-auth-session';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { 
   storeAuthTokens, 
@@ -51,7 +50,7 @@ interface AuthProviderProps {
 const getApiUrl = () => {
   if (__DEV__) {
     // Use ngrok URL for development
-    return 'https://ba0b-2600-8805-9080-c100-d8b5-4fb6-3bac-1de1.ngrok-free.app';
+    return 'https://d47b-2600-8805-9080-c100-d8b5-4fb6-3bac-1de1.ngrok-free.app';
   }
   return 'https://api.armatillo.com';
 };
@@ -286,16 +285,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('Handling OAuth callback URL:', url);
       
       // Extract token and parameters from URL
-      const urlParams = new URLSearchParams(url.split('?')[1]);
+      // Remove any hash fragments first
+      const urlWithoutHash = url.split('#')[0];
+      const urlParams = new URLSearchParams(urlWithoutHash.split('?')[1]);
+      
       const newToken = urlParams.get('token');
       const expiresIn = urlParams.get('expires_in');
       const refreshToken = urlParams.get('refresh_token');
       const state = urlParams.get('state');
       
       // Verify the state parameter to prevent CSRF attacks
+      if (!state) {
+        console.error('No state parameter in OAuth callback');
+        throw new Error('Missing state parameter in OAuth callback');
+      }
+      
       const isStateValid = await verifyOAuthState(state);
       if (!isStateValid) {
+        console.error('OAuth state validation failed, possible CSRF attack');
         throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
+      } else {
+        console.log('OAuth state validation successful');
       }
       
       if (!newToken) {
@@ -410,15 +420,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Clear all storage
         await storage.clear();
         
-        // Clear browser sessions using multiple methods
+        // Clear browser sessions using WebBrowser
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
-        
-        // Also use AuthSession to clear sessions
-        await AuthSession.dismissAuthSession();
-        await AuthSession.revokeAsync({
-          redirectUri: 'armatillo://auth/callback'
-        }, {});
         
         // Make sure no lingering OAuth state exists
         await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
@@ -476,7 +480,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clean up browser sessions
       try {
         await WebBrowser.coolDownAsync();
-        await AuthSession.dismissAuthSession();
       } catch (error) {
         console.warn('Error cleaning up browser sessions:', error);
       }
@@ -515,17 +518,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
       
-      // Also attempt to revoke Google OAuth tokens if possible
-      try {
-        await AuthSession.revokeAsync({
-          redirectUri: 'armatillo://auth/callback'
-        }, {});
-        console.log('OAuth tokens revoked');
-      } catch (revokeError) {
-        console.warn('Error revoking OAuth tokens:', revokeError);
-        // Continue with local logout
-      }
-      
       // Then, clear all local auth data
       console.log('Clearing all local auth data...');
       await clearAuthState();
@@ -534,7 +526,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
-        await AuthSession.dismissAuthSession();
         console.log('Browser sessions cleared');
       } catch (browserError) {
         console.warn('Failed to clear browser sessions:', browserError);
