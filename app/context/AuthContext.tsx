@@ -404,7 +404,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // First, ensure any previous session data is cleared
       try {
-        // Clear browser sessions and cookies to prevent automatic login with previous credentials
+        // Clear browser sessions and cookies to prevent automatic login
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
         console.log('Previous browser sessions cleared');
@@ -439,10 +439,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Using device info:', { deviceId, deviceName });
       
-      // Construct the OAuth URL with state parameter
-      const authUrl = `${API_URL}/api/auth/google-mobile?state=${encodeURIComponent(state)}`;
+      // Construct the OAuth URL with state parameter and prompt=select_account to force login screen
+      const authUrl = `${API_URL}/api/auth/google-mobile?state=${encodeURIComponent(state)}&force_login=true&prompt=select_account`;
       
-      console.log('Opening auth URL:', authUrl);
+      console.log('Opening auth URL with forced login:', authUrl);
       
       // Open the browser for authentication with proper return URL
       const redirectUrl = 'armatillo://auth/callback';
@@ -475,7 +475,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       Alert.alert('Login Failed', 'Failed to authenticate with Google. Please try again.');
     } finally {
       // Clean up browser sessions
-      await WebBrowser.coolDownAsync();
+      try {
+        await WebBrowser.coolDownAsync();
+      } catch (error) {
+        console.warn('Error cooling down browser:', error);
+      }
     }
   };
 
