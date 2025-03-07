@@ -54,6 +54,16 @@ This application uses Google OAuth for authentication. Follow these steps to set
    yarn install
    ```
 
+### Security Features
+
+This application implements several security best practices:
+
+1. **Secure Token Storage**: Authentication tokens and user data are stored using Expo SecureStore, which uses the Keychain (iOS) and KeyStore (Android) for encrypted storage, protecting sensitive data even on compromised devices.
+
+2. **OAuth Flow Protection**: The authentication flow utilizes proper URL handling and token management to prevent common authentication attacks.
+
+3. **Token Management**: The app handles token storage, validation, and removal securely throughout the authentication lifecycle.
+
 ### Testing the OAuth Flow
 
 1. Start the backend:
