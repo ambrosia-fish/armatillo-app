@@ -1,10 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // Storage keys
 export const STORAGE_KEYS = {
   TOKEN: 'auth_token',
   USER: 'user_data',
   USER_NAME: 'user_name',
+};
+
+// List of keys that should be stored securely
+const SECURE_KEYS = [
+  STORAGE_KEYS.TOKEN,
+  STORAGE_KEYS.USER,
+];
+
+// Check if a key should be stored securely
+const isSecureKey = (key: string): boolean => {
+  return SECURE_KEYS.includes(key);
 };
 
 /**
@@ -14,10 +26,15 @@ export const STORAGE_KEYS = {
 export const storage = {
   /**
    * Store a string value
+   * Uses SecureStore for sensitive data (tokens), AsyncStorage for non-sensitive data
    */
   setItem: async (key: string, value: string): Promise<void> => {
     try {
-      await AsyncStorage.setItem(key, value);
+      if (isSecureKey(key)) {
+        await SecureStore.setItemAsync(key, value);
+      } else {
+        await AsyncStorage.setItem(key, value);
+      }
     } catch (error) {
       console.error(`Error storing ${key}:`, error);
       throw error;
@@ -26,10 +43,15 @@ export const storage = {
 
   /**
    * Retrieve a string value
+   * Uses SecureStore for sensitive data (tokens), AsyncStorage for non-sensitive data
    */
   getItem: async (key: string): Promise<string | null> => {
     try {
-      return await AsyncStorage.getItem(key);
+      if (isSecureKey(key)) {
+        return await SecureStore.getItemAsync(key);
+      } else {
+        return await AsyncStorage.getItem(key);
+      }
     } catch (error) {
       console.error(`Error retrieving ${key}:`, error);
       throw error;
@@ -38,10 +60,15 @@ export const storage = {
 
   /**
    * Remove a value
+   * Uses SecureStore for sensitive data (tokens), AsyncStorage for non-sensitive data
    */
   removeItem: async (key: string): Promise<void> => {
     try {
-      await AsyncStorage.removeItem(key);
+      if (isSecureKey(key)) {
+        await SecureStore.deleteItemAsync(key);
+      } else {
+        await AsyncStorage.removeItem(key);
+      }
     } catch (error) {
       console.error(`Error removing ${key}:`, error);
       throw error;
@@ -50,11 +77,16 @@ export const storage = {
 
   /**
    * Store an object value (serialized as JSON)
+   * Uses SecureStore for sensitive data (user info), AsyncStorage for non-sensitive data
    */
   setObject: async <T>(key: string, value: T): Promise<void> => {
     try {
       const jsonValue = JSON.stringify(value);
-      await AsyncStorage.setItem(key, jsonValue);
+      if (isSecureKey(key)) {
+        await SecureStore.setItemAsync(key, jsonValue);
+      } else {
+        await AsyncStorage.setItem(key, jsonValue);
+      }
     } catch (error) {
       console.error(`Error storing object ${key}:`, error);
       throw error;
@@ -63,10 +95,16 @@ export const storage = {
 
   /**
    * Retrieve an object value (parsed from JSON)
+   * Uses SecureStore for sensitive data (user info), AsyncStorage for non-sensitive data
    */
   getObject: async <T>(key: string): Promise<T | null> => {
     try {
-      const jsonValue = await AsyncStorage.getItem(key);
+      let jsonValue;
+      if (isSecureKey(key)) {
+        jsonValue = await SecureStore.getItemAsync(key);
+      } else {
+        jsonValue = await AsyncStorage.getItem(key);
+      }
       return jsonValue != null ? JSON.parse(jsonValue) : null;
     } catch (error) {
       console.error(`Error retrieving object ${key}:`, error);
@@ -76,10 +114,17 @@ export const storage = {
 
   /**
    * Clear all stored data
+   * Clears both AsyncStorage and SecureStore
    */
   clear: async (): Promise<void> => {
     try {
+      // Clear AsyncStorage
       await AsyncStorage.clear();
+      
+      // Clear SecureStore (need to delete each key individually)
+      for (const key of SECURE_KEYS) {
+        await SecureStore.deleteItemAsync(key);
+      }
     } catch (error) {
       console.error('Error clearing storage:', error);
       throw error;
