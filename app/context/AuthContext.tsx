@@ -383,6 +383,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Check if this is an authorization code flow or token response
       const authCode = urlParams.get('code');
       const state = urlParams.get('state');
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      
+      // Check for errors in the callback
+      if (error) {
+        console.error(`OAuth error: ${error}: ${errorDescription || 'No description'}`);
+        throw new Error(`OAuth error: ${error}: ${errorDescription || 'Authentication error'}`);
+      }
       
       // For authorization code flow
       if (authCode) {
@@ -415,6 +423,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         // Get the code verifier that was stored during login
         const codeVerifier = await getStoredCodeVerifier();
+        console.log('Retrieved code verifier from storage:', codeVerifier);
+        
         if (!codeVerifier) {
           console.error('No code verifier found in storage');
           throw new Error('Missing PKCE code verifier');
@@ -422,6 +432,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         // Exchange the authorization code for tokens using PKCE
         console.log('Exchanging authorization code for tokens using PKCE...');
+        console.log('Token request data:', {
+          grant_type: 'authorization_code',
+          code: authCode,
+          code_verifier: codeVerifier,
+          redirect_uri: 'armatillo://auth/callback'
+        });
+        
         const tokenResponse = await fetch(`${API_URL}/api/auth/token`, {
           method: 'POST',
           headers: {
@@ -435,18 +452,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
           })
         });
         
+        // Log the raw response for debugging
+        const tokenResponseText = await tokenResponse.text();
+        console.log('Token response status:', tokenResponse.status);
+        console.log('Token response:', tokenResponseText);
+        
         if (!tokenResponse.ok) {
-          const errorText = await tokenResponse.text();
-          console.error('Token exchange failed:', errorText);
+          console.error('Token exchange failed:', tokenResponseText);
           
           // Increment auth failure count
           authFailureCount++;
           
-          throw new Error(`Failed to exchange code for token: ${tokenResponse.status} ${errorText}`);
+          throw new Error(`Failed to exchange code for token: ${tokenResponse.status} ${tokenResponseText}`);
         }
         
         // Parse token response
-        const tokenData = await tokenResponse.json();
+        let tokenData;
+        try {
+          tokenData = JSON.parse(tokenResponseText);
+        } catch (e) {
+          console.error('Failed to parse token response as JSON:', e);
+          throw new Error('Invalid token response format');
+        }
         
         // Clear code verifier after use
         await clearCodeVerifier();
@@ -645,11 +672,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Generate a state parameter to prevent CSRF attacks
       const state = await generateOAuthState();
-      console.log('Generated new OAuth state');
+      console.log('Generated new OAuth state:', state);
       
       // Generate PKCE challenge
       const { codeVerifier, codeChallenge } = await generatePKCEChallenge();
-      console.log('Generated PKCE code verifier and challenge');
+      console.log('Generated PKCE code verifier:', codeVerifier);
+      console.log('Generated PKCE code challenge:', codeChallenge);
       
       // Construct the OAuth URL with PKCE and state parameters
       const timestamp = Date.now(); // Add timestamp to prevent caching
