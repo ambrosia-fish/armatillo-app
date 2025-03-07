@@ -185,18 +185,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Clear authentication state
   const clearAuthState = async () => {
     try {
-      // Clear all auth tokens
-      await clearAuthTokens();
+      console.log('Clearing authentication state...');
       
-      // Clear user data
-      await storage.removeItem(STORAGE_KEYS.USER);
-      await storage.removeItem(STORAGE_KEYS.USER_NAME);
-      
-      // Clear any OAuth state or PKCE verifiers
-      await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
-      await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
-      
-      console.log('All auth state cleared completely');
+      // Use the storage.clear() method to clean everything
+      await storage.clear();
       
       // Update state
       setToken(null);
@@ -207,6 +199,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         clearTimeout(tokenRefreshTimeout);
         tokenRefreshTimeout = null;
       }
+      
+      console.log('Authentication state cleared successfully');
     } catch (error) {
       console.error('Error clearing auth state:', error);
     }
@@ -404,15 +398,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Function to initiate Google OAuth login
   const login = async () => {
     try {
+      console.log('Starting login process...');
       setIsLoading(true);
       setInProgress(true);
       
-      // This performs an important step to handle the Google OAuth correctly
-      // It will clear any existing sessions, preventing cached states
-      await WebBrowser.warmUpAsync();
+      // First, ensure any previous session data is cleared
+      try {
+        // Clear browser sessions and cookies to prevent automatic login with previous credentials
+        await WebBrowser.warmUpAsync();
+        await WebBrowser.coolDownAsync();
+        console.log('Previous browser sessions cleared');
+        
+        // Make sure no lingering OAuth state exists
+        await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
+        await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
+      } catch (clearError) {
+        console.warn('Error clearing previous sessions:', clearError);
+        // Continue anyway as this is just a precaution
+      }
       
       // Generate a state parameter to prevent CSRF attacks
       const state = await generateOAuthState();
+      console.log('Generated new OAuth state');
       
       // Get device info to use in the OAuth request
       let deviceName = 'Armatillo Device';
@@ -445,7 +452,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         {
           // Prevent reusing previous session
           createTask: true,
-          showInRecents: false
+          showInRecents: false,
+          dismissButtonStyle: 'close',
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN
         }
       );
       
@@ -473,6 +482,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Function to logout
   const logout = async () => {
     try {
+      console.log('Starting logout process...');
       setIsLoading(true);
       
       // Get token for logout request
