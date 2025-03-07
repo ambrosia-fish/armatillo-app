@@ -3,12 +3,16 @@ import { Alert, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Device from 'expo-device';
+import * as Crypto from 'expo-crypto';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { 
   storeAuthTokens, 
   isTokenExpired, 
   getTokenTimeRemaining, 
-  clearAuthTokens 
+  clearAuthTokens,
+  validateToken,
+  blacklistToken,
+  reportCompromisedToken
 } from '../utils/tokenUtils';
 import {
   generateOAuthState,
@@ -39,6 +43,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   handleOAuthCallback: (url: string) => Promise<void>;
   refreshTokenIfNeeded: () => Promise<boolean>;
+  reportSuspiciousActivity: (reason: string) => Promise<void>;
 }
 
 // Create the context with a default undefined value
@@ -63,6 +68,12 @@ const API_URL = getApiUrl();
 
 // Token refresh timeout reference
 let tokenRefreshTimeout: NodeJS.Timeout | null = null;
+
+// Max consecutive authentication failures before triggering security measures
+const MAX_AUTH_FAILURES = 3;
+
+// Counter for consecutive authentication failures
+let authFailureCount = 0;
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -112,6 +123,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
 
         if (storedToken && storedUser) {
+          // Validate the token (signature verification + blacklist check)
+          const isTokenValid = await validateToken(storedToken);
+          
+          if (!isTokenValid) {
+            console.log('Token validation failed - invalid signature or blacklisted');
+            await clearAuthState();
+            router.replace('/login');
+            return;
+          }
+          
           // Check if token is expired or about to expire
           if (await isTokenExpired()) {
             console.log('Token expired on app start, attempting refresh');
@@ -233,6 +254,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (!response.ok) {
         console.error('Failed to refresh token:', await response.text());
+        
+        // If server rejects the refresh token, it might be compromised
+        if (response.status === 401) {
+          // Blacklist this refresh token
+          console.log('Refresh token rejected by server, possibly compromised');
+          await blacklistToken(refreshToken, 'server_rejected_refresh');
+        }
+        
         return false;
       }
       
@@ -268,15 +297,74 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Refresh token if needed (can be called externally)
   const refreshTokenIfNeeded = async (): Promise<boolean> => {
     try {
+      // Check if token is valid
+      const currentToken = await storage.getItem(STORAGE_KEYS.TOKEN);
+      if (currentToken) {
+        const isValid = await validateToken(currentToken);
+        if (!isValid) {
+          console.log('Token validation failed, requiring refresh');
+          return await refreshToken();
+        }
+      }
+      
       // Check if token is expired or about to expire
       if (await isTokenExpired()) {
         return await refreshToken();
       }
+      
       // Token is still valid
       return true;
     } catch (error) {
       console.error('Error in refreshTokenIfNeeded:', error);
       return false;
+    }
+  };
+
+  // Report suspicious activity (compromised tokens)
+  const reportSuspiciousActivity = async (reason: string): Promise<void> => {
+    try {
+      const currentToken = token;
+      if (currentToken) {
+        console.log(`Reporting suspicious activity: ${reason}`);
+        
+        // Blacklist the current token
+        await reportCompromisedToken(currentToken, reason);
+        
+        // Notify the server if possible (in a real app, this would also alert security teams)
+        try {
+          await fetch(`${API_URL}/api/auth/report-security-event`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+              reason,
+              tokenFingerprint: await Crypto.digestStringAsync(
+                Crypto.CryptoDigestAlgorithm.SHA256,
+                currentToken
+              )
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to notify server of security event:', error);
+        }
+        
+        // Log out user immediately
+        await clearAuthState();
+        
+        // Show alert to user
+        Alert.alert(
+          'Security Alert',
+          'For your safety, you have been logged out due to suspicious activity. Please log in again.',
+          [{ text: 'OK', onPress: () => router.replace('/login') }]
+        );
+      }
+    } catch (error) {
+      console.error('Error reporting suspicious activity:', error);
+      
+      // Force logout anyway for safety
+      await clearAuthState();
+      router.replace('/login');
     }
   };
 
@@ -309,9 +397,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const isStateValid = await verifyOAuthState(state);
         if (!isStateValid) {
           console.error('OAuth state validation failed, possible CSRF attack');
+          
+          // Increment auth failure count
+          authFailureCount++;
+          
+          // If too many failures, report suspicious activity
+          if (authFailureCount >= MAX_AUTH_FAILURES) {
+            await reportSuspiciousActivity('multiple_csrf_validation_failures');
+          }
+          
           throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
         } else {
           console.log('OAuth state validation successful');
+          // Reset auth failure count on success
+          authFailureCount = 0;
         }
         
         // Get the code verifier that was stored during login
@@ -339,6 +438,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!tokenResponse.ok) {
           const errorText = await tokenResponse.text();
           console.error('Token exchange failed:', errorText);
+          
+          // Increment auth failure count
+          authFailureCount++;
+          
           throw new Error(`Failed to exchange code for token: ${tokenResponse.status} ${errorText}`);
         }
         
@@ -376,9 +479,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const isStateValid = await verifyOAuthState(state);
         if (!isStateValid) {
           console.error('OAuth state validation failed, possible CSRF attack');
+          
+          // Increment auth failure count
+          authFailureCount++;
+          
+          // If too many failures, report suspicious activity
+          if (authFailureCount >= MAX_AUTH_FAILURES) {
+            await reportSuspiciousActivity('multiple_csrf_validation_failures');
+          }
+          
           throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
         } else {
           console.log('OAuth state validation successful');
+          // Reset auth failure count on success
+          authFailureCount = 0;
         }
         
         if (!newToken) {
@@ -430,6 +544,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API response not OK:', errorText);
+        
+        // If unauthorized, the token might be compromised
+        if (response.status === 401) {
+          await blacklistToken(newToken, 'unauthorized_user_fetch');
+        }
+        
         throw new Error(`Failed to fetch user data: ${response.status} ${errorText}`);
       }
       
@@ -655,6 +775,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     handleOAuthCallback: handleAuthResponse,
     refreshTokenIfNeeded,
+    reportSuspiciousActivity
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
