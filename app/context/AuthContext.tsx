@@ -39,7 +39,7 @@ const getApiUrl = () => {
     // Use ngrok URL for development
     return 'https://ba0b-2600-8805-9080-c100-d8b5-4fb6-3bac-1de1.ngrok-free.app';
   }
-  return 'https://api.armatillo.com/api';
+  return 'https://api.armatillo.com';
 };
 
 // API URL
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Fetch user data with the token
       console.log('Fetching user data from API');
-      const response = await fetch(`${API_URL}/auth/me`, {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${newToken}`,
         },
@@ -176,7 +176,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.warn('Could not get device info:', deviceError);
       }
       
-      console.log('Using device info:', { deviceName, deviceId });
+      console.log('Using device info:', { deviceId, deviceName });
       
       // Construct the OAuth URL to go directly to Google
       // The URL redirects directly to Google's OAuth page
@@ -234,7 +234,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Call API to invalidate session
       try {
-        await fetch(`${API_URL}/auth/logout`, {
+        await fetch(`${API_URL}/api/auth/logout`, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
