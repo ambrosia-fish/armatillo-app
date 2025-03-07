@@ -66,7 +66,9 @@ This application implements several security best practices:
 
 4. **API Error Recovery**: If an API request fails due to an expired token, the app automatically attempts to refresh the token and retry the request, providing a seamless experience for users.
 
-5. **OAuth Flow Protection**: The authentication flow utilizes proper URL handling and token management to prevent common authentication attacks.
+5. **CSRF Protection**: The authentication flow implements state parameters to prevent Cross-Site Request Forgery attacks, ensuring that authentication requests originate from the app and not from malicious sources.
+
+6. **OAuth Flow Protection**: The authentication flow utilizes proper URL handling and token management to prevent common authentication attacks.
 
 ### Testing the OAuth Flow
 
@@ -107,4 +109,4 @@ This project uses React Native with Expo and follows the Expo Router file-based 
 - `/app/context` - React context providers for state management
 - `/app/services` - API service for backend communication
 - `/app/components` - Reusable UI components
-- `/app/utils` - Utility functions including token management
+- `/app/utils` - Utility functions including token management and security utilities
