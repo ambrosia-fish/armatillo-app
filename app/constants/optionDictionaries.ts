@@ -165,3 +165,15 @@ export const sensoryOptions: OptionItem[] = [
   { id: 'stickiness', label: 'stickiness', emoji: '🍯' },
   { id: 'irregularity', label: 'irregularity', emoji: '〰️' },
 ];
+
+// Create a wrapper object for default export
+const OptionDictionaries = {
+  triggerOptions,
+  environmentOptions,
+  feelingOptions,
+  sensationOptions,
+  thoughtOptions,
+  sensoryOptions
+};
+
+export default OptionDictionaries;
