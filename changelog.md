@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created token utility functions for better security
 - Added CSRF protection in OAuth flow
   - Implemented state parameter generation and validation
-  - Created secure random utilities using expo-random
+  - Created secure random utilities using native crypto methods
   - Added protection against authentication hijacking attacks
   - Prepared foundation for future PKCE implementation
 - Time selection screen for BFRB incident tracking
@@ -33,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added dependencies
   - @react-native-community/datetimepicker for native time selection
   - expo-secure-store for secure authentication data storage
-  - expo-random for generating secure random values
 
 ### Changed
 - Enhanced storage utility to use SecureStore for sensitive data (auth tokens and user info)
@@ -42,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced OAuth flow with CSRF protection
 - Improved error handling for authentication flows
 - Modified logout process to properly clean up tokens and session data
+- Used native crypto methods instead of external dependencies for random string generation
 
 ## [0.1.0] - 2025-03-03
 
