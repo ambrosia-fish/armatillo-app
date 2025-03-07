@@ -327,14 +327,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userData = await response.json();
       console.log('User data received');
       
-      // Save user data to storage
-      await storage.setObject(STORAGE_KEYS.USER, userData.user);
-      setUser(userData.user);
-      
-      // Store user display name separately for easier access
-      if (userData.user && userData.user.displayName) {
-        await storage.setItem(STORAGE_KEYS.USER_NAME, userData.user.displayName);
-        console.log('User display name stored:', userData.user.displayName);
+      // Save user data to storage - ensure it's a valid object before storing
+      if (userData.user) {
+        try {
+          // Store user data as an object - storage.setObject will handle the JSON stringification
+          await storage.setObject(STORAGE_KEYS.USER, userData.user);
+          setUser(userData.user);
+          
+          // Store user display name separately for easier access
+          if (userData.user.displayName) {
+            await storage.setItem(STORAGE_KEYS.USER_NAME, userData.user.displayName);
+            console.log('User display name stored:', userData.user.displayName);
+          }
+        } catch (storageError) {
+          console.error('Error storing user data:', storageError);
+          throw new Error('Failed to store user data securely');
+        }
+      } else {
+        throw new Error('Invalid user data received from API');
       }
       
       // Navigate to home screen
