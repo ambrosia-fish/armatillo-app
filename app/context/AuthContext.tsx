@@ -3,6 +3,7 @@ import { Alert, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Device from 'expo-device';
+import * as AuthSession from 'expo-auth-session';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { 
   storeAuthTokens, 
@@ -402,59 +403,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       setInProgress(true);
       
-      // First, ensure any previous session data is cleared
+      // First, deeply clean any previous auth sessions
+      console.log('Clearing ALL browser sessions and auth data...');
+      
       try {
-        // Clear browser sessions and cookies to prevent automatic login
+        // Clear all storage
+        await storage.clear();
+        
+        // Clear browser sessions using multiple methods
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
-        console.log('Previous browser sessions cleared');
+        
+        // Also use AuthSession to clear sessions
+        await AuthSession.dismissAuthSession();
+        await AuthSession.revokeAsync({
+          redirectUri: 'armatillo://auth/callback'
+        }, {});
         
         // Make sure no lingering OAuth state exists
         await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
         await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
+        
+        console.log('All authentication sessions and data cleared');
       } catch (clearError) {
         console.warn('Error clearing previous sessions:', clearError);
-        // Continue anyway as this is just a precaution
+        // Continue anyway
       }
       
       // Generate a state parameter to prevent CSRF attacks
       const state = await generateOAuthState();
       console.log('Generated new OAuth state');
       
-      // Get device info to use in the OAuth request
-      let deviceName = 'Armatillo Device';
-      let deviceId = 'armatillo_dev_device';
+      // Construct the OAuth URL with MULTIPLE parameters to force new login
+      const timestamp = Date.now(); // Add timestamp to prevent caching
+      const randomNonce = Math.random().toString(36).substring(2); // Random nonce for uniqueness
       
-      try {
-        // Get device model and brand information
-        const model = Device.modelName || 'Unknown Model';
-        const brand = Device.brandName || 'Unknown Brand';
-        deviceName = `${brand} ${model}`;
-        
-        // Create a unique device ID using available device info
-        deviceId = `${Device.osName}_${Device.osVersion}_${Device.deviceYearClass || '2023'}`;
-      } catch (deviceError) {
-        console.warn('Could not get device info:', deviceError);
-      }
-      
-      console.log('Using device info:', { deviceId, deviceName });
-      
-      // Construct the OAuth URL with state parameter and prompt=select_account to force login screen
-      const authUrl = `${API_URL}/api/auth/google-mobile?state=${encodeURIComponent(state)}&force_login=true&prompt=select_account`;
+      // Create a unique custom login URL with required parameters for forced login
+      const authUrl = `${API_URL}/api/auth/google-mobile?state=${encodeURIComponent(state)}&force_login=true&prompt=select_account&login_hint=&authuser=&nonce=${randomNonce}&timestamp=${timestamp}&use_incognito=true`;
       
       console.log('Opening auth URL with forced login:', authUrl);
       
-      // Open the browser for authentication with proper return URL
-      const redirectUrl = 'armatillo://auth/callback';
+      // Use a direct in-app browser instead of WebBrowser.openAuthSessionAsync
+      // This gives us more control over the browser session
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
-        redirectUrl,
+        'armatillo://auth/callback',
         {
-          // Prevent reusing previous session
           createTask: true,
           showInRecents: false,
           dismissButtonStyle: 'close',
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+          preferEphemeralSession: true // Use ephemeral/incognito mode if available
         }
       );
       
@@ -477,8 +476,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clean up browser sessions
       try {
         await WebBrowser.coolDownAsync();
+        await AuthSession.dismissAuthSession();
       } catch (error) {
-        console.warn('Error cooling down browser:', error);
+        console.warn('Error cleaning up browser sessions:', error);
       }
     }
   };
@@ -486,7 +486,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Function to logout
   const logout = async () => {
     try {
-      console.log('Starting logout process...');
+      console.log('Starting complete logout process...');
       setIsLoading(true);
       
       // Get token for logout request
@@ -515,21 +515,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
       
+      // Also attempt to revoke Google OAuth tokens if possible
+      try {
+        await AuthSession.revokeAsync({
+          redirectUri: 'armatillo://auth/callback'
+        }, {});
+        console.log('OAuth tokens revoked');
+      } catch (revokeError) {
+        console.warn('Error revoking OAuth tokens:', revokeError);
+        // Continue with local logout
+      }
+      
       // Then, clear all local auth data
       console.log('Clearing all local auth data...');
       await clearAuthState();
       
-      // Also clear any browser sessions (important to prevent auto-login)
+      // Also clear any browser sessions 
       try {
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
+        await AuthSession.dismissAuthSession();
         console.log('Browser sessions cleared');
       } catch (browserError) {
         console.warn('Failed to clear browser sessions:', browserError);
       }
       
       // Finally, navigate to login screen
-      console.log('Logout complete, navigating to login screen');
+      console.log('Complete logout process finished, navigating to login screen');
       router.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
