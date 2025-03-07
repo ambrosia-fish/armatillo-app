@@ -183,24 +183,38 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const router = useRouter();
 
-  // Save app state when navigating
+  // Save app state when navigating - Fixed router state listener
   useEffect(() => {
-    // Listen for route changes to save state
-    const unsubscribe = router.addListener('state', () => {
-      // Get current route info
-      const currentRoute = router.state.key;
-      if (currentRoute) {
-        // Save state on important navigation events
-        crashRecovery.saveCurrentAppState({
-          currentRoute,
-          timestamp: Date.now()
-        });
-      }
-    });
+    // Check if router has the addListener method before using it
+    if (router && typeof router.addListener === 'function') {
+      // Listen for route changes to save state
+      const unsubscribe = router.addListener('state', () => {
+        // Get current route info
+        const currentRoute = router.state?.key;
+        if (currentRoute) {
+          // Save state on important navigation events
+          crashRecovery.saveCurrentAppState({
+            currentRoute,
+            timestamp: Date.now()
+          });
+        }
+      });
 
-    return () => {
-      unsubscribe();
-    };
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
+    } else {
+      // Fallback for when router.addListener is not available
+      console.log('Router listener not available, using manual state saving');
+      
+      // Save initial state
+      crashRecovery.saveCurrentAppState({
+        initialRoute: true,
+        timestamp: Date.now()
+      });
+    }
   }, [router]);
 
   // Screen options for BFRB tracking flow
