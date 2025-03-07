@@ -12,7 +12,8 @@ import {
 } from '../utils/tokenUtils';
 import {
   generateOAuthState,
-  verifyOAuthState
+  verifyOAuthState,
+  SECURITY_KEYS
 } from '../utils/securityUtils';
 
 // Define the type for user data
@@ -183,21 +184,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Clear authentication state
   const clearAuthState = async () => {
-    // Clear all auth tokens
-    await clearAuthTokens();
-    
-    // Clear user data
-    await storage.removeItem(STORAGE_KEYS.USER);
-    await storage.removeItem(STORAGE_KEYS.USER_NAME);
-    
-    // Update state
-    setToken(null);
-    setUser(null);
-    
-    // Clear token refresh timeout
-    if (tokenRefreshTimeout) {
-      clearTimeout(tokenRefreshTimeout);
-      tokenRefreshTimeout = null;
+    try {
+      // Clear all auth tokens
+      await clearAuthTokens();
+      
+      // Clear user data
+      await storage.removeItem(STORAGE_KEYS.USER);
+      await storage.removeItem(STORAGE_KEYS.USER_NAME);
+      
+      // Clear any OAuth state or PKCE verifiers
+      await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
+      await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
+      
+      console.log('All auth state cleared completely');
+      
+      // Update state
+      setToken(null);
+      setUser(null);
+      
+      // Clear token refresh timeout
+      if (tokenRefreshTimeout) {
+        clearTimeout(tokenRefreshTimeout);
+        tokenRefreshTimeout = null;
+      }
+    } catch (error) {
+      console.error('Error clearing auth state:', error);
     }
   };
 
@@ -467,26 +478,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Get token for logout request
       const currentToken = token;
       
-      // Clear auth state (tokens and user data)
-      await clearAuthState();
-      
-      // Call API to invalidate session
+      // First, try to call the API to invalidate the session server-side
       if (currentToken) {
         try {
-          await fetch(`${API_URL}/api/auth/logout`, {
+          console.log('Calling logout API endpoint...');
+          const response = await fetch(`${API_URL}/api/auth/logout`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${currentToken}`,
             },
           });
+          
+          if (response.ok) {
+            console.log('Server-side logout successful');
+          } else {
+            console.warn('Server-side logout returned error:', await response.text());
+          }
         } catch (error) {
           console.warn('Error calling logout endpoint:', error);
           // Continue with local logout even if the API call fails
         }
       }
       
-      // Navigate to login
+      // Then, clear all local auth data
+      console.log('Clearing all local auth data...');
+      await clearAuthState();
+      
+      // Also clear any browser sessions (important to prevent auto-login)
+      try {
+        await WebBrowser.warmUpAsync();
+        await WebBrowser.coolDownAsync();
+        console.log('Browser sessions cleared');
+      } catch (browserError) {
+        console.warn('Failed to clear browser sessions:', browserError);
+      }
+      
+      // Finally, navigate to login screen
+      console.log('Logout complete, navigating to login screen');
       router.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
