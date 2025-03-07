@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,11 +8,14 @@ import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
+import { useAuth } from './context/AuthContext';
 import { instancesApi } from './services/api';
+import storage, { STORAGE_KEYS } from './utils/storage';
 
 export default function NotesScreen() {
   const router = useRouter();
   const { formData, updateFormData, resetFormData } = useFormContext();
+  const { user } = useAuth();
   
   // Track loading state for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +27,22 @@ export default function NotesScreen() {
   const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>(
     formData.selectedSensoryTriggers || []
   );
+
+  // Store user name in AsyncStorage when available
+  useEffect(() => {
+    const storeUserName = async () => {
+      if (user && user.displayName) {
+        try {
+          await storage.setItem(STORAGE_KEYS.USER_NAME, user.displayName);
+          console.log('User name stored in AsyncStorage:', user.displayName);
+        } catch (error) {
+          console.error('Error storing user name:', error);
+        }
+      }
+    };
+
+    storeUserName();
+  }, [user]);
   
   const handleSave = async () => {
     // Prevent double submission
@@ -32,17 +51,31 @@ export default function NotesScreen() {
     try {
       setIsSubmitting(true);
       
+      // Get user name from auth context or AsyncStorage
+      let userName = '';
+      if (user && user.displayName) {
+        userName = user.displayName;
+      } else {
+        // Fallback to AsyncStorage if user object isn't available
+        const storedUserName = await storage.getItem(STORAGE_KEYS.USER_NAME);
+        if (storedUserName) {
+          userName = storedUserName;
+        }
+      }
+      
       // Save final data to context
       updateFormData({
         selectedSensoryTriggers,
-        notes
+        notes,
+        userName
       });
       
       // Prepare complete data to send to API
       const completeData = {
         ...formData,
         selectedSensoryTriggers,
-        notes
+        notes,
+        userName
       };
       
       // Send data to API using our API service
