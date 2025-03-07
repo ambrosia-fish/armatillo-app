@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created AuthContext for managing authentication state
   - Implemented secure token storage using expo-secure-store
   - Added authentication callback handler for OAuth flow
+- Enhanced token security and management
+  - Added token expiration tracking and automatic refresh
+  - Implemented proactive token refresh before expiration
+  - Added token validation to prevent using expired tokens
+  - Created token utility functions for better security
 - Time selection screen for BFRB incident tracking
   - When user presses the "+" button, a modal opens that allows selecting when the BFRB incident occurred
   - Option to record "Just happened" or select a custom time
@@ -25,7 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Enhanced storage utility to use SecureStore for sensitive data (auth tokens and user info)
-- Improved security of OAuth implementation
+- Improved API service to automatically handle token expiration and refresh
+- Updated AuthContext to handle token expiration and scheduling proactive refreshes
+- Improved error handling for authentication flows
+- Modified logout process to properly clean up tokens and session data
 
 ## [0.1.0] - 2025-03-03
 
