@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented proactive token refresh before expiration
   - Added token validation to prevent using expired tokens
   - Created token utility functions for better security
+- Added CSRF protection in OAuth flow
+  - Implemented state parameter generation and validation
+  - Created secure random utilities using expo-random
+  - Added protection against authentication hijacking attacks
+  - Prepared foundation for future PKCE implementation
 - Time selection screen for BFRB incident tracking
   - When user presses the "+" button, a modal opens that allows selecting when the BFRB incident occurred
   - Option to record "Just happened" or select a custom time
@@ -25,13 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added "Custom" option with native time picker for precise time selection
   - Duration selection for tracking how long the incident lasted
   - Next button to proceed to the tracking workflow
-- Added @react-native-community/datetimepicker dependency for native time selection
-- Added expo-secure-store for secure authentication data storage
+- Added dependencies
+  - @react-native-community/datetimepicker for native time selection
+  - expo-secure-store for secure authentication data storage
+  - expo-random for generating secure random values
 
 ### Changed
 - Enhanced storage utility to use SecureStore for sensitive data (auth tokens and user info)
 - Improved API service to automatically handle token expiration and refresh
 - Updated AuthContext to handle token expiration and scheduling proactive refreshes
+- Enhanced OAuth flow with CSRF protection
 - Improved error handling for authentication flows
 - Modified logout process to properly clean up tokens and session data
 
