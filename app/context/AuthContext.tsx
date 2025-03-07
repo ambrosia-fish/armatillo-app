@@ -791,3 +791,11 @@ export function useAuth() {
 
   return context;
 }
+
+// Create a default export
+const Auth = {
+  AuthProvider,
+  useAuth
+};
+
+export default Auth;
