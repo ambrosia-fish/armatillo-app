@@ -4,6 +4,12 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Device from 'expo-device';
 import storage, { STORAGE_KEYS } from '../utils/storage';
+import { 
+  storeAuthTokens, 
+  isTokenExpired, 
+  getTokenTimeRemaining, 
+  clearAuthTokens 
+} from '../utils/tokenUtils';
 
 // Define the type for user data
 interface User {
@@ -23,6 +29,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  handleOAuthCallback: (url: string) => Promise<void>;
+  refreshTokenIfNeeded: () => Promise<boolean>;
 }
 
 // Create the context with a default undefined value
@@ -44,6 +52,9 @@ const getApiUrl = () => {
 
 // API URL
 const API_URL = getApiUrl();
+
+// Token refresh timeout reference
+let tokenRefreshTimeout: NodeJS.Timeout | null = null;
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -73,6 +84,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [inProgress]);
 
+  // Clean up token refresh timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tokenRefreshTimeout) {
+        clearTimeout(tokenRefreshTimeout);
+      }
+    };
+  }, []);
+
   // Load the user's authentication state on app start
   useEffect(() => {
     const loadAuthState = async () => {
@@ -84,7 +104,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
 
         if (storedToken && storedUser) {
-          setToken(storedToken);
+          // Check if token is expired or about to expire
+          if (await isTokenExpired()) {
+            console.log('Token expired on app start, attempting refresh');
+            const refreshed = await refreshToken();
+            if (!refreshed) {
+              // Refresh failed, clear auth state and redirect to login
+              await clearAuthState();
+              router.replace('/login');
+              return;
+            }
+          } else {
+            // Token is valid, set it
+            setToken(storedToken);
+            
+            // Schedule token refresh before it expires
+            scheduleTokenRefresh();
+          }
+          
+          // Set user data
           setUser(storedUser);
           
           // Store user display name separately for easier access
@@ -94,6 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error('Failed to load authentication state:', error);
+        await clearAuthState();
       } finally {
         setIsLoading(false);
       }
@@ -102,6 +141,133 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loadAuthState();
   }, []);
 
+  // Schedule token refresh before it expires
+  const scheduleTokenRefresh = async () => {
+    try {
+      // Clear any existing timeout
+      if (tokenRefreshTimeout) {
+        clearTimeout(tokenRefreshTimeout);
+      }
+      
+      // Get time remaining until token expires
+      const timeRemaining = await getTokenTimeRemaining();
+      
+      if (timeRemaining <= 0) {
+        // Token already expired, refresh now
+        refreshToken();
+        return;
+      }
+      
+      // Schedule refresh for 1 minute before expiration or at half of the remaining time,
+      // whichever is sooner (but at least 5 seconds before expiry)
+      const refreshTime = Math.min(
+        timeRemaining - 60000, // 1 minute before expiry
+        timeRemaining / 2      // Half of remaining time
+      );
+      const refreshDelay = Math.max(refreshTime, 5000); // At least 5 seconds before expiry
+      
+      console.log(`Scheduling token refresh in ${refreshDelay / 1000} seconds`);
+      
+      tokenRefreshTimeout = setTimeout(async () => {
+        console.log('Executing scheduled token refresh');
+        await refreshToken();
+      }, refreshDelay);
+    } catch (error) {
+      console.error('Error scheduling token refresh:', error);
+    }
+  };
+
+  // Clear authentication state
+  const clearAuthState = async () => {
+    // Clear all auth tokens
+    await clearAuthTokens();
+    
+    // Clear user data
+    await storage.removeItem(STORAGE_KEYS.USER);
+    await storage.removeItem(STORAGE_KEYS.USER_NAME);
+    
+    // Update state
+    setToken(null);
+    setUser(null);
+    
+    // Clear token refresh timeout
+    if (tokenRefreshTimeout) {
+      clearTimeout(tokenRefreshTimeout);
+      tokenRefreshTimeout = null;
+    }
+  };
+
+  // Refresh the access token
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      console.log('Attempting to refresh token');
+      
+      // Get refresh token
+      const refreshToken = await storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      
+      if (!refreshToken) {
+        console.log('No refresh token available');
+        return false;
+      }
+      
+      // Call refresh token endpoint
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to refresh token:', await response.text());
+        return false;
+      }
+      
+      // Parse response
+      const data = await response.json();
+      
+      if (!data.token) {
+        console.error('Invalid refresh response:', data);
+        return false;
+      }
+      
+      // Store new tokens
+      await storeAuthTokens(
+        data.token,
+        data.expiresIn || undefined,
+        data.refreshToken || refreshToken // Use new refresh token if provided, otherwise keep the current one
+      );
+      
+      // Update token state
+      setToken(data.token);
+      
+      // Schedule next refresh
+      scheduleTokenRefresh();
+      
+      console.log('Token refreshed successfully');
+      return true;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return false;
+    }
+  };
+
+  // Refresh token if needed (can be called externally)
+  const refreshTokenIfNeeded = async (): Promise<boolean> => {
+    try {
+      // Check if token is expired or about to expire
+      if (await isTokenExpired()) {
+        return await refreshToken();
+      }
+      // Token is still valid
+      return true;
+    } catch (error) {
+      console.error('Error in refreshTokenIfNeeded:', error);
+      return false;
+    }
+  };
+
   // Handle the authentication response
   const handleAuthResponse = async (url: string) => {
     try {
@@ -109,9 +275,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Handling OAuth callback URL:', url);
       
-      // Extract token from URL
+      // Extract token and parameters from URL
       const urlParams = new URLSearchParams(url.split('?')[1]);
       const newToken = urlParams.get('token');
+      const expiresIn = urlParams.get('expires_in');
+      const refreshToken = urlParams.get('refresh_token');
       
       if (!newToken) {
         throw new Error('No token received from authentication');
@@ -119,9 +287,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Token received from OAuth callback');
       
-      // Save token to storage
-      await storage.setItem(STORAGE_KEYS.TOKEN, newToken);
+      // Store tokens with expiration
+      await storeAuthTokens(
+        newToken,
+        expiresIn ? parseInt(expiresIn, 10) : undefined,
+        refreshToken || undefined
+      );
+      
+      // Update state
       setToken(newToken);
+      
+      // Schedule token refresh
+      scheduleTokenRefresh();
       
       // Fetch user data with the token
       console.log('Fetching user data from API');
@@ -233,28 +410,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // Clear stored data
-      await Promise.all([
-        storage.removeItem(STORAGE_KEYS.TOKEN),
-        storage.removeItem(STORAGE_KEYS.USER),
-        storage.removeItem(STORAGE_KEYS.USER_NAME),
-      ]);
+      // Get token for logout request
+      const currentToken = token;
       
-      // Reset state
-      setToken(null);
-      setUser(null);
+      // Clear auth state (tokens and user data)
+      await clearAuthState();
       
       // Call API to invalidate session
-      try {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      } catch (error) {
-        console.warn('Error calling logout endpoint:', error);
-        // Continue with local logout even if the API call fails
+      if (currentToken) {
+        try {
+          await fetch(`${API_URL}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentToken}`,
+            },
+          });
+        } catch (error) {
+          console.warn('Error calling logout endpoint:', error);
+          // Continue with local logout even if the API call fails
+        }
       }
       
       // Navigate to login
@@ -275,6 +450,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     login,
     logout,
+    handleOAuthCallback: handleAuthResponse,
+    refreshTokenIfNeeded,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
