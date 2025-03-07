@@ -320,31 +320,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       
       if (!response.ok) {
-        console.error('API response not OK:', await response.text());
-        throw new Error('Failed to fetch user data');
+        const errorText = await response.text();
+        console.error('API response not OK:', errorText);
+        throw new Error(`Failed to fetch user data: ${response.status} ${errorText}`);
       }
       
-      const userData = await response.json();
-      console.log('User data received');
+      const rawResponse = await response.text();
+      console.log('Raw API response:', rawResponse);
+      
+      let userData;
+      try {
+        userData = JSON.parse(rawResponse);
+        console.log('Parsed user data:', JSON.stringify(userData));
+      } catch (parseError) {
+        console.error('Failed to parse user data JSON:', parseError);
+        throw new Error('Invalid JSON in user data response');
+      }
+      
+      // Validate the user data structure
+      if (!userData) {
+        throw new Error('Empty response from API');
+      }
+      
+      if (!userData.user) {
+        console.error('User data missing user field:', userData);
+        throw new Error('User data missing user field');
+      }
+      
+      const userObj = userData.user;
+      
+      // Validate required user properties
+      if (!userObj.id) {
+        console.error('User data missing id:', userObj);
+        throw new Error('User data missing required id field');
+      }
+      
+      if (!userObj.email) {
+        console.error('User data missing email:', userObj);
+        throw new Error('User data missing required email field');
+      }
+      
+      if (!userObj.displayName) {
+        // If displayName is missing, create one from email or set a default
+        userObj.displayName = userObj.email.split('@')[0] || 'Armatillo User';
+        console.log('Created display name:', userObj.displayName);
+      }
+      
+      console.log('User data validation passed');
       
       // Save user data to storage - ensure it's a valid object before storing
-      if (userData.user) {
-        try {
-          // Store user data as an object - storage.setObject will handle the JSON stringification
-          await storage.setObject(STORAGE_KEYS.USER, userData.user);
-          setUser(userData.user);
-          
-          // Store user display name separately for easier access
-          if (userData.user.displayName) {
-            await storage.setItem(STORAGE_KEYS.USER_NAME, userData.user.displayName);
-            console.log('User display name stored:', userData.user.displayName);
-          }
-        } catch (storageError) {
-          console.error('Error storing user data:', storageError);
-          throw new Error('Failed to store user data securely');
-        }
-      } else {
-        throw new Error('Invalid user data received from API');
+      try {
+        // Store user data as a stringified object
+        await storage.setObject(STORAGE_KEYS.USER, userObj);
+        setUser(userObj);
+        
+        // Store user display name separately for easier access
+        await storage.setItem(STORAGE_KEYS.USER_NAME, userObj.displayName);
+        console.log('User display name stored:', userObj.displayName);
+      } catch (storageError) {
+        console.error('Error storing user data:', storageError);
+        throw new Error('Failed to store user data securely');
       }
       
       // Navigate to home screen
