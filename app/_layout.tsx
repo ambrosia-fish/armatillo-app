@@ -11,11 +11,12 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { FormProvider } from './context/FormContext';
 import { AuthProvider } from './context/AuthContext';
 import crashRecovery from './utils/crashRecovery';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+  // Use our custom error boundary
+  ErrorBoundary
+};
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
