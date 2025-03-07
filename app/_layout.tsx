@@ -32,6 +32,7 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
   const [isCrashDetected, setIsCrashDetected] = useState(false);
+  const [isDevRestart, setIsDevRestart] = useState(false);
   const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
   const [recoveryData, setRecoveryData] = useState<any>(null);
 
@@ -49,13 +50,27 @@ export default function RootLayout() {
           if (recoveryInfo) {
             console.log('Recovery data available:', recoveryInfo);
             setRecoveryData(recoveryInfo);
-            setIsCrashDetected(true);
             
-            // Show recovery modal after app is fully loaded
-            if (loaded) {
-              setIsRecoveryModalVisible(true);
+            // Check if this is a dev mode restart
+            if (recoveryInfo.isDevelopmentRestart) {
+              setIsDevRestart(true);
+              // Don't show recovery modal for dev restarts
+              console.log('Development restart, not showing recovery modal');
+              // Automatically clean up recovery data for dev restarts
+              await crashRecovery.completeCrashRecovery();
+            } else {
+              setIsCrashDetected(true);
+              // Only show recovery modal for actual crashes
+              if (loaded) {
+                setIsRecoveryModalVisible(true);
+              }
             }
           }
+        } else if (crashRecovery.isDevRestart()) {
+          setIsDevRestart(true);
+          console.log('Development mode restart detected');
+          // Automatically clean up any recovery data
+          await crashRecovery.completeCrashRecovery();
         }
       } catch (error) {
         console.error('Error initializing crash detection:', error);
@@ -74,12 +89,12 @@ export default function RootLayout() {
     if (loaded) {
       SplashScreen.hideAsync();
       
-      // If crash was detected, show recovery modal
-      if (isCrashDetected && recoveryData) {
+      // If crash was detected (and not a dev restart), show recovery modal
+      if (isCrashDetected && !isDevRestart && recoveryData) {
         setIsRecoveryModalVisible(true);
       }
     }
-  }, [loaded, isCrashDetected, recoveryData]);
+  }, [loaded, isCrashDetected, isDevRestart, recoveryData]);
 
   // Handle recovery action - restore data
   const handleRestore = async () => {
@@ -131,7 +146,7 @@ export default function RootLayout() {
     }
   };
 
-  // Render recovery modal
+  // Render recovery modal - only shown for genuine crashes
   const RecoveryModal = () => (
     <Modal
       visible={isRecoveryModalVisible}
