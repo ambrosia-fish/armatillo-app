@@ -37,9 +37,32 @@ export function generateRandomString(length: number = 32): string {
  * @returns The generated state string
  */
 export async function generateOAuthState(): Promise<string> {
-  const state = generateRandomString(32);
-  await storage.setItem(SECURITY_KEYS.OAUTH_STATE, state);
-  return state;
+  try {
+    // First, clear any existing state to prevent issues
+    await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
+    
+    // Generate a new random state
+    const state = generateRandomString(32);
+    console.log(`Generated new OAuth state: ${state}`);
+    
+    // Store it in secure storage
+    await storage.setItem(SECURITY_KEYS.OAUTH_STATE, state);
+    
+    // Verify it was stored correctly
+    const storedState = await storage.getItem(SECURITY_KEYS.OAUTH_STATE);
+    if (storedState !== state) {
+      console.warn(`Warning: Stored state (${storedState}) doesn't match generated state (${state})`);
+    } else {
+      console.log('OAuth state successfully stored in secure storage');
+    }
+    
+    return state;
+  } catch (error) {
+    console.error('Error generating OAuth state:', error);
+    
+    // Return a state even if storage fails - this is better than nothing
+    return generateRandomString(32);
+  }
 }
 
 /**
@@ -48,32 +71,47 @@ export async function generateOAuthState(): Promise<string> {
  * @returns True if state is valid, false otherwise
  */
 export async function verifyOAuthState(callbackState: string | null): Promise<boolean> {
-  // If no callback state provided, fail validation
-  if (!callbackState) {
-    console.error('No state parameter in OAuth callback');
+  try {
+    // If no callback state provided, fail validation
+    if (!callbackState) {
+      console.error('No state parameter in OAuth callback');
+      return false;
+    }
+    
+    console.log(`Verifying OAuth state: ${callbackState}`);
+    
+    // Get the stored state
+    const storedState = await storage.getItem(SECURITY_KEYS.OAUTH_STATE);
+    
+    // If no stored state, fail validation
+    if (!storedState) {
+      console.error('No stored state parameter found in secure storage');
+      return false;
+    }
+    
+    console.log(`Stored state: ${storedState}`);
+    console.log(`Callback state: ${callbackState}`);
+    
+    // Compare stored state with callback state
+    const isValid = storedState === callbackState;
+    
+    // Clear the stored state regardless of outcome (one-time use)
+    await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
+    console.log('Cleared stored OAuth state');
+    
+    if (!isValid) {
+      console.error(`OAuth state validation failed: stored=${storedState}, callback=${callbackState}`);
+    } else {
+      console.log('OAuth state validation successful');
+    }
+    
+    return isValid;
+  } catch (error) {
+    console.error('Error verifying OAuth state:', error);
+    
+    // If there's an error during verification, fail safe
     return false;
   }
-  
-  // Get the stored state
-  const storedState = await storage.getItem(SECURITY_KEYS.OAUTH_STATE);
-  
-  // If no stored state (should never happen), fail validation
-  if (!storedState) {
-    console.error('No stored state parameter found');
-    return false;
-  }
-  
-  // Compare stored state with callback state
-  const isValid = storedState === callbackState;
-  
-  // Clear the stored state regardless of outcome (one-time use)
-  await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
-  
-  if (!isValid) {
-    console.error('OAuth state validation failed, possible CSRF attack');
-  }
-  
-  return isValid;
 }
 
 /**
@@ -95,3 +133,12 @@ export async function generatePKCEChallenge(): Promise<{ codeVerifier: string, c
   
   return { codeVerifier, codeChallenge };
 }
+
+// Default export for compatibility with routes
+export default {
+  generateRandomString,
+  generateOAuthState,
+  verifyOAuthState,
+  generatePKCEChallenge,
+  SECURITY_KEYS
+};
