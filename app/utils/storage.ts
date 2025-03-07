@@ -34,6 +34,11 @@ export const storage = {
    */
   setItem: async (key: string, value: string): Promise<void> => {
     try {
+      // Ensure value is a string for SecureStore
+      if (typeof value !== 'string') {
+        value = String(value);
+      }
+      
       if (isSecureKey(key)) {
         await SecureStore.setItemAsync(key, value);
       } else {
@@ -85,8 +90,13 @@ export const storage = {
    */
   setObject: async <T>(key: string, value: T): Promise<void> => {
     try {
+      // Always stringify the object to ensure we're storing a string
       const jsonValue = JSON.stringify(value);
+      
       if (isSecureKey(key)) {
+        if (typeof jsonValue !== 'string') {
+          throw new Error(`Cannot store non-string value in SecureStore for key: ${key}`);
+        }
         await SecureStore.setItemAsync(key, jsonValue);
       } else {
         await AsyncStorage.setItem(key, jsonValue);
