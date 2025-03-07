@@ -20,9 +20,13 @@ interface BFRBFormData {
   
   // Thoughts screen data
   selectedThoughts?: string[];
-  
+
   // Notes screen data
+  selectedSensoryTriggers?: string[];
   notes?: string;
+
+  // User identification
+  userName?: string;
 }
 
 // Define the context type
