@@ -10,6 +10,10 @@ import {
   getTokenTimeRemaining, 
   clearAuthTokens 
 } from '../utils/tokenUtils';
+import {
+  generateOAuthState,
+  verifyOAuthState
+} from '../utils/securityUtils';
 
 // Define the type for user data
 interface User {
@@ -280,6 +284,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const newToken = urlParams.get('token');
       const expiresIn = urlParams.get('expires_in');
       const refreshToken = urlParams.get('refresh_token');
+      const state = urlParams.get('state');
+      
+      // Verify the state parameter to prevent CSRF attacks
+      const isStateValid = await verifyOAuthState(state);
+      if (!isStateValid) {
+        throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
+      }
       
       if (!newToken) {
         throw new Error('No token received from authentication');
@@ -348,6 +359,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // It will clear any existing sessions, preventing cached states
       await WebBrowser.warmUpAsync();
       
+      // Generate a state parameter to prevent CSRF attacks
+      const state = await generateOAuthState();
+      
       // Get device info to use in the OAuth request
       let deviceName = 'Armatillo Device';
       let deviceId = 'armatillo_dev_device';
@@ -366,9 +380,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Using device info:', { deviceId, deviceName });
       
-      // Construct the OAuth URL to go directly to Google
-      // The URL redirects directly to Google's OAuth page
-      const authUrl = `${API_URL}/api/auth/google-mobile`;
+      // Construct the OAuth URL with state parameter
+      const authUrl = `${API_URL}/api/auth/google-mobile?state=${encodeURIComponent(state)}`;
       
       console.log('Opening auth URL:', authUrl);
       
