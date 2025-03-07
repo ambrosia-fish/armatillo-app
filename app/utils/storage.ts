@@ -18,6 +18,13 @@ const SECURE_KEYS = [
   STORAGE_KEYS.USER,
 ];
 
+// Additional keys that should be cleared during logout (including security-related keys)
+const ADDITIONAL_CLEAR_KEYS = [
+  'oauth_state',
+  'pkce_code_verifier',
+  // Add any other keys that might be used for auth/sessions
+];
+
 // Check if a key should be stored securely
 const isSecureKey = (key: string): boolean => {
   return SECURE_KEYS.includes(key);
@@ -132,13 +139,35 @@ export const storage = {
    */
   clear: async (): Promise<void> => {
     try {
-      // Clear AsyncStorage
+      // Clear AsyncStorage completely
       await AsyncStorage.clear();
+      console.log('AsyncStorage cleared');
       
-      // Clear SecureStore (need to delete each key individually)
-      for (const key of SECURE_KEYS) {
-        await SecureStore.deleteItemAsync(key);
+      // Clear all SecureStore keys (both defined and additional ones)
+      const allSecureKeys = [...SECURE_KEYS, ...ADDITIONAL_CLEAR_KEYS];
+      
+      // Delete each key individually from SecureStore
+      const clearPromises = allSecureKeys.map(key => 
+        SecureStore.deleteItemAsync(key).catch(err => {
+          // Log but don't fail if a key doesn't exist
+          console.warn(`Could not delete key ${key}:`, err);
+        })
+      );
+      
+      await Promise.all(clearPromises);
+      console.log('SecureStore cleared');
+      
+      // To be extra thorough, try to get each key to ensure it's truly deleted
+      for (const key of allSecureKeys) {
+        const value = await SecureStore.getItemAsync(key);
+        if (value !== null) {
+          console.warn(`Key ${key} still exists after clearing!`);
+          // Try once more to delete it
+          await SecureStore.deleteItemAsync(key);
+        }
       }
+      
+      console.log('Storage completely cleared');
     } catch (error) {
       console.error('Error clearing storage:', error);
       throw error;
