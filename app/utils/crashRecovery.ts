@@ -1,4 +1,4 @@
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import storage, { STORAGE_KEYS } from './storage';
 
@@ -14,6 +14,9 @@ const MIN_STATE_SAVE_INTERVAL = 5000; // 5 seconds
 // Flag to indicate if we detected a crash on startup
 let crashDetected = false;
 
+// Flag to help identify development mode restarts vs actual crashes
+let isDevModeRestart = false;
+
 /**
  * Initialize crash detection
  * Should be called as early as possible in the app lifecycle
@@ -28,25 +31,73 @@ export const initCrashDetection = async (): Promise<boolean> => {
     await storage.resetSessionId();
     const newSessionId = await storage.getSessionId();
     
+    // In development mode, we might want to be less aggressive about crash detection
+    if (__DEV__) {
+      // Check if this is a development-mode reload/restart
+      const isDev = await storage.getItem('IS_DEV_MODE');
+      if (isDev === 'true') {
+        // This is likely a development restart, not a crash
+        isDevModeRestart = true;
+        console.log('Development mode restart detected, not treating as crash');
+        
+        // Still keep recovery data available if needed
+        if (lastSessionData) {
+          await storage.setCrashRecoveryData({
+            lastState: lastSessionData.state,
+            timestamp: lastSessionData.timestamp || Date.now(),
+            previousSessionId: lastSessionId,
+            crashDetected: false,
+            isDevelopmentRestart: true
+          });
+        }
+        
+        // Set up dev mode marker for next time
+        await storage.setItem('IS_DEV_MODE', 'true');
+        
+        // Setup app state change listeners to track app status
+        setupAppStateTracking();
+        
+        return false;
+      } else {
+        // First launch or after storage clear, set dev mode marker
+        await storage.setItem('IS_DEV_MODE', 'true');
+      }
+    }
+    
     if (lastSessionData && lastSessionId && lastSessionId !== newSessionId) {
       // Check if the last state was recent (within MAX_RECOVERY_AGE)
       const now = Date.now();
       const lastStateTime = lastSessionData.timestamp || 0;
       
       if (now - lastStateTime < MAX_RECOVERY_AGE) {
-        // This could indicate a crash since the previous session wasn't properly closed
-        console.log('Potential crash detected! Previous session:', lastSessionId);
-        crashDetected = true;
-        
-        // Keep the crash recovery data available for app to handle
-        await storage.setCrashRecoveryData({
-          lastState: lastSessionData.state,
-          timestamp: lastStateTime,
-          previousSessionId: lastSessionId,
-          crashDetected: true
-        });
-        
-        return true;
+        // If in development and just reloading, don't treat as crash
+        if (__DEV__ && lastStateTime > now - 10000) { // If last state was less than 10 seconds ago
+          console.log('Recent development restart detected, not treating as crash');
+          isDevModeRestart = true;
+          
+          // Still keep recovery data available if needed
+          await storage.setCrashRecoveryData({
+            lastState: lastSessionData.state,
+            timestamp: lastStateTime,
+            previousSessionId: lastSessionId,
+            crashDetected: false,
+            isDevelopmentRestart: true
+          });
+        } else {
+          // This could indicate a crash since the previous session wasn't properly closed
+          console.log('Potential crash detected! Previous session:', lastSessionId);
+          crashDetected = true;
+          
+          // Keep the crash recovery data available for app to handle
+          await storage.setCrashRecoveryData({
+            lastState: lastSessionData.state,
+            timestamp: lastStateTime,
+            previousSessionId: lastSessionId,
+            crashDetected: true
+          });
+          
+          return true;
+        }
       } else {
         console.log('Old session data found but expired:', lastSessionId);
         // Clear outdated session data
@@ -126,7 +177,14 @@ export const saveCurrentAppState = async (state?: any): Promise<void> => {
  * Check if a crash was detected during app startup
  */
 export const wasCrashDetected = (): boolean => {
-  return crashDetected;
+  return crashDetected && !isDevModeRestart;
+};
+
+/**
+ * Check if this is just a development mode restart
+ */
+export const isDevRestart = (): boolean => {
+  return isDevModeRestart;
 };
 
 /**
@@ -156,11 +214,14 @@ export const secureStateCleanup = async (keysToKeep: string[] = []): Promise<voi
   try {
     console.log('Performing secure state cleanup...');
     
+    // Add dev mode key to keys to keep
+    const preserveKeys = [...keysToKeep, 'IS_DEV_MODE'];
+    
     // Get all AsyncStorage keys
     const allKeys = await AsyncStorage.getAllKeys();
     
     // Filter out keys we want to keep
-    const keysToRemove = allKeys.filter(key => !keysToKeep.includes(key));
+    const keysToRemove = allKeys.filter(key => !preserveKeys.includes(key));
     
     if (keysToRemove.length > 0) {
       // Remove the filtered keys
@@ -182,6 +243,7 @@ export default {
   initCrashDetection,
   saveCurrentAppState,
   wasCrashDetected,
+  isDevRestart,
   getCrashRecoveryData,
   completeCrashRecovery,
   secureStateCleanup
