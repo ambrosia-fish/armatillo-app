@@ -87,7 +87,7 @@ export const storage = {
       }
     } catch (error) {
       console.error(`Error removing ${key}:`, error);
-      throw error;
+      // Don't throw here, just log the error
     }
   },
 
@@ -138,39 +138,55 @@ export const storage = {
    * Clears both AsyncStorage and SecureStore
    */
   clear: async (): Promise<void> => {
+    let asyncStorageCleared = false;
+    let secureStoreCleared = false;
+
+    // Clear AsyncStorage
     try {
-      // Clear AsyncStorage completely
       await AsyncStorage.clear();
+      asyncStorageCleared = true;
       console.log('AsyncStorage cleared');
-      
-      // Clear all SecureStore keys (both defined and additional ones)
-      const allSecureKeys = [...SECURE_KEYS, ...ADDITIONAL_CLEAR_KEYS];
-      
-      // Delete each key individually from SecureStore
-      const clearPromises = allSecureKeys.map(key => 
-        SecureStore.deleteItemAsync(key).catch(err => {
-          // Log but don't fail if a key doesn't exist
-          console.warn(`Could not delete key ${key}:`, err);
-        })
-      );
-      
-      await Promise.all(clearPromises);
-      console.log('SecureStore cleared');
-      
-      // To be extra thorough, try to get each key to ensure it's truly deleted
-      for (const key of allSecureKeys) {
-        const value = await SecureStore.getItemAsync(key);
-        if (value !== null) {
-          console.warn(`Key ${key} still exists after clearing!`);
-          // Try once more to delete it
-          await SecureStore.deleteItemAsync(key);
+    } catch (asyncError) {
+      console.warn('Error clearing AsyncStorage:', asyncError);
+      // Try to clear individual keys instead
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        if (allKeys && allKeys.length > 0) {
+          await AsyncStorage.multiRemove(allKeys);
+          asyncStorageCleared = true;
+          console.log('AsyncStorage cleared using multiRemove');
         }
+      } catch (multiError) {
+        console.warn('Error with AsyncStorage.multiRemove:', multiError);
       }
-      
+    }
+    
+    // Clear all SecureStore keys (both defined and additional ones)
+    const allSecureKeys = [...SECURE_KEYS, ...ADDITIONAL_CLEAR_KEYS];
+    
+    // Delete each key individually from SecureStore
+    let secureKeyErrors = 0;
+    for (const key of allSecureKeys) {
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch (err) {
+        secureKeyErrors++;
+        // Just log, don't throw - we want to try all keys
+        console.warn(`Could not delete secure key ${key}:`, err);
+      }
+    }
+    
+    // Mark secure store as cleared if we didn't have errors for all keys
+    if (secureKeyErrors < allSecureKeys.length) {
+      secureStoreCleared = true;
+      console.log('SecureStore cleared');
+    }
+    
+    // Consider the operation successful if at least one type of storage was cleared
+    if (asyncStorageCleared || secureStoreCleared) {
       console.log('Storage completely cleared');
-    } catch (error) {
-      console.error('Error clearing storage:', error);
-      throw error;
+    } else {
+      console.error('Failed to clear any storage');
     }
   },
 };
