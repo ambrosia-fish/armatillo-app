@@ -1,4 +1,5 @@
 import { AppState, AppStateStatus } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import storage, { STORAGE_KEYS } from './storage';
 
 // Max age of crash recovery data to be considered valid (10 minutes)
