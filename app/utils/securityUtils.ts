@@ -1,4 +1,3 @@
-import * as Random from 'expo-random';
 import storage, { STORAGE_KEYS } from './storage';
 
 // Add new storage keys for security parameters
@@ -11,36 +10,26 @@ export const SECURITY_KEYS = {
  * Generate a random string of specified length for security purposes
  * Used for generating OAuth state and PKCE code verifier
  */
-export async function generateRandomString(length: number = 32): Promise<string> {
-  try {
-    // Generate random bytes
-    const randomBytes = await Random.getRandomBytesAsync(length);
-    
-    // Convert to Base64 string and make URL safe
-    let randomString = Buffer.from(randomBytes).toString('base64');
-    
-    // Replace non-alphanumeric chars to make URL safe
-    randomString = randomString
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-    
-    // Trim to desired length
-    return randomString.substring(0, length);
-  } catch (error) {
-    console.error('Error generating random string:', error);
-    
-    // Fallback method if expo-random fails
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-    let result = '';
-    
-    // Use Math.random as a fallback (less secure but better than nothing)
+export function generateRandomString(length: number = 32): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const randomValues = new Uint8Array(length);
+  
+  // Use crypto.getRandomValues if available (browser)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(randomValues);
+  } else {
+    // Fallback to Math.random (less secure)
     for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      randomValues[i] = Math.floor(Math.random() * 256);
     }
-    
-    return result;
   }
+  
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[randomValues[i] % chars.length];
+  }
+  
+  return result;
 }
 
 /**
@@ -48,7 +37,7 @@ export async function generateRandomString(length: number = 32): Promise<string>
  * @returns The generated state string
  */
 export async function generateOAuthState(): Promise<string> {
-  const state = await generateRandomString(32);
+  const state = generateRandomString(32);
   await storage.setItem(SECURITY_KEYS.OAUTH_STATE, state);
   return state;
 }
@@ -97,7 +86,7 @@ export async function generatePKCEChallenge(): Promise<{ codeVerifier: string, c
   // For now, we're just implementing the OAuth state parameter
   // Full PKCE implementation would require crypto functions
   
-  const codeVerifier = await generateRandomString(64);
+  const codeVerifier = generateRandomString(64);
   // In a real implementation, we'd hash the verifier using SHA-256 to create the challenge
   // For now, we'll just use the same value for simplicity
   const codeChallenge = codeVerifier;
