@@ -1,5 +1,4 @@
 import * as Crypto from 'expo-crypto';
-import * as Random from 'expo-random';
 import storage, { STORAGE_KEYS } from './storage';
 
 // Add new storage keys for security parameters
@@ -16,15 +15,12 @@ export function generateRandomString(length: number = 32): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   let result = '';
   
-  // Use crypto.getRandomValues for secure random generation
-  const randomValues = new Uint8Array(length);
-  
   try {
-    // Get secure random values
-    Random.getRandomBytes(randomValues);
+    // Use Crypto to generate random bytes
+    const randomBytes = Crypto.getRandomBytes(length);
     
     for (let i = 0; i < length; i++) {
-      result += chars[randomValues[i] % chars.length];
+      result += chars[randomBytes[i] % chars.length];
     }
     
     console.log(`Generated random string of length ${length}`);
