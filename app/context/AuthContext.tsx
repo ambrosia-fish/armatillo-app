@@ -86,6 +86,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(storedUser);
+          
+          // Store user display name separately for easier access
+          if (storedUser.displayName) {
+            await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
+          }
         }
       } catch (error) {
         console.error('Failed to load authentication state:', error);
@@ -137,6 +142,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Save user data to storage
       await storage.setObject(STORAGE_KEYS.USER, userData.user);
       setUser(userData.user);
+      
+      // Store user display name separately for easier access
+      if (userData.user && userData.user.displayName) {
+        await storage.setItem(STORAGE_KEYS.USER_NAME, userData.user.displayName);
+        console.log('User display name stored:', userData.user.displayName);
+      }
       
       // Navigate to home screen
       console.log('Authentication complete, navigating to home');
@@ -226,6 +237,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await Promise.all([
         storage.removeItem(STORAGE_KEYS.TOKEN),
         storage.removeItem(STORAGE_KEYS.USER),
+        storage.removeItem(STORAGE_KEYS.USER_NAME),
       ]);
       
       // Reset state
