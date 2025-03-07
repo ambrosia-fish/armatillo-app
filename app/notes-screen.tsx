@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,13 +8,14 @@ import { sensoryOptions } from './constants/optionDictionaries';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
-
-// The API URL - should be set in environment config
-const API_URL = 'http://192.168.0.101:3000/api/instances'; // Replace with your local IP
+import { useAuth } from './context/AuthContext';
+import { instancesApi } from './services/api';
+import storage, { STORAGE_KEYS } from './utils/storage';
 
 export default function NotesScreen() {
   const router = useRouter();
   const { formData, updateFormData, resetFormData } = useFormContext();
+  const { user } = useAuth();
   
   // Track loading state for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,6 +27,22 @@ export default function NotesScreen() {
   const [selectedSensoryTriggers, setSelectedSensoryTriggers] = useState<string[]>(
     formData.selectedSensoryTriggers || []
   );
+
+  // Store user name in AsyncStorage when available
+  useEffect(() => {
+    const storeUserName = async () => {
+      if (user && user.displayName) {
+        try {
+          await storage.setItem(STORAGE_KEYS.USER_NAME, user.displayName);
+          console.log('User name stored in AsyncStorage:', user.displayName);
+        } catch (error) {
+          console.error('Error storing user name:', error);
+        }
+      }
+    };
+
+    storeUserName();
+  }, [user]);
   
   const handleSave = async () => {
     // Prevent double submission
@@ -34,34 +51,35 @@ export default function NotesScreen() {
     try {
       setIsSubmitting(true);
       
+      // Get user name from auth context or AsyncStorage
+      let userName = '';
+      if (user && user.displayName) {
+        userName = user.displayName;
+      } else {
+        // Fallback to AsyncStorage if user object isn't available
+        const storedUserName = await storage.getItem(STORAGE_KEYS.USER_NAME);
+        if (storedUserName) {
+          userName = storedUserName;
+        }
+      }
+      
       // Save final data to context
       updateFormData({
         selectedSensoryTriggers,
-        notes
+        notes,
+        userName
       });
       
       // Prepare complete data to send to API
       const completeData = {
         ...formData,
         selectedSensoryTriggers,
-        notes
+        notes,
+        userName
       };
       
-      // Send data to API
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(completeData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      
-      // Get the response data
-      const responseData = await response.json();
+      // Send data to API using our API service
+      const responseData = await instancesApi.createInstance(completeData);
       console.log('API response:', responseData);
       
       // Show success message and return to home
