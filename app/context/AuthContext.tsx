@@ -13,6 +13,9 @@ import {
 import {
   generateOAuthState,
   verifyOAuthState,
+  generatePKCEChallenge,
+  getStoredCodeVerifier,
+  clearCodeVerifier,
   SECURITY_KEYS
 } from '../utils/securityUtils';
 
@@ -289,31 +292,120 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const urlWithoutHash = url.split('#')[0];
       const urlParams = new URLSearchParams(urlWithoutHash.split('?')[1]);
       
-      const newToken = urlParams.get('token');
-      const expiresIn = urlParams.get('expires_in');
-      const refreshToken = urlParams.get('refresh_token');
+      // Check if this is an authorization code flow or token response
+      const authCode = urlParams.get('code');
       const state = urlParams.get('state');
       
-      // Verify the state parameter to prevent CSRF attacks
-      if (!state) {
-        console.error('No state parameter in OAuth callback');
-        throw new Error('Missing state parameter in OAuth callback');
-      }
-      
-      const isStateValid = await verifyOAuthState(state);
-      if (!isStateValid) {
-        console.error('OAuth state validation failed, possible CSRF attack');
-        throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
+      // For authorization code flow
+      if (authCode) {
+        console.log('Authorization code received, exchanging for tokens...');
+        
+        // Verify the state parameter to prevent CSRF attacks
+        if (!state) {
+          console.error('No state parameter in OAuth callback');
+          throw new Error('Missing state parameter in OAuth callback');
+        }
+        
+        const isStateValid = await verifyOAuthState(state);
+        if (!isStateValid) {
+          console.error('OAuth state validation failed, possible CSRF attack');
+          throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
+        } else {
+          console.log('OAuth state validation successful');
+        }
+        
+        // Get the code verifier that was stored during login
+        const codeVerifier = await getStoredCodeVerifier();
+        if (!codeVerifier) {
+          console.error('No code verifier found in storage');
+          throw new Error('Missing PKCE code verifier');
+        }
+        
+        // Exchange the authorization code for tokens using PKCE
+        console.log('Exchanging authorization code for tokens using PKCE...');
+        const tokenResponse = await fetch(`${API_URL}/api/auth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            grant_type: 'authorization_code',
+            code: authCode,
+            code_verifier: codeVerifier,
+            redirect_uri: 'armatillo://auth/callback'
+          })
+        });
+        
+        if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          console.error('Token exchange failed:', errorText);
+          throw new Error(`Failed to exchange code for token: ${tokenResponse.status} ${errorText}`);
+        }
+        
+        // Parse token response
+        const tokenData = await tokenResponse.json();
+        
+        // Clear code verifier after use
+        await clearCodeVerifier();
+        
+        // Process the token response
+        const newToken = tokenData.access_token || tokenData.token;
+        const expiresIn = tokenData.expires_in || tokenData.expiresIn;
+        const refreshToken = tokenData.refresh_token || tokenData.refreshToken;
+        
+        if (!newToken) {
+          throw new Error('No token received from authorization code exchange');
+        }
+        
+        console.log('Token received from authorization code exchange');
+        
+        // Continue with token processing
+        await processReceivedToken(newToken, expiresIn, refreshToken);
       } else {
-        console.log('OAuth state validation successful');
+        // Legacy direct token flow (fallback)
+        const newToken = urlParams.get('token');
+        const expiresIn = urlParams.get('expires_in');
+        const refreshToken = urlParams.get('refresh_token');
+        
+        // Verify the state parameter to prevent CSRF attacks
+        if (!state) {
+          console.error('No state parameter in OAuth callback');
+          throw new Error('Missing state parameter in OAuth callback');
+        }
+        
+        const isStateValid = await verifyOAuthState(state);
+        if (!isStateValid) {
+          console.error('OAuth state validation failed, possible CSRF attack');
+          throw new Error('Invalid state parameter in OAuth callback, possible CSRF attack');
+        } else {
+          console.log('OAuth state validation successful');
+        }
+        
+        if (!newToken) {
+          throw new Error('No token received from authentication');
+        }
+        
+        console.log('Token received directly in URL params');
+        
+        // Continue with token processing
+        await processReceivedToken(newToken, expiresIn, refreshToken);
       }
-      
-      if (!newToken) {
-        throw new Error('No token received from authentication');
-      }
-      
-      console.log('Token received from OAuth callback');
-      
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      Alert.alert('Authentication Failed', 'Failed to complete the login process. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setInProgress(false);
+    }
+  };
+  
+  // Process received token (common code for both flows)
+  const processReceivedToken = async (
+    newToken: string,
+    expiresIn: string | null,
+    refreshToken: string | null
+  ) => {
+    try {
       // Store tokens with expiration
       await storeAuthTokens(
         newToken,
@@ -398,11 +490,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('Authentication complete, navigating to home');
       router.replace('/(tabs)');
     } catch (error) {
-      console.error('OAuth callback error:', error);
-      Alert.alert('Authentication Failed', 'Failed to complete the login process. Please try again.');
-    } finally {
-      setIsLoading(false);
-      setInProgress(false);
+      console.error('Error processing token:', error);
+      throw error;
     }
   };
 
@@ -424,7 +513,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
         
-        // Make sure no lingering OAuth state exists
+        // Make sure no lingering OAuth state or PKCE verifier exists
         await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
         await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
         
@@ -438,14 +527,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const state = await generateOAuthState();
       console.log('Generated new OAuth state');
       
-      // Construct the OAuth URL with MULTIPLE parameters to force new login
+      // Generate PKCE challenge
+      const { codeVerifier, codeChallenge } = await generatePKCEChallenge();
+      console.log('Generated PKCE code verifier and challenge');
+      
+      // Construct the OAuth URL with PKCE and state parameters
       const timestamp = Date.now(); // Add timestamp to prevent caching
       const randomNonce = Math.random().toString(36).substring(2); // Random nonce for uniqueness
       
       // Create a unique custom login URL with required parameters for forced login
-      const authUrl = `${API_URL}/api/auth/google-mobile?state=${encodeURIComponent(state)}&force_login=true&prompt=select_account&login_hint=&authuser=&nonce=${randomNonce}&timestamp=${timestamp}&use_incognito=true`;
+      const authUrl = `${API_URL}/api/auth/google-mobile?` + 
+        `state=${encodeURIComponent(state)}` +
+        `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+        `&code_challenge_method=S256` +
+        `&force_login=true` +
+        `&prompt=select_account` +
+        `&login_hint=` +
+        `&authuser=` +
+        `&nonce=${randomNonce}` +
+        `&timestamp=${timestamp}` +
+        `&use_incognito=true`;
       
-      console.log('Opening auth URL with forced login:', authUrl);
+      console.log('Opening auth URL with PKCE:', authUrl);
       
       // Use a direct in-app browser instead of WebBrowser.openAuthSessionAsync
       // This gives us more control over the browser session
