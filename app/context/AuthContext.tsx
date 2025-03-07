@@ -342,12 +342,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Empty response from API');
       }
       
-      if (!userData.user) {
-        console.error('User data missing user field:', userData);
-        throw new Error('User data missing user field');
-      }
-      
-      const userObj = userData.user;
+      // The API returns the user object directly, not wrapped in a 'user' property
+      const userObj = userData.user || userData; // Try both formats for backward compatibility
       
       // Validate required user properties
       if (!userObj.id) {
