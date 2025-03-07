@@ -122,58 +122,13 @@ export async function verifyOAuthState(callbackState: string | null): Promise<bo
 }
 
 /**
- * Base64 URL encode a string or buffer
- * Correctly implements the RFC 7636 requirements for PKCE code challenge
- * @param input The input string or buffer to encode
- * @returns The base64 URL encoded string
+ * Convert buffer to plain string (to get bytes)
  */
-export function base64UrlEncode(input: string | ArrayBuffer): string {
-  if (typeof input === 'string') {
-    // For string input directly use the digest function with SHA-256
-    // This function is intended to be used with ArrayBuffer from SHA-256 digest
-    // so string inputs should already be hashed somewhere else
-    const encoder = new TextEncoder();
-    input = encoder.encode(input).buffer;
-  }
-  
-  // Convert ArrayBuffer to Base64
-  const bytes = new Uint8Array(input);
-  let base64 = '';
-  
-  // Convert bytes to characters and create base64 string
-  const byteToCharMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  const byteLength = bytes.byteLength;
-  const byteRemainder = byteLength % 3;
-  const mainLength = byteLength - byteRemainder;
-  
-  // Process 3 bytes at a time
-  for (let i = 0; i < mainLength; i += 3) {
-    const chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
-    base64 += byteToCharMap[(chunk >> 18) & 63];
-    base64 += byteToCharMap[(chunk >> 12) & 63];
-    base64 += byteToCharMap[(chunk >> 6) & 63];
-    base64 += byteToCharMap[chunk & 63];
-  }
-  
-  // Handle the remaining bytes
-  if (byteRemainder === 1) {
-    const chunk = bytes[mainLength];
-    base64 += byteToCharMap[(chunk >> 2)];
-    base64 += byteToCharMap[(chunk << 4) & 63];
-    base64 += '=='; // Add padding
-  } else if (byteRemainder === 2) {
-    const chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1];
-    base64 += byteToCharMap[chunk >> 10];
-    base64 += byteToCharMap[(chunk >> 4) & 63];
-    base64 += byteToCharMap[(chunk << 2) & 63];
-    base64 += '='; // Add padding
-  }
-  
-  // Now convert to base64url encoding
-  return base64
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+function arrayBufferToString(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  return Array.from(bytes)
+    .map(byte => String.fromCharCode(byte))
+    .join('');
 }
 
 /**
@@ -189,8 +144,17 @@ export async function generateCodeChallenge(codeVerifier: string): Promise<strin
       codeVerifier
     );
     
-    // Base64url encode the hash
-    const codeChallenge = base64UrlEncode(hashBuffer);
+    // Convert the hash buffer to a byte string
+    const hashString = arrayBufferToString(hashBuffer);
+    
+    // Base64 encode the hash string
+    const base64 = btoa(hashString);
+    
+    // Convert to base64url
+    const codeChallenge = base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
     
     console.log(`Code verifier: ${codeVerifier}`);
     console.log(`Generated code challenge: ${codeChallenge}`);
@@ -280,6 +244,5 @@ export default {
   generatePKCEChallenge,
   getStoredCodeVerifier,
   clearCodeVerifier,
-  base64UrlEncode,
   SECURITY_KEYS
 };
