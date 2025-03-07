@@ -4,6 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 // Storage keys
 export const STORAGE_KEYS = {
   TOKEN: 'auth_token',
+  TOKEN_EXPIRY: 'auth_token_expiry',
+  REFRESH_TOKEN: 'auth_refresh_token',
   USER: 'user_data',
   USER_NAME: 'user_name',
 };
@@ -11,6 +13,8 @@ export const STORAGE_KEYS = {
 // List of keys that should be stored securely
 const SECURE_KEYS = [
   STORAGE_KEYS.TOKEN,
+  STORAGE_KEYS.TOKEN_EXPIRY,
+  STORAGE_KEYS.REFRESH_TOKEN,
   STORAGE_KEYS.USER,
 ];
 
