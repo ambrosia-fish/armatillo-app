@@ -60,9 +60,13 @@ This application implements several security best practices:
 
 1. **Secure Token Storage**: Authentication tokens and user data are stored using Expo SecureStore, which uses the Keychain (iOS) and KeyStore (Android) for encrypted storage, protecting sensitive data even on compromised devices.
 
-2. **OAuth Flow Protection**: The authentication flow utilizes proper URL handling and token management to prevent common authentication attacks.
+2. **Token Expiration Handling**: The app automatically tracks token expiration and refreshes tokens before they expire, ensuring a seamless user experience and maintaining security.
 
-3. **Token Management**: The app handles token storage, validation, and removal securely throughout the authentication lifecycle.
+3. **Proactive Token Refresh**: Instead of waiting for tokens to expire and cause failed API requests, the app proactively refreshes tokens before they expire.
+
+4. **API Error Recovery**: If an API request fails due to an expired token, the app automatically attempts to refresh the token and retry the request, providing a seamless experience for users.
+
+5. **OAuth Flow Protection**: The authentication flow utilizes proper URL handling and token management to prevent common authentication attacks.
 
 ### Testing the OAuth Flow
 
@@ -103,3 +107,4 @@ This project uses React Native with Expo and follows the Expo Router file-based 
 - `/app/context` - React context providers for state management
 - `/app/services` - API service for backend communication
 - `/app/components` - Reusable UI components
+- `/app/utils` - Utility functions including token management
