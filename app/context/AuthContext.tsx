@@ -17,11 +17,11 @@ import {
 import {
   generateOAuthState,
   verifyOAuthState,
-  generatePKCEChallenge,
-  getStoredCodeVerifier,
-  clearCodeVerifier,
   SECURITY_KEYS
 } from '../utils/securityUtils';
+
+// Import mock PKCE implementation for testing
+import mockPKCE from '../utils/mockPKCE';
 
 // Define the type for user data
 interface User {
@@ -422,7 +422,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         // Get the code verifier that was stored during login
-        const codeVerifier = await getStoredCodeVerifier();
+        const codeVerifier = await mockPKCE.getCodeVerifier();
         console.log('Retrieved code verifier from storage:', codeVerifier);
         
         if (!codeVerifier) {
@@ -476,7 +476,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         // Clear code verifier after use
-        await clearCodeVerifier();
+        await mockPKCE.clearCodeVerifier();
         
         // Process the token response
         const newToken = tokenData.access_token || tokenData.token;
@@ -662,7 +662,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         // Make sure no lingering OAuth state or PKCE verifier exists
         await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
-        await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
         
         console.log('All authentication sessions and data cleared');
       } catch (clearError) {
@@ -674,8 +673,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const state = await generateOAuthState();
       console.log('Generated new OAuth state:', state);
       
-      // Generate PKCE challenge
-      const { codeVerifier, codeChallenge } = await generatePKCEChallenge();
+      // Generate PKCE challenge using our mock implementation that works with the backend
+      const { codeVerifier, codeChallenge } = await mockPKCE.generatePKCEChallenge();
       console.log('Generated PKCE code verifier:', codeVerifier);
       console.log('Generated PKCE code challenge:', codeChallenge);
       
