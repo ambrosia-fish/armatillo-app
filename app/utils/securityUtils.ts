@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import storage, { STORAGE_KEYS } from './storage';
 
 // Add new storage keys for security parameters
@@ -7,26 +8,33 @@ export const SECURITY_KEYS = {
 };
 
 /**
- * Generate a random string of specified length for security purposes
+ * Generate a cryptographically secure random string of specified length
  * Used for generating OAuth state and PKCE code verifier
  */
 export function generateRandomString(length: number = 32): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let result = '';
+  
+  // Use crypto.getRandomValues for secure random generation
   const randomValues = new Uint8Array(length);
   
-  // Use crypto.getRandomValues if available (browser)
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+  try {
+    // Use native crypto API for secure random generation
     crypto.getRandomValues(randomValues);
-  } else {
-    // Fallback to Math.random (less secure)
+    
     for (let i = 0; i < length; i++) {
-      randomValues[i] = Math.floor(Math.random() * 256);
+      result += chars[randomValues[i] % chars.length];
     }
-  }
-  
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars[randomValues[i] % chars.length];
+  } catch (error) {
+    // If the native crypto API fails, use expo-crypto's getRandomBytes as a fallback
+    console.warn('Native crypto.getRandomValues failed, using expo-crypto fallback');
+    
+    // Generate a completely new set of random values
+    for (let i = 0; i < length; i++) {
+      // Use a high-entropy source to generate each character
+      const randomIndex = Math.floor(Crypto.getRandomBytes(1)[0] % chars.length);
+      result += chars[randomIndex];
+    }
   }
   
   return result;
@@ -115,23 +123,104 @@ export async function verifyOAuthState(callbackState: string | null): Promise<bo
 }
 
 /**
+ * Base64 URL encode a string
+ * @param str The input string to encode
+ * @returns The base64 URL encoded string
+ */
+export function base64UrlEncode(str: string | ArrayBuffer): string {
+  let base64;
+  
+  // Handle string vs ArrayBuffer input
+  if (typeof str === 'string') {
+    // Encode the string to base64
+    base64 = btoa(str);
+  } else {
+    // Convert ArrayBuffer to a string
+    const bytes = new Uint8Array(str);
+    const binary = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+    base64 = btoa(binary);
+  }
+  
+  // Convert base64 to base64url encoding
+  return base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+/**
+ * Generate a code challenge from a code verifier using SHA-256
+ * @param codeVerifier The code verifier string
+ * @returns Promise resolving to the code challenge string
+ */
+export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
+  try {
+    // Generate the SHA-256 hash of the code verifier
+    const hashBuffer = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      codeVerifier
+    );
+    
+    // Base64url encode the hash
+    return base64UrlEncode(hashBuffer);
+  } catch (error) {
+    console.error('Error generating code challenge:', error);
+    throw error;
+  }
+}
+
+/**
  * Generate PKCE code verifier and code challenge
- * For advanced OAuth security
- * @returns Object containing code verifier and code challenge
+ * For OAuth security against code interception attacks
+ * @returns Promise resolving to an object with code verifier and code challenge
  */
 export async function generatePKCEChallenge(): Promise<{ codeVerifier: string, codeChallenge: string }> {
-  // This function is a placeholder for future PKCE implementation
-  // For now, we're just implementing the OAuth state parameter
-  // Full PKCE implementation would require crypto functions
-  
-  const codeVerifier = generateRandomString(64);
-  // In a real implementation, we'd hash the verifier using SHA-256 to create the challenge
-  // For now, we'll just use the same value for simplicity
-  const codeChallenge = codeVerifier;
-  
-  await storage.setItem(SECURITY_KEYS.CODE_VERIFIER, codeVerifier);
-  
-  return { codeVerifier, codeChallenge };
+  try {
+    console.log('Generating PKCE challenge...');
+    
+    // Generate code verifier (random string between 43-128 chars)
+    // RFC 7636 recommends at least 43 characters, we use 64 for good security
+    const codeVerifier = generateRandomString(64);
+    console.log(`Generated code verifier (length ${codeVerifier.length})`);
+    
+    // Store the code verifier securely
+    await storage.setItem(SECURITY_KEYS.CODE_VERIFIER, codeVerifier);
+    
+    // Generate code challenge using SHA-256
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+    console.log(`Generated code challenge using SHA-256: ${codeChallenge}`);
+    
+    return { codeVerifier, codeChallenge };
+  } catch (error) {
+    console.error('Failed to generate PKCE challenge:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the stored code verifier for PKCE token exchange
+ * @returns Promise resolving to the code verifier or null if not found
+ */
+export async function getStoredCodeVerifier(): Promise<string | null> {
+  try {
+    return await storage.getItem(SECURITY_KEYS.CODE_VERIFIER);
+  } catch (error) {
+    console.error('Error getting stored code verifier:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear the stored code verifier
+ * Should be called after token exchange is complete
+ */
+export async function clearCodeVerifier(): Promise<void> {
+  try {
+    await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
+    console.log('Code verifier cleared');
+  } catch (error) {
+    console.error('Error clearing code verifier:', error);
+  }
 }
 
 // Default export for compatibility with routes
@@ -140,5 +229,8 @@ export default {
   generateOAuthState,
   verifyOAuthState,
   generatePKCEChallenge,
+  getStoredCodeVerifier,
+  clearCodeVerifier,
+  base64UrlEncode,
   SECURITY_KEYS
 };
