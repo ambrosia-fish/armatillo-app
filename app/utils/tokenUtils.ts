@@ -23,20 +23,25 @@ export async function storeAuthTokens(
   expiresIn: number = DEFAULT_TOKEN_EXPIRATION / 1000,
   refreshToken?: string
 ): Promise<void> {
-  // Calculate expiration timestamp
-  const expiryTime = Date.now() + expiresIn * 1000;
-  const expiryTimeString = expiryTime.toString();
+  try {
+    // Calculate expiration timestamp
+    const expiryTime = Date.now() + expiresIn * 1000;
+    const expiryTimeString = expiryTime.toString();
 
-  // Store token and expiration
-  await storage.setItem(STORAGE_KEYS.TOKEN, token);
-  await storage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTimeString);
+    // Store token and expiration
+    await storage.setItem(STORAGE_KEYS.TOKEN, token);
+    await storage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTimeString);
 
-  // Store refresh token if provided
-  if (refreshToken) {
-    await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    // Store refresh token if provided
+    if (refreshToken) {
+      await storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    }
+
+    console.log(`Token stored with expiration in ${expiresIn} seconds`);
+  } catch (error) {
+    console.error('Error storing auth tokens:', error);
+    throw error;
   }
-
-  console.log(`Token stored with expiration in ${expiresIn} seconds`);
 }
 
 /**
@@ -84,12 +89,17 @@ export async function getRefreshToken(): Promise<string | null> {
  * Clear all authentication tokens
  */
 export async function clearAuthTokens(): Promise<void> {
-  await Promise.all([
-    storage.removeItem(STORAGE_KEYS.TOKEN),
-    storage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
-    storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
-  ]);
-  console.log('Auth tokens cleared');
+  try {
+    await Promise.all([
+      storage.removeItem(STORAGE_KEYS.TOKEN),
+      storage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
+      storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
+    ]);
+    console.log('Auth tokens cleared');
+  } catch (error) {
+    console.error('Error clearing auth tokens:', error);
+    throw error;
+  }
 }
 
 /**
@@ -114,3 +124,13 @@ export async function getTokenTimeRemaining(): Promise<number> {
     return 0;
   }
 }
+
+// Default export for compatibility with routes
+export default {
+  storeAuthTokens,
+  isTokenExpired,
+  getRefreshToken,
+  clearAuthTokens,
+  getTokenTimeRemaining,
+  DEFAULT_TOKEN_EXPIRATION
+};
