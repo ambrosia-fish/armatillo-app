@@ -1,4 +1,5 @@
 import * as Crypto from 'expo-crypto';
+import * as Random from 'expo-random';
 import storage, { STORAGE_KEYS } from './storage';
 
 // Add new storage keys for security parameters
@@ -19,25 +20,27 @@ export function generateRandomString(length: number = 32): string {
   const randomValues = new Uint8Array(length);
   
   try {
-    // Use native crypto API for secure random generation
-    crypto.getRandomValues(randomValues);
+    // Get secure random values
+    Random.getRandomBytes(randomValues);
     
     for (let i = 0; i < length; i++) {
       result += chars[randomValues[i] % chars.length];
     }
-  } catch (error) {
-    // If the native crypto API fails, use expo-crypto's getRandomBytes as a fallback
-    console.warn('Native crypto.getRandomValues failed, using expo-crypto fallback');
     
-    // Generate a completely new set of random values
+    console.log(`Generated random string of length ${length}`);
+    return result;
+  } catch (error) {
+    console.error('Error generating random string:', error);
+    
+    // Fallback to a less secure method in case of error
+    console.warn('Using fallback method for random string generation');
     for (let i = 0; i < length; i++) {
-      // Use a high-entropy source to generate each character
-      const randomIndex = Math.floor(Crypto.getRandomBytes(1)[0] % chars.length);
+      const randomIndex = Math.floor(Math.random() * chars.length);
       result += chars[randomIndex];
     }
+    
+    return result;
   }
-  
-  return result;
 }
 
 /**
@@ -123,20 +126,22 @@ export async function verifyOAuthState(callbackState: string | null): Promise<bo
 }
 
 /**
- * Base64 URL encode a string
- * @param str The input string to encode
+ * Base64 URL encode a string or buffer
+ * @param input The input string or buffer to encode
  * @returns The base64 URL encoded string
  */
-export function base64UrlEncode(str: string | ArrayBuffer): string {
+export function base64UrlEncode(input: string | ArrayBuffer): string {
   let base64;
   
   // Handle string vs ArrayBuffer input
-  if (typeof str === 'string') {
-    // Encode the string to base64
-    base64 = btoa(str);
+  if (typeof input === 'string') {
+    // Convert string to ArrayBuffer
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
   } else {
     // Convert ArrayBuffer to a string
-    const bytes = new Uint8Array(str);
+    const bytes = new Uint8Array(input);
     const binary = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
     base64 = btoa(binary);
   }
@@ -162,7 +167,12 @@ export async function generateCodeChallenge(codeVerifier: string): Promise<strin
     );
     
     // Base64url encode the hash
-    return base64UrlEncode(hashBuffer);
+    const codeChallenge = base64UrlEncode(hashBuffer);
+    
+    console.log(`Code verifier: ${codeVerifier}`);
+    console.log(`Generated code challenge: ${codeChallenge}`);
+    
+    return codeChallenge;
   } catch (error) {
     console.error('Error generating code challenge:', error);
     throw error;
@@ -181,10 +191,18 @@ export async function generatePKCEChallenge(): Promise<{ codeVerifier: string, c
     // Generate code verifier (random string between 43-128 chars)
     // RFC 7636 recommends at least 43 characters, we use 64 for good security
     const codeVerifier = generateRandomString(64);
-    console.log(`Generated code verifier (length ${codeVerifier.length})`);
+    console.log(`Generated code verifier (length ${codeVerifier.length}): ${codeVerifier}`);
     
     // Store the code verifier securely
     await storage.setItem(SECURITY_KEYS.CODE_VERIFIER, codeVerifier);
+    
+    // Verify it was stored correctly
+    const storedVerifier = await storage.getItem(SECURITY_KEYS.CODE_VERIFIER);
+    if (storedVerifier !== codeVerifier) {
+      console.warn(`Warning: Stored code verifier doesn't match generated verifier`);
+    } else {
+      console.log('Code verifier successfully stored in secure storage');
+    }
     
     // Generate code challenge using SHA-256
     const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -203,7 +221,15 @@ export async function generatePKCEChallenge(): Promise<{ codeVerifier: string, c
  */
 export async function getStoredCodeVerifier(): Promise<string | null> {
   try {
-    return await storage.getItem(SECURITY_KEYS.CODE_VERIFIER);
+    const verifier = await storage.getItem(SECURITY_KEYS.CODE_VERIFIER);
+    
+    if (verifier) {
+      console.log(`Retrieved stored code verifier: ${verifier}`);
+    } else {
+      console.error('No code verifier found in storage');
+    }
+    
+    return verifier;
   } catch (error) {
     console.error('Error getting stored code verifier:', error);
     return null;
