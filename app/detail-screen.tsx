@@ -38,7 +38,7 @@ export default function DetailScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { refreshTokenIfNeeded } = useAuth();
-  const { formData, updateFormData, resetFormData } = useFormContext();
+  const { formData, updateFormData, resetForm } = useFormContext();
 
   // Determine if we're viewing an existing instance or creating a new one
   const isCreatingNewEntry = !id;
@@ -110,9 +110,9 @@ export default function DetailScreen() {
         automatic: formData.automatic || false,
         location: formData.location || '',
         activity: formData.activity || '',
-        feelings: formData.selectedEmotions || [],
-        thoughts: formData.selectedThoughts?.join(', ') || '',
-        environment: formData.selectedEnvironments || [],
+        feelings: formData.feelings || [],
+        thoughts: formData.thoughts || '',
+        environment: formData.environment || [],
         notes: formData.notes || '',
         time: formData.time || new Date(),
         duration: formData.duration || 1
@@ -122,7 +122,7 @@ export default function DetailScreen() {
       const response = await api.instances.createInstance(instanceData);
       
       // Reset form after successful submission
-      resetFormData();
+      resetForm();
       
       // Navigate to history screen
       Alert.alert(
@@ -240,7 +240,9 @@ export default function DetailScreen() {
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Type:</Text>
               <Text style={styles.detailValue}>
-                {formData.intentionType || 'Not recorded'}
+                {formData.automatic !== undefined 
+                  ? (formData.automatic ? 'Automatic' : 'Deliberate Decision') 
+                  : 'Not recorded'}
               </Text>
             </View>
             
@@ -272,11 +274,11 @@ export default function DetailScreen() {
             </View>
           </View>
           
-          {formData.selectedEmotions && formData.selectedEmotions.length > 0 && (
+          {formData.feelings && formData.feelings.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Feelings</Text>
               <View style={styles.tagContainer}>
-                {formData.selectedEmotions.map((feeling, index) => (
+                {formData.feelings.map((feeling, index) => (
                   <View key={index} style={styles.tag}>
                     <Text style={styles.tagText}>{feeling}</Text>
                   </View>
@@ -285,18 +287,18 @@ export default function DetailScreen() {
             </View>
           )}
           
-          {formData.selectedThoughts && formData.selectedThoughts.length > 0 && (
+          {formData.thoughts && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Thoughts</Text>
-              <Text style={styles.paragraphText}>{formData.selectedThoughts.join(", ")}</Text>
+              <Text style={styles.paragraphText}>{formData.thoughts}</Text>
             </View>
           )}
           
-          {formData.selectedEnvironments && formData.selectedEnvironments.length > 0 && (
+          {formData.environment && formData.environment.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Environmental Factors</Text>
               <View style={styles.tagContainer}>
-                {formData.selectedEnvironments.map((factor, index) => (
+                {formData.environment.map((factor, index) => (
                   <View key={index} style={styles.tag}>
                     <Text style={styles.tagText}>{factor}</Text>
                   </View>
