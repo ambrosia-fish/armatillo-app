@@ -276,6 +276,32 @@ function RootLayoutNav() {
               options={screenOptions} 
             />
             <Stack.Screen 
+              name="strength-screen" 
+              options={{ 
+                ...screenOptions,
+                headerShown: true,  // Enable the header for this screen
+                title: "About the Instance",
+                headerLeft: () => (
+                  <TouchableOpacity 
+                    onPress={() => router.back()}
+                    style={{ padding: 8 }}
+                  >
+                    <Ionicons name="arrow-back" size={24} color="#333" />
+                  </TouchableOpacity>
+                ),
+                headerRight: () => (
+                  <TouchableOpacity 
+                    onPress={() => router.push('/environment-screen')}
+                    style={{ padding: 8 }}
+                  >
+                    <Text style={{ color: '#2a9d8f', fontWeight: 'bold', fontSize: 16 }}>
+                      Next
+                    </Text>
+                  </TouchableOpacity>
+                ),
+              }}
+            />
+            <Stack.Screen 
               name="detail-screen" 
               options={screenOptions} 
             />
