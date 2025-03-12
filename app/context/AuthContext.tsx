@@ -58,7 +58,7 @@ interface AuthProviderProps {
 const getApiUrl = () => {
   if (__DEV__) {
     // Use ngrok URL for development
-    return 'http://localhost:3000';
+    return 'http://192.168.0.101:3000';
   }
   return 'https://api.armatillo.com';
 };
