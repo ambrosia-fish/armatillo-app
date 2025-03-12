@@ -1,233 +1,156 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  ActivityIndicator,
-  TouchableOpacity 
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from './context/AuthContext';
-import api from './services/api';
+import CancelFooter from './components/CancelFooter';
+import { useFormContext } from './context/FormContext';
 
-// Instance interface (same as in progress.tsx)
-interface Instance {
-  _id: string;
-  userId: string;
-  createdAt: string;
-  urgeStrength?: number;
-  automatic?: boolean;
-  location?: string;
-  activity?: string;
-  feelings?: string[];
-  thoughts?: string;
-  environment?: string[];
-  notes?: string;
-}
-
-export default function DetailScreen() {
-  const { id } = useLocalSearchParams();
-  const [instance, setInstance] = useState<Instance | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function StrengthScreen() {
+  const router = useRouter();
+  const { formData, updateFormData } = useFormContext();
   
-  const { refreshTokenIfNeeded } = useAuth();
+  // Initialize state from context if available
+  const [urgeStrength, setUrgeStrength] = useState<number | null>(
+    formData.urgeStrength || null
+  );
+  const [intentionType, setIntentionType] = useState<string | null>(
+    formData.intentionType || null
+  );
+  
+  // We'll use this to prevent preset selection for now
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
-  // Fetch instance details
-  useEffect(() => {
-    const fetchInstanceDetail = async () => {
-      if (!id) {
-        setError('Invalid instance ID');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Ensure token is valid
-        await refreshTokenIfNeeded();
-        
-        // Fetch instance by ID
-        const response = await api.instances.getInstance(id as string);
-        setInstance(response);
-      } catch (err) {
-        console.error('Error fetching instance details:', err);
-        setError('Failed to load details. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInstanceDetail();
-  }, [id]);
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const handleNext = () => {
+    // Save the data to context
+    updateFormData({
+      urgeStrength: urgeStrength || undefined,
+      intentionType: intentionType || undefined
     });
+    
+    // Navigate to the next screen in the questionnaire flow
+    router.push('/environment-screen');
   };
 
-  // Handle back navigation
-  const goBack = () => {
-    router.back();
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={goBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Instance Details</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text style={styles.loadingText}>Loading details...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error || !instance) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={goBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Instance Details</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={50} color="#d32f2f" />
-          <Text style={styles.errorText}>{error || 'Instance not found'}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={goBack}
+  // Helper function to render strength option buttons (1-10)
+  const renderStrengthOptions = () => {
+    const options = [];
+    for (let i = 1; i <= 10; i++) {
+      options.push(
+        <TouchableOpacity
+          key={i}
+          style={[
+            styles.strengthOption,
+            urgeStrength === i && styles.selectedOption,
+          ]}
+          onPress={() => setUrgeStrength(i)}
+        >
+          <Text
+            style={[
+              styles.strengthOptionText,
+              urgeStrength === i && styles.selectedOptionText,
+            ]}
           >
-            <Text style={styles.retryButtonText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+            {i}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    return options;
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Instance Details</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.title}>About the Instance</Text>
+        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+          <Text style={styles.nextButtonText}>Next</Text>
+        </TouchableOpacity>
       </View>
       
       <ScrollView style={styles.content}>
-        <View style={styles.dateContainer}>
-          <Text style={styles.dateLabel}>Recorded on:</Text>
-          <Text style={styles.dateValue}>{formatDate(instance.createdAt)}</Text>
-        </View>
-        
+        {/* Presets Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Behavior Details</Text>
+          <Text style={styles.sectionTitle}>Presets</Text>
+          <Text style={styles.sectionSubtitle}>Save time by using common patterns</Text>
           
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Urge Strength:</Text>
-            <Text style={styles.detailValue}>
-              {instance.urgeStrength !== undefined 
-                ? `${instance.urgeStrength}/10` 
-                : 'Not recorded'}
-            </Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Type:</Text>
-            <Text style={styles.detailValue}>
-              {instance.automatic !== undefined 
-                ? (instance.automatic ? 'Automatic' : 'Deliberate Decision') 
-                : 'Not recorded'}
-            </Text>
+          <View style={styles.presetsContainer}>
+            <Text style={styles.emptyPresetsText}>No presets available yet</Text>
+            <TouchableOpacity 
+              style={styles.newPresetButton}
+              disabled={true}
+            >
+              <Text style={styles.newPresetButtonText}>+ New Preset</Text>
+            </TouchableOpacity>
           </View>
         </View>
         
+        {/* Urge Strength Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Context</Text>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Location:</Text>
-            <Text style={styles.detailValue}>
-              {instance.location || 'Not recorded'}
-            </Text>
+          <Text style={styles.sectionTitle}>How strong was the urge?</Text>
+          <View style={styles.strengthOptionsContainer}>
+            {renderStrengthOptions()}
           </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Activity:</Text>
-            <Text style={styles.detailValue}>
-              {instance.activity || 'Not recorded'}
-            </Text>
+          <View style={styles.strengthLabelsContainer}>
+            <Text style={styles.strengthLabel}>Mild</Text>
+            <Text style={styles.strengthLabel}>Strong</Text>
           </View>
         </View>
         
-        {instance.feelings && instance.feelings.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Feelings</Text>
-            <View style={styles.tagContainer}>
-              {instance.feelings.map((feeling, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{feeling}</Text>
-                </View>
-              ))}
-            </View>
+        {/* Intention Type Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Was it intentional or automatic?</Text>
+          <View style={styles.intentionOptionsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.intentionOption,
+                intentionType === 'intentional' && styles.selectedOption,
+              ]}
+              onPress={() => setIntentionType('intentional')}
+            >
+              <Text
+                style={[
+                  styles.intentionOptionText,
+                  intentionType === 'intentional' && styles.selectedOptionText,
+                ]}
+              >
+                Intentional
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.intentionOption,
+                intentionType === 'automatic' && styles.selectedOption,
+              ]}
+              onPress={() => setIntentionType('automatic')}
+            >
+              <Text
+                style={[
+                  styles.intentionOptionText,
+                  intentionType === 'automatic' && styles.selectedOptionText,
+                ]}
+              >
+                Automatic
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
-        
-        {instance.thoughts && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Thoughts</Text>
-            <Text style={styles.paragraphText}>{instance.thoughts}</Text>
-          </View>
-        )}
-        
-        {instance.environment && instance.environment.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Environmental Factors</Text>
-            <View style={styles.tagContainer}>
-              {instance.environment.map((factor, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{factor}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-        
-        {instance.notes && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-            <Text style={styles.paragraphText}>{instance.notes}</Text>
-          </View>
-        )}
-        
-        <View style={styles.spacer} />
+        </View>
       </ScrollView>
+      
+      {/* Add Cancel Footer */}
+      <CancelFooter onCancel={() => {
+        // Reset form data when cancelling
+        updateFormData({
+          urgeStrength: undefined,
+          intentionType: undefined
+        });
+      }} />
+      
+      <StatusBar style="auto" />
     </SafeAreaView>
   );
 }
@@ -235,7 +158,7 @@ export default function DetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
@@ -244,48 +167,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: 'white',
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
+  closeButton: {
+    padding: 8,
   },
-  headerTitle: {
+  title: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  nextButton: {
+    padding: 8,
+  },
+  nextButtonText: {
+    color: '#2a9d8f',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  dateContainer: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  dateLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  dateValue: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
   section: {
-    backgroundColor: 'white',
+    marginBottom: 24,
     padding: 16,
-    borderRadius: 10,
-    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -295,79 +203,94 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+    marginBottom: 16,
   },
-  detailRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontSize: 15,
-    color: '#555',
-    width: 120,
-    fontWeight: '500',
-  },
-  detailValue: {
-    fontSize: 15,
-    color: '#333',
-    flex: 1,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: '#e1f5fe',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    margin: 4,
-  },
-  tagText: {
-    color: '#0288d1',
-    fontSize: 14,
-  },
-  paragraphText: {
-    fontSize: 15,
-    color: '#333',
-    lineHeight: 22,
-  },
-  spacer: {
-    height: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
+  sectionSubtitle: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 16,
   },
-  errorContainer: {
-    flex: 1,
+  strengthOptionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  strengthOption: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
-  errorText: {
-    fontSize: 16,
-    color: '#d32f2f',
+  selectedOption: {
+    backgroundColor: '#2a9d8f',
+    borderColor: '#2a9d8f',
+  },
+  strengthOptionText: {
     textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 20,
+    fontSize: 14,
   },
-  retryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
+  selectedOptionText: {
+    color: '#fff',
     fontWeight: 'bold',
+  },
+  strengthLabelsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  strengthLabel: {
+    color: '#666',
+    fontSize: 14,
+  },
+  intentionOptionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  intentionOption: {
+    flex: 1,
+    marginHorizontal: 5,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  intentionOptionText: {
+    textAlign: 'center',
     fontSize: 16,
+  },
+  // New styles for presets section
+  presetsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+  },
+  emptyPresetsText: {
+    fontSize: 16,
+    color: '#999',
+    marginBottom: 12,
+  },
+  newPresetButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#e0e0e0',
+    opacity: 0.6,
+  },
+  newPresetButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
 });
