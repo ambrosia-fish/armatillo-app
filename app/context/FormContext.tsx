@@ -83,3 +83,11 @@ export function useFormContext() {
   
   return context;
 }
+
+// Create a default export
+const Form = {
+  FormProvider,
+  useFormContext
+};
+
+export default Form;

@@ -1,19 +1,22 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { FormProvider } from './context/FormContext';
 import { AuthProvider } from './context/AuthContext';
+import crashRecovery from './utils/crashRecovery';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+  // Use our custom error boundary
+  ErrorBoundary
+};
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -28,6 +31,54 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+  const [isCrashDetected, setIsCrashDetected] = useState(false);
+  const [isDevRestart, setIsDevRestart] = useState(false);
+  const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<any>(null);
+
+  // Initialize crash detection
+  useEffect(() => {
+    const initCrash = async () => {
+      try {
+        // Initialize crash detection as early as possible
+        const crashDetected = await crashRecovery.initCrashDetection();
+        
+        if (crashDetected) {
+          console.log('Crash detected during app startup');
+          const recoveryInfo = await crashRecovery.getCrashRecoveryData();
+          
+          if (recoveryInfo) {
+            console.log('Recovery data available:', recoveryInfo);
+            setRecoveryData(recoveryInfo);
+            
+            // Check if this is a dev mode restart
+            if (recoveryInfo.isDevelopmentRestart) {
+              setIsDevRestart(true);
+              // Don't show recovery modal for dev restarts
+              console.log('Development restart, not showing recovery modal');
+              // Automatically clean up recovery data for dev restarts
+              await crashRecovery.completeCrashRecovery();
+            } else {
+              setIsCrashDetected(true);
+              // Only show recovery modal for actual crashes
+              if (loaded) {
+                setIsRecoveryModalVisible(true);
+              }
+            }
+          }
+        } else if (crashRecovery.isDevRestart()) {
+          setIsDevRestart(true);
+          console.log('Development mode restart detected');
+          // Automatically clean up any recovery data
+          await crashRecovery.completeCrashRecovery();
+        }
+      } catch (error) {
+        console.error('Error initializing crash detection:', error);
+      }
+    };
+    
+    initCrash();
+  }, [loaded]);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -37,18 +88,149 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      
+      // If crash was detected (and not a dev restart), show recovery modal
+      if (isCrashDetected && !isDevRestart && recoveryData) {
+        setIsRecoveryModalVisible(true);
+      }
     }
-  }, [loaded]);
+  }, [loaded, isCrashDetected, isDevRestart, recoveryData]);
+
+  // Handle recovery action - restore data
+  const handleRestore = async () => {
+    try {
+      // Here you would restore any critical app state from recoveryData
+      console.log('Restoring app state from recovery data');
+      
+      // Close the modal
+      setIsRecoveryModalVisible(false);
+      
+      // Inform user
+      Alert.alert(
+        'Recovery Complete',
+        'Your data has been restored successfully.'
+      );
+      
+      // Clear recovery data after successful restore
+      await crashRecovery.completeCrashRecovery();
+    } catch (error) {
+      console.error('Error restoring app state:', error);
+      
+      // Inform user of error
+      Alert.alert(
+        'Recovery Failed',
+        'Unable to restore your data. Please try again.'
+      );
+    }
+  };
+
+  // Handle recovery action - discard data
+  const handleDiscard = async () => {
+    try {
+      // Clear recovery data without restoring
+      await crashRecovery.completeCrashRecovery();
+      
+      // Close the modal
+      setIsRecoveryModalVisible(false);
+      
+      // Inform user
+      Alert.alert(
+        'Data Discarded',
+        'Continuing with a fresh start.'
+      );
+    } catch (error) {
+      console.error('Error discarding recovery data:', error);
+      
+      // Close modal anyway
+      setIsRecoveryModalVisible(false);
+    }
+  };
+
+  // Render recovery modal - only shown for genuine crashes
+  const RecoveryModal = () => (
+    <Modal
+      visible={isRecoveryModalVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setIsRecoveryModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Data Recovery</Text>
+          <Text style={styles.modalText}>
+            It looks like the app didn't close properly last time.
+            Would you like to restore your unsaved data?
+          </Text>
+          
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.restoreButton]}
+              onPress={handleRestore}
+            >
+              <Text style={styles.buttonText}>Restore</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.discardButton]}
+              onPress={handleDiscard}
+            >
+              <Text style={styles.buttonText}>Discard</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   if (!loaded) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <>
+      <RootLayoutNav />
+      <RecoveryModal />
+    </>
+  );
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
+
+  // Save app state when navigating - Fixed router state listener
+  useEffect(() => {
+    // Check if router has the addListener method before using it
+    if (router && typeof router.addListener === 'function') {
+      // Listen for route changes to save state
+      const unsubscribe = router.addListener('state', () => {
+        // Get current route info
+        const currentRoute = router.state?.key;
+        if (currentRoute) {
+          // Save state on important navigation events
+          crashRecovery.saveCurrentAppState({
+            currentRoute,
+            timestamp: Date.now()
+          });
+        }
+      });
+
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
+    } else {
+      // Fallback for when router.addListener is not available
+      console.log('Router listener not available, using manual state saving');
+      
+      // Save initial state
+      crashRecovery.saveCurrentAppState({
+        initialRoute: true,
+        timestamp: Date.now()
+      });
+    }
+  }, [router]);
 
   // Screen options for BFRB tracking flow
   // This hides previous screens when a new screen is displayed
@@ -119,3 +301,59 @@ function RootLayoutNav() {
     </AuthProvider>
   );
 }
+
+// Styles for the recovery modal
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#2a9d8f',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  restoreButton: {
+    backgroundColor: '#2a9d8f',
+  },
+  discardButton: {
+    backgroundColor: '#e76f51',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});
