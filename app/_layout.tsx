@@ -1,4 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons'; // Add Ionicons import
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
@@ -277,29 +278,7 @@ function RootLayoutNav() {
             />
             <Stack.Screen 
               name="strength-screen" 
-              options={{ 
-                ...screenOptions,
-                headerShown: true,  // Enable the header for this screen
-                title: "About the Instance",
-                headerLeft: () => (
-                  <TouchableOpacity 
-                    onPress={() => router.back()}
-                    style={{ padding: 8 }}
-                  >
-                    <Ionicons name="arrow-back" size={24} color="#333" />
-                  </TouchableOpacity>
-                ),
-                headerRight: () => (
-                  <TouchableOpacity 
-                    onPress={() => router.push('/environment-screen')}
-                    style={{ padding: 8 }}
-                  >
-                    <Text style={{ color: '#2a9d8f', fontWeight: 'bold', fontSize: 16 }}>
-                      Next
-                    </Text>
-                  </TouchableOpacity>
-                ),
-              }}
+              options={screenOptions}  // Just use the standard screenOptions
             />
             <Stack.Screen 
               name="detail-screen" 
