@@ -12,13 +12,24 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import OptionDictionaries, { OptionItem } from '../constants/optionDictionaries';
 
 // Define the Instance type
 interface Instance {
   _id: string;
-  userId: string;
+  userId?: string;
   createdAt: string;
+  time?: string | Date;
   urgeStrength?: number;
+  intentionType?: string;
+  duration?: string | number;
+  timeAgo?: string;
+  // New fields based on the MongoDB data
+  selectedEnvironments?: string[];
+  selectedEmotions?: string[];
+  selectedSensations?: string[];
+  selectedThoughts?: string[];
+  // Legacy fields
   automatic?: boolean;
   location?: string;
   activity?: string;
@@ -27,8 +38,6 @@ interface Instance {
   thoughts?: string[];
   environment?: string[];
   notes?: string;
-  duration?: string;
-  timeAgo?: string;
 }
 
 interface InstanceDetailsModalProps {
@@ -55,6 +64,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
         setLoading(true);
         setError(null);
         const data = await api.instances.getInstance(instanceId);
+        console.log('Instance data:', data); // Debug log
         setInstance(data);
       } catch (err) {
         console.error('Error fetching instance details:', err);
@@ -85,20 +95,69 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     });
   };
 
-  // Render list items with bullet points
-  const renderList = (items?: string[]) => {
-    if (!items || items.length === 0) return <Text style={styles.infoValue}>None</Text>;
+  // Get option label and emoji by ID
+  const getOptionDetails = (optionId: string, optionsList: OptionItem[]): { label: string, emoji: string } => {
+    const option = optionsList.find(opt => opt.id === optionId);
+    return option 
+      ? { label: option.label, emoji: option.emoji } 
+      : { label: optionId, emoji: '' }; // Fallback to ID if not found
+  };
+  
+  // Render array items with emojis
+  const renderListWithEmojis = (items?: string[], optionsList?: OptionItem[]) => {
+    if (!items || items.length === 0 || !optionsList) {
+      return <Text style={styles.infoValue}>None</Text>;
+    }
     
     return (
       <View style={styles.listContainer}>
-        {items.map((item, index) => (
-          <View key={index} style={styles.listItem}>
-            <Text style={styles.bulletPoint}>•</Text>
-            <Text style={styles.listItemText}>{item}</Text>
-          </View>
-        ))}
+        {items.map((itemId, index) => {
+          const { label, emoji } = getOptionDetails(itemId, optionsList);
+          return (
+            <View key={index} style={styles.listItem}>
+              <Text style={styles.emoji}>{emoji}</Text>
+              <Text style={styles.listItemText}>{label}</Text>
+            </View>
+          );
+        })}
       </View>
     );
+  };
+
+  // Get the behavior type (automatic/intentional)
+  const getBehaviorType = () => {
+    if (instance?.intentionType) {
+      return instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional';
+    } else if (instance?.automatic !== undefined) {
+      return instance.automatic ? 'Automatic' : 'Deliberate';
+    }
+    return 'Unknown';
+  };
+
+  // Get feeling items (handles both selectedEmotions and feelings array)
+  const getFeelingsArray = () => {
+    return instance?.selectedEmotions || instance?.feelings || [];
+  };
+
+  // Get physical sensations (handles both selectedSensations and physicalSensations array)
+  const getSensationsArray = () => {
+    return instance?.selectedSensations || instance?.physicalSensations || [];
+  };
+
+  // Get thoughts (handles both selectedThoughts and thoughts array)
+  const getThoughtsArray = () => {
+    return instance?.selectedThoughts || instance?.thoughts || [];
+  };
+
+  // Get environments (handles both selectedEnvironments and environment array)
+  const getEnvironmentsArray = () => {
+    return instance?.selectedEnvironments || instance?.environment || [];
+  };
+
+  // Format duration
+  const formatDuration = (duration?: string | number) => {
+    if (!duration) return 'Unknown';
+    return typeof duration === 'number' ? `${duration} minutes` : duration;
   };
 
   return (
@@ -152,17 +211,10 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
                 <Text style={styles.sectionTitle}>When</Text>
                 <Text style={styles.dateText}>{formatDate(instance.createdAt)}</Text>
                 
-                {instance.timeAgo && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Time Ago:</Text>
-                    <Text style={styles.infoValue}>{instance.timeAgo}</Text>
-                  </View>
-                )}
-                
-                {instance.duration && (
+                {(instance.duration || instance.timeAgo) && (
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Duration:</Text>
-                    <Text style={styles.infoValue}>{instance.duration}</Text>
+                    <Text style={styles.infoValue}>{formatDuration(instance.duration)}</Text>
                   </View>
                 )}
               </View>
@@ -177,12 +229,10 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
                   </View>
                 )}
                 
-                {instance.automatic !== undefined && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Type:</Text>
-                    <Text style={styles.infoValue}>{instance.automatic ? 'Automatic' : 'Deliberate'}</Text>
-                  </View>
-                )}
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Type:</Text>
+                  <Text style={styles.infoValue}>{getBehaviorType()}</Text>
+                </View>
               </View>
               
               <View style={styles.section}>
@@ -204,7 +254,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
                 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Environment:</Text>
-                  {renderList(instance.environment)}
+                  {renderListWithEmojis(getEnvironmentsArray(), OptionDictionaries.environmentOptions)}
                 </View>
               </View>
               
@@ -213,17 +263,17 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
                 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Feelings:</Text>
-                  {renderList(instance.feelings)}
+                  {renderListWithEmojis(getFeelingsArray(), OptionDictionaries.feelingOptions)}
                 </View>
                 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Physical Sensations:</Text>
-                  {renderList(instance.physicalSensations)}
+                  {renderListWithEmojis(getSensationsArray(), OptionDictionaries.sensationOptions)}
                 </View>
                 
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Thoughts:</Text>
-                  {renderList(instance.thoughts)}
+                  {renderListWithEmojis(getThoughtsArray(), OptionDictionaries.thoughtOptions)}
                 </View>
               </View>
               
@@ -326,12 +376,12 @@ const styles = StyleSheet.create({
   },
   listItem: {
     flexDirection: 'row',
-    marginBottom: 2,
+    marginBottom: 6,
+    alignItems: 'center',
   },
-  bulletPoint: {
-    fontSize: 14,
-    marginRight: 4,
-    color: '#666',
+  emoji: {
+    fontSize: 16,
+    marginRight: 8,
   },
   listItemText: {
     fontSize: 14,
