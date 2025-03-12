@@ -8,21 +8,45 @@ This application uses Google OAuth for authentication. Follow these steps to set
 
 ### Development Mode - OAuth Bypass
 
-When running the app in development mode, OAuth authentication is automatically bypassed to make local development easier. This feature:
+When running the app in development mode, OAuth authentication is automatically bypassed to make local development easier. The approach uses a special dev-login endpoint on the backend that:
 
-- Creates a mock user with the following details:
-  ```
-  id: 'dev-user-id',
-  email: 'dev@example.com',
-  displayName: 'Development User',
-  firstName: 'Dev',
-  lastName: 'User'
-  ```
-- Skips the Google OAuth login screen entirely
-- Redirects directly to the main application interface
-- Automatically handles token validation and refresh without API calls
+1. Creates/retrieves a development user account
+2. Generates real tokens for this user
+3. Returns these tokens to the app without requiring any OAuth login
 
-This bypass is controlled by the `BYPASS_AUTH_IN_DEV` flag in `app/context/AuthContext.tsx`, which is automatically set to `true` when `__DEV__` is true. If you need to test the actual OAuth flow during development, you can set this flag to `false`.
+This approach has several benefits for development:
+- Uses real tokens that work with all API endpoints
+- Preserves the normal authentication flow
+- Doesn't require code changes when deploying to production
+
+#### How it works
+
+The authentication bypass consists of two parts:
+
+1. **Backend** (armatillo-api):
+   - A development-only route (`/api/auth/dev-login`) is exposed only when `NODE_ENV=development`
+   - This endpoint creates a standard development user account if it doesn't exist
+   - It generates valid tokens and returns them just like a real login would
+
+2. **Frontend** (armatillo-app):
+   - When in development mode (`__DEV__` is true), the login flow is modified
+   - Instead of opening the OAuth browser, it calls the dev-login endpoint
+   - The received tokens are stored and used exactly as they would be after a normal login
+
+#### Disabling the Development Bypass
+
+If you need to test the actual OAuth flow in development:
+
+1. In the frontend app (armatillo-app), open `app/context/AuthContext.tsx` and change:
+   ```typescript
+   const BYPASS_AUTH_IN_DEV = __DEV__;
+   ```
+   to:
+   ```typescript
+   const BYPASS_AUTH_IN_DEV = false;
+   ```
+
+2. You can also selectively disable just the backend part by not setting `NODE_ENV=development` when running the API server.
 
 ### Backend Configuration (armatillo-api)
 
@@ -40,6 +64,7 @@ This bypass is controlled by the `BYPASS_AUTH_IN_DEV` flag in `app/context/AuthC
    PORT=5000
    MONGO_URI=mongodb://localhost:27017/bfrb-tracker
    FRONTEND_URL=http://localhost:3000
+   API_URL=http://localhost:5000
 
    # OAuth 
    GOOGLE_CLIENT_ID=your_google_client_id
@@ -50,9 +75,15 @@ This bypass is controlled by the `BYPASS_AUTH_IN_DEV` flag in `app/context/AuthC
 
 ### Frontend Configuration (armatillo-app)
 
-1. Update the API URL in `app/services/api.ts` to point to your local backend:
+1. Update the API URL in `app/context/AuthContext.tsx` to point to your local backend:
    ```typescript
-   const API_URL = 'http://192.168.0.101:3000/api'; // Replace with your API URL
+   const getApiUrl = () => {
+     if (__DEV__) {
+       // Use your local API URL for development
+       return 'http://192.168.0.101:5000';
+     }
+     return 'https://api.armatillo.com';
+   };
    ```
 
 2. Configure your Expo development build to handle custom URI schemes:
@@ -103,10 +134,8 @@ This application implements several security best practices:
    ```
 
 3. Open the app in your Expo Go client or simulator
-4. If in production mode, you should be redirected to the login screen
-5. Tap "Continue with Google"
-6. Complete the Google OAuth flow
-7. You should be redirected back to the app and logged in
+4. If in development mode, you'll be automatically logged in with the development user account
+5. If in production mode (or with bypass disabled), tap "Continue with Google" and complete the OAuth flow
 
 ## Troubleshooting
 
@@ -115,9 +144,14 @@ If you encounter issues with the OAuth flow:
 - Check that your backend is running and accessible from your device/simulator
 - Verify that the redirect URI matches exactly in both Google Cloud Console and your backend config
 - Check for any CORS issues if testing on a physical device
-- Make sure you're using the correct API URL in `app/services/api.ts`
+- Make sure you're using the correct API URL in the app's `getApiUrl()` function
 - Check the JWT and session secrets are properly set
 - Inspect logs on both backend and frontend for specific error messages
+
+If the development bypass isn't working:
+- Ensure the API is running with `NODE_ENV=development`
+- Check that the backend URL in the app is correct and reachable
+- Verify network connectivity between the app and your API
 
 ## Development
 
