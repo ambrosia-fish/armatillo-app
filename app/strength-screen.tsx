@@ -169,6 +169,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
+    // Remove any box shadow or elevation here
+    shadowOpacity: 0,
+    elevation: 0,
   },
   closeButton: {
     padding: 8,
