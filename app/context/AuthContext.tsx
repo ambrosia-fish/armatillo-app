@@ -75,6 +75,9 @@ const MAX_AUTH_FAILURES = 3;
 // Counter for consecutive authentication failures
 let authFailureCount = 0;
 
+// Flag to bypass authentication in development mode
+const BYPASS_AUTH_IN_DEV = __DEV__;
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -82,7 +85,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [inProgress, setInProgress] = useState(false);
 
   // Computed property to check if user is authenticated
-  const isAuthenticated = !!token && !!user;
+  // In development mode, we'll always consider the user authenticated if BYPASS_AUTH_IN_DEV is true
+  const isAuthenticated = BYPASS_AUTH_IN_DEV ? true : !!token && !!user;
 
   // Set up a listener for URL events (deep linking)
   useEffect(() => {
@@ -116,6 +120,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const loadAuthState = async () => {
       try {
+        // If we're bypassing auth in development, set up mock user data
+        if (BYPASS_AUTH_IN_DEV) {
+          console.log('Development mode: Bypassing authentication');
+          const mockUser: User = {
+            id: 'dev-user-id',
+            email: 'dev@example.com',
+            displayName: 'Development User',
+            firstName: 'Dev',
+            lastName: 'User',
+          };
+          setUser(mockUser);
+          setToken('dev-token');
+          await storage.setObject(STORAGE_KEYS.USER, mockUser);
+          await storage.setItem(STORAGE_KEYS.USER_NAME, mockUser.displayName);
+          setIsLoading(false);
+          return;
+        }
+
         // Load token from storage
         const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
         
@@ -172,6 +194,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Schedule token refresh before it expires
   const scheduleTokenRefresh = async () => {
+    // Skip token refresh in development bypass mode
+    if (BYPASS_AUTH_IN_DEV) return;
+    
     try {
       // Clear any existing timeout
       if (tokenRefreshTimeout) {
@@ -208,6 +233,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Clear authentication state
   const clearAuthState = async () => {
+    // Skip clearing auth in development bypass mode
+    if (BYPASS_AUTH_IN_DEV) return;
+    
     try {
       console.log('Clearing authentication state...');
       
@@ -232,6 +260,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Refresh the access token
   const refreshToken = async (): Promise<boolean> => {
+    // Skip token refresh in development bypass mode
+    if (BYPASS_AUTH_IN_DEV) return true;
+    
     try {
       console.log('Attempting to refresh token');
       
@@ -296,6 +327,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Refresh token if needed (can be called externally)
   const refreshTokenIfNeeded = async (): Promise<boolean> => {
+    // Skip token refresh in development bypass mode
+    if (BYPASS_AUTH_IN_DEV) return true;
+    
     try {
       // Check if token is valid
       const currentToken = await storage.getItem(STORAGE_KEYS.TOKEN);
@@ -322,6 +356,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Report suspicious activity (compromised tokens)
   const reportSuspiciousActivity = async (reason: string): Promise<void> => {
+    // Skip reporting in development bypass mode
+    if (BYPASS_AUTH_IN_DEV) return;
+    
     try {
       const currentToken = token;
       if (currentToken) {
@@ -370,6 +407,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Handle the authentication response
   const handleAuthResponse = async (url: string) => {
+    // Skip in development bypass mode
+    if (BYPASS_AUTH_IN_DEV) return;
+    
     try {
       setIsLoading(true);
       
@@ -644,6 +684,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Function to initiate Google OAuth login
   const login = async () => {
+    // In development mode with bypass enabled, create a mock user and skip OAuth
+    if (BYPASS_AUTH_IN_DEV) {
+      console.log('Development mode: Creating mock user and skipping OAuth');
+      const mockUser: User = {
+        id: 'dev-user-id',
+        email: 'dev@example.com',
+        displayName: 'Development User',
+        firstName: 'Dev',
+        lastName: 'User',
+      };
+      
+      setUser(mockUser);
+      setToken('dev-token');
+      await storage.setObject(STORAGE_KEYS.USER, mockUser);
+      await storage.setItem(STORAGE_KEYS.USER_NAME, mockUser.displayName);
+      
+      // Navigate directly to home screen, bypassing login
+      router.replace('/(tabs)');
+      return;
+    }
+    
     try {
       console.log('Starting login process...');
       setIsLoading(true);
@@ -738,6 +799,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Function to logout
   const logout = async () => {
+    // In development mode with bypass enabled, just reset the state without calling the API
+    if (BYPASS_AUTH_IN_DEV) {
+      console.log('Development mode: Resetting auth state');
+      // Navigate to login screen
+      router.replace('/login');
+      return;
+    }
+    
     try {
       console.log('Starting complete logout process...');
       setIsLoading(true);
