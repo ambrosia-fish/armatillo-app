@@ -6,6 +6,24 @@ Mobile app for tracking BFRB (Body-Focused Repetitive Behaviors) habits during h
 
 This application uses Google OAuth for authentication. Follow these steps to set up and test the authentication flow:
 
+### Development Mode - OAuth Bypass
+
+When running the app in development mode, OAuth authentication is automatically bypassed to make local development easier. This feature:
+
+- Creates a mock user with the following details:
+  ```
+  id: 'dev-user-id',
+  email: 'dev@example.com',
+  displayName: 'Development User',
+  firstName: 'Dev',
+  lastName: 'User'
+  ```
+- Skips the Google OAuth login screen entirely
+- Redirects directly to the main application interface
+- Automatically handles token validation and refresh without API calls
+
+This bypass is controlled by the `BYPASS_AUTH_IN_DEV` flag in `app/context/AuthContext.tsx`, which is automatically set to `true` when `__DEV__` is true. If you need to test the actual OAuth flow during development, you can set this flag to `false`.
+
 ### Backend Configuration (armatillo-api)
 
 1. Create a Google OAuth Client ID and Secret in the [Google Cloud Console](https://console.cloud.google.com/):
@@ -85,7 +103,7 @@ This application implements several security best practices:
    ```
 
 3. Open the app in your Expo Go client or simulator
-4. You should be redirected to the login screen
+4. If in production mode, you should be redirected to the login screen
 5. Tap "Continue with Google"
 6. Complete the Google OAuth flow
 7. You should be redirected back to the app and logged in
