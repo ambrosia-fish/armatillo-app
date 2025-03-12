@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { router } from 'expo-router';
+import InstanceDetailsModal from '../components/InstanceDetailsModal';
 
 // Define the Instance type based on your backend data structure
 interface Instance {
@@ -34,6 +34,10 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Modal state management
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
   const { isAuthenticated, refreshTokenIfNeeded } = useAuth();
 
@@ -90,8 +94,14 @@ export default function HistoryScreen() {
 
   // Navigate to detail view
   const viewInstanceDetails = (instance: Instance) => {
-    // This will be implemented later to navigate to a detail screen
-    router.push(`/detail-screen?id=${instance._id}`);
+    setSelectedInstanceId(instance._id);
+    setModalVisible(true);
+  };
+
+  // Close the modal
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedInstanceId(null);
   };
 
   // Render each instance item
@@ -184,6 +194,13 @@ export default function HistoryScreen() {
           }
         />
       )}
+      
+      {/* Instance Details Modal */}
+      <InstanceDetailsModal 
+        isVisible={modalVisible}
+        instanceId={selectedInstanceId}
+        onClose={closeModal}
+      />
     </SafeAreaView>
   );
 }
