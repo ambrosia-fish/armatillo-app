@@ -115,63 +115,86 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // Load the user's authentication state on app start
+  // Automatically attempt dev login in development mode
   useEffect(() => {
-    const loadAuthState = async () => {
-      try {
-        // Load token from storage
-        const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
-        
-        // Load user data from storage
-        const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
-
-        if (storedToken && storedUser) {
-          // Validate the token (signature verification + blacklist check)
-          const isTokenValid = await validateToken(storedToken);
-          
-          if (!isTokenValid) {
-            console.log('Token validation failed - invalid signature or blacklisted');
-            await clearAuthState();
-            router.replace('/login');
-            return;
-          }
-          
-          // Check if token is expired or about to expire
-          if (await isTokenExpired()) {
-            console.log('Token expired on app start, attempting refresh');
-            const refreshed = await refreshToken();
-            if (!refreshed) {
-              // Refresh failed, clear auth state and redirect to login
-              await clearAuthState();
-              router.replace('/login');
-              return;
-            }
-          } else {
-            // Token is valid, set it
-            setToken(storedToken);
-            
-            // Schedule token refresh before it expires
-            scheduleTokenRefresh();
-          }
-          
-          // Set user data
-          setUser(storedUser);
-          
-          // Store user display name separately for easier access
-          if (storedUser.displayName) {
-            await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
-          }
+    const autoDevLogin = async () => {
+      if (BYPASS_AUTH_IN_DEV && !isAuthenticated && !token && !user) {
+        console.log('Development mode: Auto-logging in with dev credentials');
+        try {
+          await devLogin();
+        } catch (error) {
+          console.error('Auto dev login failed:', error);
+          // Continue with normal app flow if dev login fails
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Failed to load authentication state:', error);
-        await clearAuthState();
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    loadAuthState();
+    // If no stored credentials are found, try auto dev login
+    const checkAndLogin = async () => {
+      // First check for existing stored credentials
+      await loadAuthState();
+      
+      // If still not authenticated, try dev login
+      if (BYPASS_AUTH_IN_DEV && !isAuthenticated && !token && !user) {
+        await autoDevLogin();
+      }
+    };
+
+    checkAndLogin();
   }, []);
+
+  // Load the user's authentication state on app start
+  const loadAuthState = async () => {
+    try {
+      // Load token from storage
+      const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
+      
+      // Load user data from storage
+      const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
+
+      if (storedToken && storedUser) {
+        // Validate the token (signature verification + blacklist check)
+        const isTokenValid = await validateToken(storedToken);
+        
+        if (!isTokenValid) {
+          console.log('Token validation failed - invalid signature or blacklisted');
+          await clearAuthState();
+          return;
+        }
+        
+        // Check if token is expired or about to expire
+        if (await isTokenExpired()) {
+          console.log('Token expired on app start, attempting refresh');
+          const refreshed = await refreshToken();
+          if (!refreshed) {
+            // Refresh failed, clear auth state and redirect to login
+            await clearAuthState();
+            return;
+          }
+        } else {
+          // Token is valid, set it
+          setToken(storedToken);
+          
+          // Schedule token refresh before it expires
+          scheduleTokenRefresh();
+        }
+        
+        // Set user data
+        setUser(storedUser);
+        
+        // Store user display name separately for easier access
+        if (storedUser.displayName) {
+          await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load authentication state:', error);
+      await clearAuthState();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Schedule token refresh before it expires
   const scheduleTokenRefresh = async () => {
@@ -645,48 +668,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Function to use the development login endpoint
+  const devLogin = async (): Promise<boolean> => {
+    try {
+      console.log('Development mode: Using dev-login endpoint');
+      setIsLoading(true);
+      
+      // Call the development login endpoint to get real tokens
+      const response = await fetch(`${API_URL}/api/auth/dev-login`);
+      
+      if (!response.ok) {
+        console.error('Dev login failed:', await response.text());
+        throw new Error('Dev login failed');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.token || !data.user) {
+        console.error('Invalid dev login response:', data);
+        throw new Error('Invalid dev login response');
+      }
+      
+      // Store the tokens and user data
+      await storeAuthTokens(
+        data.token,
+        data.expiresIn,
+        data.refreshToken
+      );
+      
+      setToken(data.token);
+      setUser(data.user);
+      
+      // Store user data
+      await storage.setObject(STORAGE_KEYS.USER, data.user);
+      await storage.setItem(STORAGE_KEYS.USER_NAME, data.user.displayName);
+      
+      // Schedule token refresh if needed
+      scheduleTokenRefresh();
+      
+      console.log('Development login successful');
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Error using dev login endpoint:', error);
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   // Function to initiate login - with development bypass
   const login = async () => {
     // In development mode with bypass enabled, use the dev-login endpoint
     if (BYPASS_AUTH_IN_DEV) {
       try {
-        console.log('Development mode: Using dev-login endpoint');
-        setIsLoading(true);
-        
-        // Call the development login endpoint to get real tokens
-        const response = await fetch(`${API_URL}/api/auth/dev-login`);
-        
-        if (!response.ok) {
-          console.error('Dev login failed:', await response.text());
-          throw new Error('Dev login failed');
+        const success = await devLogin();
+        if (success) {
+          // Navigate to the main app
+          router.replace('/(tabs)');
+        } else {
+          Alert.alert(
+            'Development Login Failed',
+            'Failed to use development login. Is the backend running?',
+            [{ text: 'OK' }]
+          );
         }
-        
-        const data = await response.json();
-        
-        if (!data.token || !data.user) {
-          console.error('Invalid dev login response:', data);
-          throw new Error('Invalid dev login response');
-        }
-        
-        // Store the tokens and user data
-        await storeAuthTokens(
-          data.token,
-          data.expiresIn,
-          data.refreshToken
-        );
-        
-        setToken(data.token);
-        setUser(data.user);
-        
-        // Store user data
-        await storage.setObject(STORAGE_KEYS.USER, data.user);
-        await storage.setItem(STORAGE_KEYS.USER_NAME, data.user.displayName);
-        
-        // Schedule token refresh if needed
-        scheduleTokenRefresh();
-        
-        // Navigate to the main app
-        router.replace('/(tabs)');
       } catch (error) {
         console.error('Error using dev login endpoint:', error);
         Alert.alert(
@@ -694,8 +739,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           'Failed to use development login. Is the backend running?',
           [{ text: 'OK' }]
         );
-      } finally {
-        setIsLoading(false);
       }
       return;
     }
