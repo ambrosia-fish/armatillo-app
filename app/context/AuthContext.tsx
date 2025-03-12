@@ -58,7 +58,7 @@ interface AuthProviderProps {
 const getApiUrl = () => {
   if (__DEV__) {
     // Use ngrok URL for development
-    return 'https://d47b-2600-8805-9080-c100-d8b5-4fb6-3bac-1de1.ngrok-free.app';
+    return 'http://localhost:3000';
   }
   return 'https://api.armatillo.com';
 };
@@ -124,8 +124,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await devLogin();
         } catch (error) {
           console.error('Auto dev login failed:', error);
-          // Continue with normal app flow if dev login fails
+          // Create mock user if the backend isn't running
+          console.log('Creating mock user for development');
+          const mockUser = {
+            id: 'dev-user-id',
+            email: 'dev@example.com',
+            displayName: 'Development User',
+            firstName: 'Dev',
+            lastName: 'User',
+          };
+          setUser(mockUser);
+          setToken('mock-dev-token');
+          await storage.setObject(STORAGE_KEYS.USER, mockUser);
+          await storage.setItem(STORAGE_KEYS.USER_NAME, mockUser.displayName);
           setIsLoading(false);
+          // Navigate to home screen
+          router.replace('/(tabs)');
         }
       }
     };
