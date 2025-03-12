@@ -61,17 +61,8 @@ export default function StrengthScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top','bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>About the Instance</Text>
-        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
-      
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* We removed the custom header that was duplicating the Expo Router header */}
       <ScrollView style={styles.content}>
         {/* Presets Section */}
         <View style={styles.section}>
@@ -159,34 +150,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-    // Remove any box shadow or elevation here
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  closeButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  nextButton: {
-    padding: 8,
-  },
-  nextButtonText: {
-    color: '#2a9d8f',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
   content: {
     flex: 1,
