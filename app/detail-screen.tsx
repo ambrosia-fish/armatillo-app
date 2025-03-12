@@ -5,15 +5,17 @@ import {
   StyleSheet, 
   ScrollView, 
   ActivityIndicator,
-  TouchableOpacity 
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/AuthContext';
 import api from './services/api';
+import { useFormContext } from './context/FormContext';
 
-// Instance interface (same as in progress.tsx)
+// Instance interface
 interface Instance {
   _id: string;
   userId: string;
@@ -33,14 +35,20 @@ export default function DetailScreen() {
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { refreshTokenIfNeeded } = useAuth();
+  const { formData, updateFormData, resetForm } = useFormContext();
 
-  // Fetch instance details
+  // Determine if we're viewing an existing instance or creating a new one
+  const isCreatingNewEntry = !id;
+
+  // Fetch instance details if ID is provided
   useEffect(() => {
     const fetchInstanceDetail = async () => {
       if (!id) {
-        setError('Invalid instance ID');
+        // No ID means we're creating a new entry
+        // Just show the form controls without loading indicator
         setLoading(false);
         return;
       }
@@ -86,6 +94,64 @@ export default function DetailScreen() {
     router.back();
   };
 
+  // Handle form submission for creating new entry
+  const handleSubmit = async () => {
+    try {
+      if (isSubmitting) return;
+      
+      setIsSubmitting(true);
+      
+      // Ensure token is valid
+      await refreshTokenIfNeeded();
+      
+      // Convert form data to API request format
+      const instanceData = {
+        urgeStrength: formData.urgeStrength || 5,
+        automatic: formData.automatic || false,
+        location: formData.location || '',
+        activity: formData.activity || '',
+        feelings: formData.feelings || [],
+        thoughts: formData.thoughts || '',
+        environment: formData.environment || [],
+        notes: formData.notes || '',
+        time: formData.time || new Date(),
+        duration: formData.duration || 1
+      };
+      
+      // Submit to API
+      const response = await api.instances.createInstance(instanceData);
+      
+      // Reset form after successful submission
+      resetForm();
+      
+      // Navigate to history screen
+      Alert.alert(
+        "Success",
+        "Your entry has been recorded successfully.",
+        [
+          { 
+            text: "View History", 
+            onPress: () => router.push("/(tabs)/progress") 
+          },
+          {
+            text: "Add Another",
+            onPress: () => router.push("/") 
+          }
+        ]
+      );
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      Alert.alert(
+        "Error",
+        "Failed to submit your entry. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -105,7 +171,7 @@ export default function DetailScreen() {
     );
   }
 
-  if (error || !instance) {
+  if (id && (error || !instance)) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -130,6 +196,145 @@ export default function DetailScreen() {
     );
   }
 
+  // Creating a new entry - show form review and submission
+  if (isCreatingNewEntry) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={goBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Review Entry</Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : (
+            <TouchableOpacity 
+              style={styles.submitButton} 
+              onPress={handleSubmit}
+            >
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        <ScrollView style={styles.content}>
+          <View style={styles.dateContainer}>
+            <Text style={styles.dateLabel}>Time:</Text>
+            <Text style={styles.dateValue}>
+              {formData.time ? formatDate(formData.time.toString()) : 'Now'}
+            </Text>
+          </View>
+          
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Behavior Details</Text>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Urge Strength:</Text>
+              <Text style={styles.detailValue}>
+                {formData.urgeStrength !== undefined 
+                  ? `${formData.urgeStrength}/10` 
+                  : 'Not recorded'}
+              </Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Type:</Text>
+              <Text style={styles.detailValue}>
+                {formData.automatic !== undefined 
+                  ? (formData.automatic ? 'Automatic' : 'Deliberate Decision') 
+                  : 'Not recorded'}
+              </Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Duration:</Text>
+              <Text style={styles.detailValue}>
+                {formData.duration !== undefined 
+                  ? `${formData.duration} ${formData.duration === 1 ? 'minute' : 'minutes'}` 
+                  : 'Not recorded'}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Context</Text>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Location:</Text>
+              <Text style={styles.detailValue}>
+                {formData.location || 'Not recorded'}
+              </Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Activity:</Text>
+              <Text style={styles.detailValue}>
+                {formData.activity || 'Not recorded'}
+              </Text>
+            </View>
+          </View>
+          
+          {formData.feelings && formData.feelings.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Feelings</Text>
+              <View style={styles.tagContainer}>
+                {formData.feelings.map((feeling, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{feeling}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+          
+          {formData.thoughts && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Thoughts</Text>
+              <Text style={styles.paragraphText}>{formData.thoughts}</Text>
+            </View>
+          )}
+          
+          {formData.environment && formData.environment.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Environmental Factors</Text>
+              <View style={styles.tagContainer}>
+                {formData.environment.map((factor, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{factor}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+          
+          {formData.notes && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Notes</Text>
+              <Text style={styles.paragraphText}>{formData.notes}</Text>
+            </View>
+          )}
+          
+          <View style={styles.spacer} />
+        </ScrollView>
+        
+        <View style={styles.submitFooter}>
+          <TouchableOpacity 
+            style={styles.submitFullButton}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitFullButtonText}>Submit Entry</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Viewing an existing instance
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -257,6 +462,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  submitButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  submitButtonText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   content: {
     flex: 1,
     padding: 16,
@@ -366,6 +580,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  submitFooter: {
+    padding: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  submitFullButton: {
+    backgroundColor: '#2a9d8f',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitFullButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
