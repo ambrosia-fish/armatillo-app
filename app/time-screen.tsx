@@ -174,8 +174,8 @@ export default function TimeScreen() {
       durationMinutes
     });
     
-    // Navigate to detail screen
-    router.push('/detail-screen');
+    // Navigate to environment screen instead of detail screen
+    router.push('/environment-screen');
   };
 
   const handleCustomTimeSelection = () => {
