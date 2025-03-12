@@ -12,8 +12,8 @@ import { router } from 'expo-router';
 // Configuration for different environments
 const getApiUrl = () => {
   if (__DEV__) {
-    // Use local development server or ngrok URL
-    return 'https://ba0b-2600-8805-9080-c100-d8b5-4fb6-3bac-1de1.ngrok-free.app/api';
+    // Use local development server
+    return 'http://192.168.0.101:3000/api';
   }
   return 'https://api.armatillo.com/api';
 };
