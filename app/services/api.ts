@@ -13,9 +13,9 @@ import { router } from 'expo-router';
 const getApiUrl = () => {
   if (__DEV__) {
     // Use local development server
-    return 'http://192.168.0.101:3000/api';
+    return 'http://localhost:3000/api';
   }
-  return 'https://api.armatillo.com/api';
+  return 'https://armatillo-api-production.up.railway.app/api';
 };
 
 // API URL
