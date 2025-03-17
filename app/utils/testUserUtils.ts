@@ -69,7 +69,8 @@ export const handlePendingResponse = async (url: string) => {
  */
 export const checkTestUserStatus = async (email: string): Promise<{ approved: boolean, message?: string }> => {
   try {
-    const response = await fetch(`${API_URL}/api/auth/check-test-user`, {
+    // Fixed path - removed duplicate /api
+    const response = await fetch(`${API_URL}/auth/check-test-user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
