@@ -6,7 +6,10 @@ import Constants from 'expo-constants';
  * Get the API URL for the current environment
  */
 export const getApiUrl = () => {
-  if (__DEV__) {
+  // Force using Railway in development mode for testing
+  const useRailway = true;
+  
+  if (__DEV__ && !useRailway) {
     // Read from environment variables or use fallbacks
     if (Platform.OS === 'web') {
       return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
