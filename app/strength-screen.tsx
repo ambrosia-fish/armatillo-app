@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
 
-export default function DetailScreen() {
+export default function StrengthScreen() {
   const router = useRouter();
   const { formData, updateFormData } = useFormContext();
   
@@ -18,6 +18,9 @@ export default function DetailScreen() {
   const [intentionType, setIntentionType] = useState<string | null>(
     formData.intentionType || null
   );
+  
+  // We'll use this to prevent preset selection for now
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   const handleNext = () => {
     // Save the data to context
@@ -58,9 +61,10 @@ export default function DetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top','bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Add the header back */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>About the Instance</Text>
@@ -70,6 +74,22 @@ export default function DetailScreen() {
       </View>
       
       <ScrollView style={styles.content}>
+        {/* Presets Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Presets</Text>
+          <Text style={styles.sectionSubtitle}>Save time by using common patterns</Text>
+          
+          <View style={styles.presetsContainer}>
+            <Text style={styles.emptyPresetsText}>No presets available yet</Text>
+            <TouchableOpacity 
+              style={styles.newPresetButton}
+              disabled={true}
+            >
+              <Text style={styles.newPresetButtonText}>+ New Preset</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
         {/* Urge Strength Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>How strong was the urge?</Text>
@@ -150,8 +170,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
+    // Ensure no shadow or elevation
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  closeButton: {
+  backButton: {
     padding: 8,
   },
   title: {
@@ -245,5 +268,33 @@ const styles = StyleSheet.create({
   intentionOptionText: {
     textAlign: 'center',
     fontSize: 16,
-  }
+  },
+  // New styles for presets section
+  presetsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+  },
+  emptyPresetsText: {
+    fontSize: 16,
+    color: '#999',
+    marginBottom: 12,
+  },
+  newPresetButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#e0e0e0',
+    opacity: 0.6,
+  },
+  newPresetButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
 });
