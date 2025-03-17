@@ -1,14 +1,34 @@
 import { router } from 'expo-router';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 /**
  * Get the API URL for the current environment
  */
 export const getApiUrl = () => {
   if (__DEV__) {
-    // Use ngrok URL for development
-    return 'http://192.168.0.101:3000';
+    // Read from environment variables or use fallbacks
+    if (Platform.OS === 'web') {
+      return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+    }
+    
+    // For iOS simulator, use localhost with special mapping
+    if (Platform.OS === 'ios' && !Constants.expoConfig?.debuggerHost?.includes('127.0.0.1')) {
+      return 'http://localhost:3000';
+    }
+    
+    // For Android emulator, get host IP from Expo
+    if (Platform.OS === 'android' && Constants.expoConfig?.debuggerHost) {
+      const host = Constants.expoConfig.debuggerHost.split(':')[0];
+      return `http://${host}:3000`;
+    }
+    
+    // Fallback for development
+    return 'http://localhost:3000';
   }
-  return 'https://api.armatillo.com';
+  
+  // Production API URL
+  return process.env.EXPO_PUBLIC_API_URL || 'https://api.armatillo.com';
 };
 
 // API URL
