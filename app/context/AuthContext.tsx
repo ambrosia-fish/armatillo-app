@@ -212,8 +212,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (!refreshToken) return false;
       
-      // Fixed path - removed duplicate /api
-      const response = await fetch(`${API_URL}/auth/refresh`, {
+      // Fixed path - added /api for Railway backend
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
@@ -274,8 +274,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await reportCompromisedToken(currentToken, reason);
         
         try {
-          // Fixed path - removed duplicate /api
-          await fetch(`${API_URL}/auth/report-security-event`, {
+          // Fixed path - added /api for Railway backend
+          await fetch(`${API_URL}/api/auth/report-security-event`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -347,8 +347,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('Missing PKCE code verifier');
         }
         
-        // Fixed path - removed duplicate /api
-        const tokenResponse = await fetch(`${API_URL}/auth/token`, {
+        // Fixed path - added /api for Railway backend
+        const tokenResponse = await fetch(`${API_URL}/api/auth/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -425,8 +425,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(newToken);
       scheduleTokenRefresh();
       
-      // Fixed path - removed duplicate /api
-      const response = await fetch(`${API_URL}/auth/me`, {
+      // Fixed path - added /api for Railway backend
+      const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${newToken}` },
       });
       
@@ -469,8 +469,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // Fixed path - removed duplicate /api
-      const response = await fetch(`${API_URL}/auth/dev-login`);
+      // Fixed path - added /api for Railway backend
+      const response = await fetch(`${API_URL}/api/auth/dev-login`);
       
       if (!response.ok) {
         console.error('Dev login failed:', await response.text());
@@ -530,7 +530,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setInProgress(true);
       
       // Clear previous sessions
-      await storage.clear();
+      await clearAuthState();
       await WebBrowser.warmUpAsync();
       await WebBrowser.coolDownAsync();
       await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
@@ -543,8 +543,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const timestamp = Date.now();
       const randomNonce = Math.random().toString(36).substring(2);
       
-      // Fixed path - removed duplicate /api
-      const authUrl = `${API_URL}/auth/google-mobile?` + 
+      // Fixed path - added /api for Railway backend
+      const authUrl = `${API_URL}/api/auth/google-mobile?` + 
         `state=${encodeURIComponent(state)}` +
         `&code_challenge=${encodeURIComponent(codeChallenge)}` +
         `&code_challenge_method=S256` +
@@ -597,8 +597,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call server-side logout
       if (token) {
         try {
-          // Fixed path - removed duplicate /api
-          await fetch(`${API_URL}/auth/logout`, {
+          // Fixed path - added /api for Railway backend
+          await fetch(`${API_URL}/api/auth/logout`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
