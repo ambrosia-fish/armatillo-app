@@ -11,7 +11,10 @@ import { router } from 'expo-router';
 
 // Configuration for different environments
 const getApiUrl = () => {
-  if (__DEV__) {
+  // Force using Railway in development mode for testing
+  const useRailway = true;
+  
+  if (__DEV__ && !useRailway) {
     // Use local development server
     return 'http://localhost:3000/api';
   }
