@@ -63,8 +63,8 @@ const MAX_AUTH_FAILURES = 3;
 // Counter for consecutive authentication failures
 let authFailureCount = 0;
 
-// Flag to bypass regular OAuth in development mode
-const BYPASS_AUTH_IN_DEV = __DEV__;
+// Flag to bypass regular OAuth in development mode - DISABLED when testing with Railway
+const BYPASS_AUTH_IN_DEV = false; // Set to false when testing with Railway
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -512,16 +512,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (BYPASS_AUTH_IN_DEV) {
       const success = await devLogin();
       if (!success) {
-        Alert.alert(
-          'Development Login Failed',
-          'Failed to use development login. Is the backend running?',
-          [{ text: 'OK' }]
-        );
+        console.log('Development login failed, falling back to OAuth flow');
+        // Fall back to OAuth flow
+        await initiateOAuthFlow();
       }
       return;
     }
     
     // Regular OAuth flow for production or when dev bypass is disabled
+    await initiateOAuthFlow();
+  };
+
+  // Regular OAuth flow implementation
+  const initiateOAuthFlow = async () => {
     try {
       setIsLoading(true);
       setInProgress(true);
@@ -550,6 +553,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         `&nonce=${randomNonce}` +
         `&timestamp=${timestamp}` +
         `&use_incognito=true`;
+      
+      console.log('Opening OAuth URL:', authUrl);
       
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
