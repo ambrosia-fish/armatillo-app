@@ -51,15 +51,28 @@ export default function NotesScreen() {
     try {
       setIsSubmitting(true);
       
-      // Get user name from auth context or AsyncStorage
+      // Get user info from auth context or AsyncStorage
       let userName = '';
-      if (user && user.displayName) {
-        userName = user.displayName;
+      let userId = '';
+      
+      if (user) {
+        // Use user data from auth context if available
+        if (user.displayName) {
+          userName = user.displayName;
+        }
+        if (user.id) {
+          userId = user.id;
+        }
       } else {
         // Fallback to AsyncStorage if user object isn't available
         const storedUserName = await storage.getItem(STORAGE_KEYS.USER_NAME);
         if (storedUserName) {
           userName = storedUserName;
+        }
+        // Try to get user ID from storage
+        const storedUser = await storage.getObject(STORAGE_KEYS.USER);
+        if (storedUser && storedUser.id) {
+          userId = storedUser.id;
         }
       }
       
@@ -67,7 +80,8 @@ export default function NotesScreen() {
       updateFormData({
         selectedSensoryTriggers,
         notes,
-        userName
+        userName,
+        userId
       });
       
       // Prepare complete data to send to API
@@ -75,7 +89,8 @@ export default function NotesScreen() {
         ...formData,
         selectedSensoryTriggers,
         notes,
-        userName
+        userName,
+        userId
       };
       
       // Send data to API using our API service
