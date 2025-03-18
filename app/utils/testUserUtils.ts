@@ -6,21 +6,24 @@ import Constants from 'expo-constants';
  * Get the API URL for the current environment
  */
 export const getApiUrl = () => {
-  // Force using Railway in development mode for testing
-  const useRailway = true;
-  
-  if (__DEV__ && !useRailway) {
-    // Read from environment variables or use fallbacks
+  // When running in development mode (locally)
+  if (__DEV__) {
+    // Use development deployment on Railway for testing
+    return 'https://armatillo-api-development.up.railway.app';
+    
+    // Uncomment and use these alternatives if needed for local development
+    /*
+    // Option 1: Read from environment variables
     if (Platform.OS === 'web') {
       return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
     }
     
-    // For iOS simulator, use localhost with special mapping
+    // Option 2: For iOS simulator, use localhost with special mapping
     if (Platform.OS === 'ios' && !Constants.expoConfig?.debuggerHost?.includes('127.0.0.1')) {
       return 'http://localhost:3000';
     }
     
-    // For Android emulator, get host IP from Expo
+    // Option 3: For Android emulator, get host IP from Expo
     if (Platform.OS === 'android' && Constants.expoConfig?.debuggerHost) {
       const host = Constants.expoConfig.debuggerHost.split(':')[0];
       return `http://${host}:3000`;
@@ -28,10 +31,11 @@ export const getApiUrl = () => {
     
     // Fallback for development
     return 'http://localhost:3000';
+    */
   }
   
-  // Use the development deployment API URL
-  return process.env.EXPO_PUBLIC_API_URL || 'https://armatillo-api-development.up.railway.app';
+  // When in production (deployed app)
+  return process.env.EXPO_PUBLIC_API_URL || 'https://armatillo-api-production.up.railway.app';
 };
 
 // API URL
