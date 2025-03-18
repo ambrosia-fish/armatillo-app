@@ -30,8 +30,8 @@ export const getApiUrl = () => {
     return 'http://localhost:3000';
   }
   
-  // Production API URL - point to Railway backend
-  return process.env.EXPO_PUBLIC_API_URL || 'https://armatillo-api-production.up.railway.app';
+  // Use the development deployment API URL
+  return process.env.EXPO_PUBLIC_API_URL || 'https://armatillo-api-development.up.railway.app';
 };
 
 // API URL
