@@ -18,7 +18,8 @@ const getApiUrl = () => {
     // Use local development server
     return 'http://localhost:3000/api';
   }
-  return 'https://armatillo-api-production.up.railway.app/api';
+  // Use development deployment instead of production
+  return 'https://armatillo-api-development.up.railway.app/api';
 };
 
 // API URL
