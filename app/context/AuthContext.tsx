@@ -44,6 +44,7 @@ interface AuthContextType {
   handleOAuthCallback: (url: string) => Promise<void>;
   refreshTokenIfNeeded: () => Promise<boolean>;
   reportSuspiciousActivity: (reason: string) => Promise<void>;
+  checkTestUserStatus: (email: string) => Promise<boolean>;
 }
 
 // Create the context with a default undefined value
@@ -266,6 +267,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Check if a user is an approved test user
+  const checkTestUserStatus = async (email: string): Promise<boolean> => {
+    try {
+      // Call the backend to check if this user is an approved test user
+      const response = await fetch(`${API_URL}/api/test-users/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        console.error('Error checking test user status:', await response.text());
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      // If the user is not approved, handle the pending redirect
+      if (!data.approved) {
+        // Show the pending access screen with the appropriate message
+        router.replace({
+          pathname: '/auth/pending',
+          params: { message: data.message || 'Your access request is pending approval.' }
+        });
+      }
+      
+      return data.approved;
+    } catch (error) {
+      console.error('Error checking test user status:', error);
+      return false;
+    }
+  };
+
   // Report suspicious activity (compromised tokens)
   const reportSuspiciousActivity = async (reason: string): Promise<void> => {
     try {
@@ -451,6 +485,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (!userObj.displayName) {
         userObj.displayName = userObj.email.split('@')[0] || 'Armatillo User';
+      }
+      
+      // Check if this is an approved test user
+      const isApproved = await checkTestUserStatus(userObj.email);
+      if (!isApproved) {
+        // The checkTestUserStatus function will handle the redirection to the pending page
+        return;
       }
       
       await storage.setObject(STORAGE_KEYS.USER, userObj);
@@ -640,7 +681,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     handleOAuthCallback: handleAuthResponse,
     refreshTokenIfNeeded,
-    reportSuspiciousActivity
+    reportSuspiciousActivity,
+    checkTestUserStatus
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
