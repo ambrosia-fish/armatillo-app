@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { encryptString, decryptString, encryptObject, decryptObject } from './encryptionUtils';
+import webStorage from './webStorage';
 
 // Storage keys
 export const STORAGE_KEYS = {
@@ -48,6 +50,14 @@ const shouldEncrypt = (key: string): boolean => {
   return ENCRYPTED_KEYS.includes(key) && !isSecureKey(key);
 };
 
+// Determine if we're running on web
+const isWeb = Platform.OS === 'web';
+
+// Get the appropriate secure storage implementation based on platform
+const getSecureStorage = () => {
+  return isWeb ? webStorage : SecureStore;
+};
+
 /**
  * Storage utility functions to abstract the storage mechanism
  * This allows us to swap between different storage implementations (SecureStore, AsyncStorage, etc.)
@@ -66,7 +76,8 @@ export const storage = {
       }
       
       if (isSecureKey(key)) {
-        await SecureStore.setItemAsync(key, value);
+        const secureStorage = getSecureStorage();
+        await secureStorage.setItemAsync(key, value);
       } else if (shouldEncrypt(key)) {
         // Encrypt personal but non-sensitive data
         const encryptedValue = await encryptString(value);
@@ -88,7 +99,8 @@ export const storage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
       if (isSecureKey(key)) {
-        return await SecureStore.getItemAsync(key);
+        const secureStorage = getSecureStorage();
+        return await secureStorage.getItemAsync(key);
       } else if (shouldEncrypt(key)) {
         // Get and decrypt personal data
         const encryptedValue = await AsyncStorage.getItem(key);
@@ -110,7 +122,8 @@ export const storage = {
   removeItem: async (key: string): Promise<void> => {
     try {
       if (isSecureKey(key)) {
-        await SecureStore.deleteItemAsync(key);
+        const secureStorage = getSecureStorage();
+        await secureStorage.deleteItemAsync(key);
       } else {
         await AsyncStorage.removeItem(key);
       }
@@ -134,7 +147,8 @@ export const storage = {
         if (typeof jsonValue !== 'string') {
           throw new Error(`Cannot store non-string value in SecureStore for key: ${key}`);
         }
-        await SecureStore.setItemAsync(key, jsonValue);
+        const secureStorage = getSecureStorage();
+        await secureStorage.setItemAsync(key, jsonValue);
       } else if (shouldEncrypt(key)) {
         // Encrypt the object before storing
         const encryptedValue = await encryptObject(value);
@@ -159,7 +173,8 @@ export const storage = {
       let jsonValue;
       
       if (isSecureKey(key)) {
-        jsonValue = await SecureStore.getItemAsync(key);
+        const secureStorage = getSecureStorage();
+        jsonValue = await secureStorage.getItemAsync(key);
       } else if (shouldEncrypt(key)) {
         // Get and decrypt encrypted object
         const encryptedValue = await AsyncStorage.getItem(key);
@@ -315,7 +330,8 @@ export const storage = {
     let secureKeyErrors = 0;
     for (const key of allSecureKeys) {
       try {
-        await SecureStore.deleteItemAsync(key);
+        const secureStorage = getSecureStorage();
+        await secureStorage.deleteItemAsync(key);
       } catch (err) {
         secureKeyErrors++;
         // Just log, don't throw - we want to try all keys
