@@ -68,6 +68,7 @@ export default function LoginScreen() {
     }
   };
 
+  /* Commented out dev login function
   // Handle development-only direct token setup
   const handleDevLogin = async () => {
     try {
@@ -98,6 +99,7 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Failed to set test token');
     }
   };
+  */
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -121,26 +123,26 @@ export default function LoginScreen() {
           {isLoading ? (
             <ActivityIndicator size="large" color="#2a9d8f" style={styles.loading} />
           ) : (
-            <>
-              <TouchableOpacity 
-                style={styles.googleButton}
-                onPress={handleGoogleLogin}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="logo-google" size={24} color="#fff" />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
-              
-              {__DEV__ && (
-                <TouchableOpacity 
-                  style={styles.devButton}
-                  onPress={handleDevLogin}
-                >
-                  <Text style={styles.devButtonText}>DEV: Set Test Token</Text>
-                </TouchableOpacity>
-              )}
-            </>
+            <TouchableOpacity 
+              style={styles.googleButton}
+              onPress={handleGoogleLogin}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-google" size={24} color="#fff" />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
           )}
+          
+          {/* Commented out dev button
+          {__DEV__ && (
+            <TouchableOpacity 
+              style={styles.devButton}
+              onPress={handleDevLogin}
+            >
+              <Text style={styles.devButtonText}>DEV: Set Test Token</Text>
+            </TouchableOpacity>
+          )}
+          */}
           
           <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
@@ -216,6 +218,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 12,
   },
+  /* Commented out dev button styles
   devButton: {
     backgroundColor: '#f0ad4e',
     borderRadius: 8,
@@ -229,6 +232,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  */
   privacyContainer: {
     marginTop: 24,
   },
