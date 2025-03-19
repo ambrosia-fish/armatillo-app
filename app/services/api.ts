@@ -21,11 +21,57 @@ export const API_URL = getApiUrl();
 const API_BASE_PATH = '/api';
 
 // Helper function to get authentication token
-const getAuthToken = async () => {
+const getAuthToken = async (): Promise<string | null> => {
   try {
-    // Use TOKEN key from STORAGE_KEYS to match the storage.ts implementation
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-    console.log('Retrieved auth token:', token ? 'token exists' : 'no token found');
+    console.log('Getting auth token from storage');
+    
+    // Try to get token using the storage utility first
+    let token: string | null = null;
+    
+    try {
+      // First approach: Use AsyncStorage directly 
+      token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+      console.log('Token from AsyncStorage:', token ? 'found' : 'not found');
+    } catch (asyncError) {
+      console.error('Error accessing AsyncStorage directly:', asyncError);
+    }
+    
+    if (!token) {
+      // Some tokens are stored in SecureStore, so also try it directly
+      try {
+        // Check if expo-secure-store is available
+        const SecureStore = require('expo-secure-store');
+        token = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
+        console.log('Token from SecureStore:', token ? 'found' : 'not found');
+      } catch (secureStoreError) {
+        console.error('Error accessing SecureStore directly:', secureStoreError);
+      }
+    }
+    
+    // As a final fallback, try all possible token key names
+    if (!token) {
+      const possibleTokenKeys = [
+        STORAGE_KEYS.TOKEN,
+        'auth_token',
+        'token',
+        'accessToken',
+        'access_token'
+      ];
+      
+      for (const key of possibleTokenKeys) {
+        try {
+          const fallbackToken = await AsyncStorage.getItem(key);
+          if (fallbackToken) {
+            console.log(`Found token using fallback key: ${key}`);
+            token = fallbackToken;
+            break;
+          }
+        } catch (fallbackError) {
+          console.warn(`Error checking fallback token key ${key}:`, fallbackError);
+        }
+      }
+    }
+    
     return token;
   } catch (error) {
     console.error('Error retrieving auth token:', error);
@@ -103,11 +149,57 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
 };
 
+// Add a debug method to test token storage
+export const debugTokenStorage = async (): Promise<void> => {
+  try {
+    console.log('=== DEBUG TOKEN STORAGE ===');
+    
+    // Try to get token using AsyncStorage directly
+    try {
+      const asyncToken = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+      console.log('AsyncStorage token:', asyncToken ? 'exists' : 'not found');
+    } catch (error) {
+      console.log('Error reading from AsyncStorage:', error);
+    }
+    
+    // Try to get token using SecureStore directly
+    try {
+      const SecureStore = require('expo-secure-store');
+      const secureToken = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
+      console.log('SecureStore token:', secureToken ? 'exists' : 'not found');
+    } catch (error) {
+      console.log('Error reading from SecureStore:', error);
+    }
+    
+    // Check all AsyncStorage keys to find token
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log('All AsyncStorage keys:', allKeys);
+      
+      for (const key of allKeys) {
+        if (key.includes('token') || key.includes('TOKEN')) {
+          const value = await AsyncStorage.getItem(key);
+          console.log(`Found key "${key}" with value:`, value ? 'exists' : 'empty');
+        }
+      }
+    } catch (error) {
+      console.log('Error listing AsyncStorage keys:', error);
+    }
+    
+    console.log('===========================');
+  } catch (error) {
+    console.error('Debug token storage error:', error);
+  }
+};
+
 // Instances API
 export const instancesApi = {
   // Get all instances for the current user
   getInstances: async () => {
     try {
+      // First run token storage diagnosis
+      await debugTokenStorage();
+      
       return await apiRequest('/instances', { method: 'GET' });
     } catch (error) {
       console.error('getInstances error:', error);
@@ -129,6 +221,10 @@ export const instancesApi = {
   createInstance: async (data: any) => {
     try {
       console.log('Creating instance with data:', JSON.stringify(data, null, 2));
+      
+      // First run token storage diagnosis
+      await debugTokenStorage();
+      
       return await apiRequest('/instances', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -229,6 +325,9 @@ export const authApi = {
 const api = {
   instances: instancesApi,
   auth: authApi,
+  debug: {
+    debugTokenStorage
+  }
 };
 
 // Log that API is initialized
