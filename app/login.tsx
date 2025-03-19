@@ -6,7 +6,8 @@ import {
   Image, 
   TouchableOpacity, 
   ActivityIndicator,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -49,9 +50,10 @@ export default function LoginScreen() {
       
       // Clear any existing tokens first
       try {
-        await AsyncStorage.removeItem(STORAGE_KEYS.TOKEN);
-        await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-        await AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+        // Use AsyncStorage directly to clear tokens before login
+        await AsyncStorage.removeItem(`${Platform.OS === 'web' ? 'secure_' : ''}${STORAGE_KEYS.TOKEN}`);
+        await AsyncStorage.removeItem(`${Platform.OS === 'web' ? 'secure_' : ''}${STORAGE_KEYS.REFRESH_TOKEN}`);
+        await AsyncStorage.removeItem(`${Platform.OS === 'web' ? 'secure_' : ''}${STORAGE_KEYS.TOKEN_EXPIRY}`);
         console.log('Cleared existing tokens before login');
       } catch (clearError) {
         console.error('Error clearing tokens:', clearError);
@@ -67,39 +69,6 @@ export default function LoginScreen() {
       );
     }
   };
-
-  /* Commented out dev login function
-  // Handle development-only direct token setup
-  const handleDevLogin = async () => {
-    try {
-      // FOR TESTING ONLY: This allows setting a token directly
-      const testToken = 'test_token_value';
-      
-      // Store token directly in AsyncStorage
-      await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, testToken);
-      
-      // Also set an expiry far in the future
-      const expiryTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
-      await AsyncStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
-      
-      console.log('Stored test token directly in AsyncStorage');
-      
-      // Verify storage worked
-      const verifyToken = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-      console.log('Verified token storage:', verifyToken ? 'success' : 'failed');
-      
-      // Reload the app to apply changes (should be authenticated now)
-      Alert.alert(
-        'Test Login',
-        'Test token has been stored. Reload the app to see effect.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Dev login error:', error);
-      Alert.alert('Error', 'Failed to set test token');
-    }
-  };
-  */
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -132,17 +101,6 @@ export default function LoginScreen() {
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
           )}
-          
-          {/* Commented out dev button
-          {__DEV__ && (
-            <TouchableOpacity 
-              style={styles.devButton}
-              onPress={handleDevLogin}
-            >
-              <Text style={styles.devButtonText}>DEV: Set Test Token</Text>
-            </TouchableOpacity>
-          )}
-          */}
           
           <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
@@ -218,21 +176,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 12,
   },
-  /* Commented out dev button styles
-  devButton: {
-    backgroundColor: '#f0ad4e',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
-  devButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  */
   privacyContainer: {
     marginTop: 24,
   },

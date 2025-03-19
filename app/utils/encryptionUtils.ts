@@ -2,12 +2,18 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import webStorage from './webStorage';
 
 // Key used to store the encryption key in SecureStore
 const ENCRYPTION_KEY_STORE = 'app_encryption_key';
 
 // Metadata added to encrypted values to verify decryption was successful
 const ENCRYPTION_METADATA = 'ARMATILLO_ENCRYPTED_V1:';
+
+// Get the appropriate secure storage implementation based on platform
+const getSecureStorage = () => {
+  return Platform.OS === 'web' ? webStorage : SecureStore;
+};
 
 /**
  * Generate a device-specific encryption key and securely store it
@@ -17,7 +23,8 @@ const ENCRYPTION_METADATA = 'ARMATILLO_ENCRYPTED_V1:';
 export const generateEncryptionKey = async (): Promise<string> => {
   try {
     // Check if we already have a stored key
-    const existingKey = await SecureStore.getItemAsync(ENCRYPTION_KEY_STORE);
+    const secureStorage = getSecureStorage();
+    const existingKey = await secureStorage.getItemAsync(ENCRYPTION_KEY_STORE);
     if (existingKey) {
       return existingKey;
     }
@@ -42,14 +49,15 @@ export const generateEncryptionKey = async (): Promise<string> => {
     const keyString = btoa(String.fromCharCode(...keyArray));
     
     // Store the key securely
-    await SecureStore.setItemAsync(ENCRYPTION_KEY_STORE, keyString);
+    await secureStorage.setItemAsync(ENCRYPTION_KEY_STORE, keyString);
     
     return keyString;
   } catch (error) {
     console.error('Error generating encryption key:', error);
     // Fallback to a less secure but functional approach if the above fails
     const fallbackKey = 'ARMATILLO_FALLBACK_KEY_' + Date.now().toString();
-    await SecureStore.setItemAsync(ENCRYPTION_KEY_STORE, fallbackKey);
+    const secureStorage = getSecureStorage();
+    await secureStorage.setItemAsync(ENCRYPTION_KEY_STORE, fallbackKey);
     return fallbackKey;
   }
 };
@@ -57,35 +65,67 @@ export const generateEncryptionKey = async (): Promise<string> => {
 /**
  * Get a device identifier for encryption purposes
  * This combines multiple device characteristics
+ * Adapted for web platform compatibility
  * @returns {Promise<string>} Device identifier
  */
 const getDeviceIdentifier = async (): Promise<string> => {
   try {
     const deviceInfo = [];
     
-    // Get device type
-    const deviceType = Device.deviceType || 'unknown';
-    deviceInfo.push(`type:${deviceType}`);
-    
-    // Get device name if available
-    try {
-      const deviceName = await Device.getDeviceNameAsync() || 'unknown';
-      deviceInfo.push(`name:${deviceName.substring(0, 10)}`); // Only use first 10 chars for privacy
-    } catch (e) {
-      deviceInfo.push('name:unavailable');
-    }
-    
-    // Get OS info
-    const osName = Platform.OS;
-    const osVersion = Platform.Version.toString();
-    deviceInfo.push(`os:${osName}-${osVersion}`);
-    
-    // Get total memory if available
-    try {
-      const memory = await Device.getTotalMemoryAsync();
-      deviceInfo.push(`mem:${memory}`);
-    } catch (e) {
-      deviceInfo.push('mem:unavailable');
+    if (Platform.OS === 'web') {
+      // Web-specific device information
+      deviceInfo.push(`type:web`);
+      
+      // Browser information
+      if (typeof navigator !== 'undefined') {
+        deviceInfo.push(`browser:${navigator.userAgent.substring(0, 50)}`);
+        
+        if (navigator.language) {
+          deviceInfo.push(`lang:${navigator.language}`);
+        }
+        
+        if (navigator.platform) {
+          deviceInfo.push(`platform:${navigator.platform}`);
+        }
+      }
+      
+      // Screen information
+      if (typeof window !== 'undefined' && window.screen) {
+        deviceInfo.push(`screen:${window.screen.width}x${window.screen.height}`);
+        
+        if (window.screen.colorDepth) {
+          deviceInfo.push(`depth:${window.screen.colorDepth}`);
+        }
+      }
+      
+      // Add timestamp as a semi-unique identifier
+      deviceInfo.push(`time:${Math.floor(Date.now() / 86400000)}`); // Days since epoch
+    } else {
+      // Native device information
+      // Get device type
+      const deviceType = Device.deviceType || 'unknown';
+      deviceInfo.push(`type:${deviceType}`);
+      
+      // Get device name if available
+      try {
+        const deviceName = await Device.getDeviceNameAsync() || 'unknown';
+        deviceInfo.push(`name:${deviceName.substring(0, 10)}`); // Only use first 10 chars for privacy
+      } catch (e) {
+        deviceInfo.push('name:unavailable');
+      }
+      
+      // Get OS info
+      const osName = Platform.OS;
+      const osVersion = Platform.Version.toString();
+      deviceInfo.push(`os:${osName}-${osVersion}`);
+      
+      // Get total memory if available
+      try {
+        const memory = await Device.getTotalMemoryAsync();
+        deviceInfo.push(`mem:${memory}`);
+      } catch (e) {
+        deviceInfo.push('mem:unavailable');
+      }
     }
     
     // Combine all info and create a hash

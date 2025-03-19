@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+import * as NativeWebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { 
@@ -23,6 +23,12 @@ import { API_URL } from '../services/api';
 
 // Import mock PKCE implementation for testing
 import mockPKCE from '../utils/mockPKCE';
+
+// Import web-specific browser implementation
+import webBrowser from '../utils/webBrowser';
+
+// Use the appropriate WebBrowser implementation based on platform
+const WebBrowser = Platform.OS === 'web' ? webBrowser : NativeWebBrowser;
 
 // Define the type for user data
 interface User {
@@ -97,6 +103,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Add the event listener
     const subscription = Linking.addEventListener('url', handleUrl);
+
+    // If on web, check if the current URL is a callback
+    if (Platform.OS === 'web') {
+      const url = window.location.href;
+      if (url.includes('auth/callback') || url.includes('code=')) {
+        console.log('Detected OAuth callback in URL:', url);
+        handleAuthResponse(url);
+      } else if (url.includes('auth/pending')) {
+        console.log('Detected pending auth in URL:', url);
+        handlePendingResponse(url);
+      }
+    }
 
     // Remove the listener when the component unmounts
     return () => {
@@ -397,13 +415,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      const urlWithoutHash = url.split('#')[0];
-      const urlParams = new URLSearchParams(urlWithoutHash.split('?')[1]);
+      // Extract query parameters from the URL
+      let authCode, state, error, errorDescription;
       
-      const authCode = urlParams.get('code');
-      const state = urlParams.get('state');
-      const error = urlParams.get('error');
-      const errorDescription = urlParams.get('error_description');
+      // Handle URL format differences between web and native
+      if (Platform.OS === 'web') {
+        // For web, we can use URL API
+        const urlObj = new URL(url);
+        authCode = urlObj.searchParams.get('code');
+        state = urlObj.searchParams.get('state');
+        error = urlObj.searchParams.get('error');
+        errorDescription = urlObj.searchParams.get('error_description');
+      } else {
+        // For native, parse manually as before
+        const urlWithoutHash = url.split('#')[0];
+        const urlParams = new URLSearchParams(urlWithoutHash.split('?')[1]);
+        
+        authCode = urlParams.get('code');
+        state = urlParams.get('state');
+        error = urlParams.get('error');
+        errorDescription = urlParams.get('error_description');
+      }
       
       if (error) {
         throw new Error(`OAuth error: ${error}: ${errorDescription || 'Authentication error'}`);
@@ -442,7 +474,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             grant_type: 'authorization_code',
             code: authCode,
             code_verifier: codeVerifier,
-            redirect_uri: 'armatillo://auth/callback'
+            redirect_uri: Platform.OS === 'web' 
+              ? window.location.origin + '/auth/callback'
+              : 'armatillo://auth/callback'
           })
         });
         
@@ -468,9 +502,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await processReceivedToken(newToken, expiresIn, refreshToken);
       } else {
         // Legacy direct token flow (fallback)
-        const newToken = urlParams.get('token');
-        const expiresIn = urlParams.get('expires_in');
-        const refreshToken = urlParams.get('refresh_token');
+        let newToken, expiresIn, refreshToken;
+        
+        if (Platform.OS === 'web') {
+          const urlObj = new URL(url);
+          newToken = urlObj.searchParams.get('token');
+          expiresIn = urlObj.searchParams.get('expires_in');
+          refreshToken = urlObj.searchParams.get('refresh_token');
+        } else {
+          const urlWithoutHash = url.split('#')[0];
+          const urlParams = new URLSearchParams(urlWithoutHash.split('?')[1]);
+          newToken = urlParams.get('token');
+          expiresIn = urlParams.get('expires_in');
+          refreshToken = urlParams.get('refresh_token');
+        }
         
         if (!state || !await verifyOAuthState(state)) {
           authFailureCount++;
@@ -489,6 +534,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         await processReceivedToken(newToken, expiresIn, refreshToken);
+      }
+      
+      // For web platform, redirect to home after successful login
+      if (Platform.OS === 'web') {
+        window.history.replaceState({}, document.title, '/');
       }
     } catch (error) {
       console.error('OAuth callback error:', error);
@@ -640,8 +690,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Clear previous sessions
       await clearAuthState();
-      await WebBrowser.warmUpAsync();
-      await WebBrowser.coolDownAsync();
+      
+      // Use try/catch for each WebBrowser call to handle gracefully on web
+      try {
+        await WebBrowser.warmUpAsync();
+      } catch (e) {
+        console.log('WebBrowser.warmUpAsync not available:', e);
+      }
+      
+      try {
+        await WebBrowser.coolDownAsync();
+      } catch (e) {
+        console.log('WebBrowser.coolDownAsync not available:', e);
+      }
+      
       await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
       
       // Generate OAuth state and PKCE challenge
@@ -660,6 +722,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       console.log('Using API_URL:', API_URL);
       
+      // Set redirect URL based on platform
+      const redirectUrl = Platform.OS === 'web' 
+        ? `${window.location.origin}/auth/callback`
+        : 'armatillo://auth/callback';
+      
       const authUrl = `${API_URL}/api/auth/google-mobile?` + 
         `state=${encodeURIComponent(state)}` +
         `&code_challenge=${encodeURIComponent(codeChallenge)}` +
@@ -668,28 +735,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
         `&prompt=select_account` +
         `&nonce=${randomNonce}` +
         `&timestamp=${timestamp}` +
+        `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
         `&use_incognito=true`;
       
       console.log('Opening OAuth URL:', authUrl);
       
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'armatillo://auth/callback',
-        {
-          createTask: true,
-          showInRecents: false,
-          dismissButtonStyle: 'close',
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-          preferEphemeralSession: true
-        }
-      );
-      
-      if (result.type === 'success' && result.url) {
-        await handleAuthResponse(result.url);
+      // For Web platform, handle differently
+      if (Platform.OS === 'web') {
+        const result = await WebBrowser.openAuthSessionAsync(
+          authUrl,
+          redirectUrl
+        );
+        
+        // The web implementation will handle this differently, 
+        // so no need to check result as we'll trigger a page navigation
       } else {
-        // User cancelled or flow was interrupted
-        setIsLoading(false);
-        setInProgress(false);
+        // For native platforms, use the native WebBrowser
+        const result = await WebBrowser.openAuthSessionAsync(
+          authUrl,
+          'armatillo://auth/callback',
+          {
+            createTask: true,
+            showInRecents: false,
+            dismissButtonStyle: 'close',
+            presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+            preferEphemeralSession: true
+          }
+        );
+        
+        if (result.type === 'success' && result.url) {
+          await handleAuthResponse(result.url);
+        } else {
+          // User cancelled or flow was interrupted
+          setIsLoading(false);
+          setInProgress(false);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -728,7 +808,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear local state
       await clearAuthState();
       
-      // Clear browser sessions
+      // Clear browser sessions - handle gracefully for web
       try {
         await WebBrowser.warmUpAsync();
         await WebBrowser.coolDownAsync();
@@ -736,7 +816,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.warn('Failed to clear browser sessions:', browserError);
       }
       
-      router.replace('/login');
+      // For web platform, redirect to login page
+      if (Platform.OS === 'web') {
+        window.location.href = '/login';
+      } else {
+        router.replace('/login');
+      }
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Logout Failed', 'Failed to logout. Please try again.');
