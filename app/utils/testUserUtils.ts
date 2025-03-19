@@ -60,3 +60,11 @@ export const checkTestUserStatus = async (email: string): Promise<{ approved: bo
     return { approved: false };
   }
 };
+
+// Add a default export to prevent router from treating this as a component
+const testUserUtils = {
+  handlePendingResponse,
+  checkTestUserStatus
+};
+
+export default testUserUtils;
