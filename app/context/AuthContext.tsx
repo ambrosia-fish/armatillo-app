@@ -18,7 +18,8 @@ import {
   verifyOAuthState,
   SECURITY_KEYS
 } from '../utils/securityUtils';
-import { API_URL, handlePendingResponse } from '../utils/testUserUtils';
+import { handlePendingResponse } from '../utils/testUserUtils';
+import { API_URL } from '../services/api';
 
 // Import mock PKCE implementation for testing
 import mockPKCE from '../utils/mockPKCE';
@@ -213,7 +214,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (!refreshToken) return false;
       
-      // Fixed path - added /api for Railway backend
       const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -308,7 +308,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await reportCompromisedToken(currentToken, reason);
         
         try {
-          // Fixed path - added /api for Railway backend
           await fetch(`${API_URL}/api/auth/report-security-event`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -381,7 +380,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('Missing PKCE code verifier');
         }
         
-        // Fixed path - added /api for Railway backend
         const tokenResponse = await fetch(`${API_URL}/api/auth/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -459,7 +457,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(newToken);
       scheduleTokenRefresh();
       
-      // Fixed path - added /api for Railway backend
       const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${newToken}` },
       });
@@ -510,7 +507,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // Fixed path - added /api for Railway backend
       const response = await fetch(`${API_URL}/api/auth/dev-login`);
       
       if (!response.ok) {
@@ -584,7 +580,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const timestamp = Date.now();
       const randomNonce = Math.random().toString(36).substring(2);
       
-      // Fixed path - added /api for Railway backend
+      // Use the API_URL from the imported service
+      if (!API_URL) {
+        console.error('API_URL is undefined. Check API service configuration.');
+        throw new Error('API URL is not defined');
+      }
+      
+      console.log('Using API_URL:', API_URL);
+      
       const authUrl = `${API_URL}/api/auth/google-mobile?` + 
         `state=${encodeURIComponent(state)}` +
         `&code_challenge=${encodeURIComponent(codeChallenge)}` +
@@ -638,7 +641,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call server-side logout
       if (token) {
         try {
-          // Fixed path - added /api for Railway backend
           await fetch(`${API_URL}/api/auth/logout`, {
             method: 'POST',
             headers: {
