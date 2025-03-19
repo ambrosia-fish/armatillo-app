@@ -6,7 +6,8 @@ import {
   FlatList, 
   TouchableOpacity, 
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,11 +52,28 @@ export default function HistoryScreen() {
       setError(null);
       setLoading(true);
       
+      if (!isAuthenticated) {
+        console.log('Not authenticated yet, skipping fetch');
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      
       // Make sure token is valid before making the request
-      await refreshTokenIfNeeded();
+      const tokenRefreshed = await refreshTokenIfNeeded();
+      console.log('Token refresh status:', tokenRefreshed ? 'refreshed' : 'not needed');
       
       // Fetch instances
+      console.log('Fetching instances...');
       const response = await api.instances.getInstances();
+      console.log('Fetched instances count:', response?.length || 0);
+      
+      // Check if response is an array
+      if (!Array.isArray(response)) {
+        console.error('Expected array but got:', typeof response);
+        setError('Received invalid response format from server');
+        return;
+      }
       
       // Sort instances by creation date (newest first)
       const sortedInstances = response.sort((a: Instance, b: Instance) => 
@@ -65,7 +83,13 @@ export default function HistoryScreen() {
       setInstances(sortedInstances);
     } catch (err) {
       console.error('Error fetching instances:', err);
-      setError('Failed to load your history. Please try again.');
+      
+      let errorMessage = 'Failed to load your history. Please try again.';
+      if (err instanceof Error) {
+        errorMessage += '\n\nDetails: ' + err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -78,6 +102,8 @@ export default function HistoryScreen() {
     useCallback(() => {
       if (isAuthenticated) {
         fetchInstances();
+      } else {
+        console.log('Not authenticated, waiting before fetching instances');
       }
       // Clean up function (optional)
       return () => {
