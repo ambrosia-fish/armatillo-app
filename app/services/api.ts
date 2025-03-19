@@ -22,7 +22,8 @@ const API_URL = getApiUrl();
 // Helper function to get authentication token
 const getAuthToken = async () => {
   try {
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    // Use TOKEN key from STORAGE_KEYS to match the storage.ts implementation
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
     return token;
   } catch (error) {
     console.error('Error retrieving auth token:', error);
