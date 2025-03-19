@@ -1,45 +1,5 @@
 import { router } from 'expo-router';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-
-/**
- * Get the API URL for the current environment
- */
-export const getApiUrl = () => {
-  // When running in development mode (locally)
-  if (__DEV__) {
-    // Use development deployment on Railway for testing
-    return 'https://armatillo-api-development.up.railway.app';
-    
-    // Uncomment and use these alternatives if needed for local development
-    /*
-    // Option 1: Read from environment variables
-    if (Platform.OS === 'web') {
-      return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-    }
-    
-    // Option 2: For iOS simulator, use localhost with special mapping
-    if (Platform.OS === 'ios' && !Constants.expoConfig?.debuggerHost?.includes('127.0.0.1')) {
-      return 'http://localhost:3000';
-    }
-    
-    // Option 3: For Android emulator, get host IP from Expo
-    if (Platform.OS === 'android' && Constants.expoConfig?.debuggerHost) {
-      const host = Constants.expoConfig.debuggerHost.split(':')[0];
-      return `http://${host}:3000`;
-    }
-    
-    // Fallback for development
-    return 'http://localhost:3000';
-    */
-  }
-  
-  // When in production (deployed app)
-  return process.env.EXPO_PUBLIC_API_URL || 'https://armatillo-api-production.up.railway.app';
-};
-
-// API URL
-export const API_URL = getApiUrl();
+import { API_URL } from '../services/api';
 
 /**
  * Handle pending test user response
@@ -76,7 +36,7 @@ export const handlePendingResponse = async (url: string) => {
  */
 export const checkTestUserStatus = async (email: string): Promise<{ approved: boolean, message?: string }> => {
   try {
-    // Fixed path - added /api for Railway backend
+    // Call the API endpoint
     const response = await fetch(`${API_URL}/api/auth/check-test-user`, {
       method: 'POST',
       headers: {
