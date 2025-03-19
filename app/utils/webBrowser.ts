@@ -51,7 +51,8 @@ export const coolDownAsync = async (): Promise<void> => {
 
 /**
  * Web-compatible implementation of openAuthSessionAsync
- * Opens a new tab or redirects user to the OAuth provider
+ * For web, we directly modify the auth URL to use the web callback URL
+ * instead of the native scheme
  */
 export const openAuthSessionAsync = async (
   url: string,
@@ -64,11 +65,31 @@ export const openAuthSessionAsync = async (
   }
 
   try {
-    // Save the current URL so we can detect the redirect
-    const currentUrl = window.location.href;
+    // Transform the URL to replace any instances of the deep link with the web URL
+    let webUrl = url;
+    
+    // Replace native scheme with web URL
+    // Example: replace "armatillo://auth/callback" with "https://app.armatillo.com/auth/callback" 
+    if (redirectUrl.startsWith('armatillo://')) {
+      // Extract the path part (after the scheme)
+      const nativePath = redirectUrl.split('://')[1]; // "auth/callback"
+      
+      // Generate the correct web redirect URL
+      const webRedirectUrl = `${window.location.origin}/${nativePath}`; // "https://app.armatillo.com/auth/callback"
+      
+      // Replace the native redirect in the URL with the web one
+      webUrl = url.replace(encodeURIComponent(redirectUrl), encodeURIComponent(webRedirectUrl));
+      
+      // Also check for non-encoded version
+      if (webUrl === url) {
+        webUrl = url.replace(redirectUrl, webRedirectUrl);
+      }
+      
+      console.log('Transformed auth URL for web:', webUrl);
+    }
     
     // In web, we'll just open the URL directly in the same window
-    window.location.href = url;
+    window.location.href = webUrl;
     
     // This won't actually run, as we're navigating away from the page
     // But we include it for type compatibility
