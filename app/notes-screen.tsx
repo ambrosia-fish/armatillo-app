@@ -9,13 +9,13 @@ import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
 import { useAuth } from './context/AuthContext';
-import { instancesApi } from './services/api';
+import api from './services/api';
 import storage, { STORAGE_KEYS } from './utils/storage';
 
 export default function NotesScreen() {
   const router = useRouter();
   const { formData, updateFormData, resetFormData } = useFormContext();
-  const { user } = useAuth();
+  const { user, refreshTokenIfNeeded } = useAuth();
   
   // Track loading state for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +50,9 @@ export default function NotesScreen() {
     
     try {
       setIsSubmitting(true);
+      
+      // Ensure token is valid
+      await refreshTokenIfNeeded();
       
       // Get user info from auth context or AsyncStorage
       let userName = '';
@@ -93,8 +96,10 @@ export default function NotesScreen() {
         userEmail
       };
       
+      console.log('Submitting instance data:', JSON.stringify(completeData, null, 2));
+      
       // Send data to API using our API service
-      const responseData = await instancesApi.createInstance(completeData);
+      const responseData = await api.instances.createInstance(completeData);
       console.log('API response:', responseData);
       
       // Show success message and return to home
@@ -116,9 +121,15 @@ export default function NotesScreen() {
       // Handle errors
       console.error('Error saving instance:', error);
       
+      let errorMessage = 'There was a problem saving your data. Please try again.';
+      
+      if (error instanceof Error) {
+        errorMessage += '\n\nDetails: ' + error.message;
+      }
+      
       Alert.alert(
         "Error Saving",
-        "There was a problem saving your data. Please try again.",
+        errorMessage,
         [{ text: "OK" }]
       );
     } finally {
