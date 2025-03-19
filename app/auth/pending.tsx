@@ -47,7 +47,7 @@ export default function PendingAccessScreen() {
       
       <View style={styles.content}>
         <Image 
-          source={require('../assets/images/armatillo-placeholder-logo.png')}
+          source={require('../../assets/images/armatillo-placeholder-logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
