@@ -2,22 +2,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
 
 // Configuration for different environments
-const getApiUrl = () => {
+export const getApiUrl = () => {
   // When running in development mode (local)
   if (__DEV__) {
     // Use the development deployment on Railway
-    return 'https://armatillo-api-development.up.railway.app/api';
+    return 'https://armatillo-api-development.up.railway.app';
     
     // Uncomment this if you want to use a local server instead
-    // return 'http://localhost:3000/api';
+    // return 'http://localhost:3000';
   }
   
   // When running in production (deployed app)
-  return 'https://armatillo-api-production.up.railway.app/api';
+  return 'https://armatillo-api-production.up.railway.app';
 };
 
 // Base API URL
-const API_URL = getApiUrl();
+export const API_URL = getApiUrl();
+const API_BASE_PATH = '/api';
 
 // Helper function to get authentication token
 const getAuthToken = async () => {
@@ -46,7 +47,10 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const url = `${API_URL}${API_BASE_PATH}${endpoint}`;
+    console.log(`Making API request to: ${url}`);
+    
+    const response = await fetch(url, {
       ...options,
       headers,
     });
