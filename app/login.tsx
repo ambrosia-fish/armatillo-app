@@ -62,11 +62,15 @@ export default function LoginScreen() {
       await login();
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert(
-        'Login Failed',
-        'Could not complete the login process. Please try again.',
-        [{ text: 'OK' }]
-      );
+      if (Platform.OS === 'web') {
+        alert('Could not complete the login process. Please try again.');
+      } else {
+        Alert.alert(
+          'Login Failed',
+          'Could not complete the login process. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
