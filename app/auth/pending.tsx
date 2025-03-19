@@ -1,80 +1,78 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  TouchableOpacity,
-  Linking
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function PendingScreen() {
+export default function PendingAccessScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [message, setMessage] = useState<string>('');
-
-  useEffect(() => {
-    // Get message from URL params
-    if (params.message) {
-      setMessage(decodeURIComponent(params.message as string));
-    } else {
-      setMessage('Your access request is pending approval.');
+  
+  // Get message from route params, or use default
+  const message = params.message as string || 'Your access is pending approval.';
+  
+  // Function to handle requesting access via email
+  const handleRequestAccess = async () => {
+    const subject = encodeURIComponent('Armatillo App Access Request');
+    const body = encodeURIComponent('Hello,\n\nI would like to request access to the Armatillo app.\n\nThank you.');
+    
+    // Open default email app
+    const emailUrl = `mailto:josef@feztech.io?subject=${subject}&body=${body}`;
+    
+    try {
+      const canOpen = await Linking.canOpenURL(emailUrl);
+      if (canOpen) {
+        await Linking.openURL(emailUrl);
+      } else {
+        console.error('Cannot open email client');
+      }
+    } catch (error) {
+      console.error('Error opening email client:', error);
     }
-  }, [params]);
-
-  const handleContactSupport = () => {
-    Linking.openURL('mailto:support@armatillo.com?subject=Test%20User%20Access%20Request');
   };
-
+  
+  // Function to go back to login screen
   const handleGoBack = () => {
     router.replace('/login');
   };
-
+  
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
-      
-      <View style={styles.content}>
-        {/* Logo and app name */}
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../assets/images/icon.png')}
-            style={styles.logo}
-          />
-          <Text style={styles.appName}>Armatillo</Text>
-          <Text style={styles.tagline}>Access Pending</Text>
-        </View>
-        
-        {/* Message */}
-        <View style={styles.messageContainer}>
-          <Ionicons name="time-outline" size={48} color="#2a9d8f" />
-          <Text style={styles.messageTitle}>Thank You</Text>
-          <Text style={styles.messageText}>{message}</Text>
-          
-          <Text style={styles.infoText}>
-            Armatillo is currently in a closed testing phase. We'll notify you when your access is approved.
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.supportButton}
-            onPress={handleContactSupport}
-          >
-            <Text style={styles.supportButtonText}>Contact Support</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Back button */}
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleGoBack}
-        >
-          <Text style={styles.backButtonText}>Back to Login</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
       </View>
+      
+      <View style={styles.content}>
+        <Image 
+          source={require('../../assets/images/armatillo-placeholder-logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        
+        <Text style={styles.title}>Access Pending</Text>
+        
+        <View style={styles.messageCard}>
+          <Text style={styles.message}>{message}</Text>
+        </View>
+        
+        <Text style={styles.description}>
+          Armatillo is currently in limited beta testing. Please contact the developer to request access.
+        </Text>
+        
+        <TouchableOpacity onPress={handleRequestAccess} style={styles.requestButton}>
+          <Ionicons name="mail-outline" size={18} color="#fff" style={styles.buttonIcon} />
+          <Text style={styles.requestButtonText}>Request Access via Email</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={handleGoBack} style={styles.backToLoginButton}>
+          <Text style={styles.backToLoginText}>Back to Login</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <StatusBar style="auto" />
     </SafeAreaView>
   );
 }
@@ -82,80 +80,76 @@ export default function PendingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  backButton: {
+    padding: 8,
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-  },
-  logoContainer: {
     alignItems: 'center',
-    marginTop: 40,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
   },
   logo: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-    marginBottom: 16,
+    width: 120,
+    height: 120,
+    marginBottom: 24,
   },
-  appName: {
+  title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2a9d8f',
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-  },
-  messageContainer: {
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    marginVertical: 40,
-  },
-  messageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginVertical: 16,
-    color: '#333',
-  },
-  messageText: {
-    fontSize: 18,
-    textAlign: 'center',
     marginBottom: 16,
-    color: '#444',
-  },
-  infoText: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
-    lineHeight: 20,
-  },
-  supportButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#2a9d8f',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 8,
-  },
-  supportButtonText: {
     color: '#2a9d8f',
+  },
+  messageCard: {
+    backgroundColor: '#e8f4f8',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    width: '100%',
+    borderLeftWidth: 4,
+    borderLeftColor: '#2a9d8f',
+  },
+  message: {
     fontSize: 16,
-    fontWeight: '500',
+    color: '#333',
+    lineHeight: 24,
   },
-  backButton: {
+  description: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  requestButton: {
+    backgroundColor: '#2a9d8f',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 16,
   },
-  backButtonText: {
+  buttonIcon: {
+    marginRight: 8,
+  },
+  requestButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  backToLoginButton: {
+    padding: 12,
+  },
+  backToLoginText: {
     color: '#666',
     fontSize: 16,
   },

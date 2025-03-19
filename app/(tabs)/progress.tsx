@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -6,18 +6,22 @@ import {
   FlatList, 
   TouchableOpacity, 
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import InstanceDetailsModal from '../components/InstanceDetailsModal';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Define the Instance type based on your backend data structure
 interface Instance {
   _id: string;
   userId: string;
+  userEmail: string;
+  user_id: string;
   createdAt: string;
   urgeStrength?: number;
   automatic?: boolean;
@@ -31,26 +35,45 @@ interface Instance {
 
 export default function HistoryScreen() {
   const [instances, setInstances] = useState<Instance[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
   
   // Modal state management
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
-  const { isAuthenticated, refreshTokenIfNeeded } = useAuth();
+  const { isAuthenticated, refreshTokenIfNeeded, user } = useAuth();
 
   // Function to fetch instances from API
   const fetchInstances = async () => {
     try {
       setError(null);
+      setLoading(true);
+      
+      if (!isAuthenticated) {
+        console.log('Not authenticated yet, skipping fetch');
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
       
       // Make sure token is valid before making the request
-      await refreshTokenIfNeeded();
+      const tokenRefreshed = await refreshTokenIfNeeded();
+      console.log('Token refresh status:', tokenRefreshed ? 'refreshed' : 'not needed');
       
       // Fetch instances
+      console.log('Fetching instances...');
       const response = await api.instances.getInstances();
+      console.log('Fetched instances count:', response?.length || 0);
+      
+      // Check if response is an array
+      if (!Array.isArray(response)) {
+        console.error('Expected array but got:', typeof response);
+        setError('Received invalid response format from server');
+        return;
+      }
       
       // Sort instances by creation date (newest first)
       const sortedInstances = response.sort((a: Instance, b: Instance) => 
@@ -60,19 +83,34 @@ export default function HistoryScreen() {
       setInstances(sortedInstances);
     } catch (err) {
       console.error('Error fetching instances:', err);
-      setError('Failed to load your history. Please try again.');
+      
+      let errorMessage = 'Failed to load your history. Please try again.';
+      if (err instanceof Error) {
+        errorMessage += '\n\nDetails: ' + err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setInitialLoad(false);
     }
   };
 
-  // Load instances when component mounts
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchInstances();
-    }
-  }, [isAuthenticated]);
+  // Only load instances when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        fetchInstances();
+      } else {
+        console.log('Not authenticated, waiting before fetching instances');
+      }
+      // Clean up function (optional)
+      return () => {
+        // Any cleanup code if needed
+      };
+    }, [isAuthenticated])
+  );
 
   // Handle pull-to-refresh
   const onRefresh = async () => {
@@ -174,7 +212,7 @@ export default function HistoryScreen() {
         </View>
       )}
       
-      {loading ? (
+      {loading && initialLoad ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
           <Text style={styles.loadingText}>Loading your history...</Text>
@@ -185,13 +223,19 @@ export default function HistoryScreen() {
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
           contentContainerStyle={instances.length === 0 ? { flex: 1 } : { paddingBottom: 20 }}
-          ListEmptyComponent={EmptyState}
+          ListEmptyComponent={!loading ? EmptyState : null}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
             />
           }
+          ListHeaderComponent={loading && !initialLoad ? (
+            <View style={styles.inlineLoadingContainer}>
+              <ActivityIndicator size="small" color="#0000ff" />
+              <Text style={styles.inlineLoadingText}>Refreshing...</Text>
+            </View>
+          ) : null}
         />
       )}
       
@@ -287,6 +331,19 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
+    color: '#666',
+  },
+  inlineLoadingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  inlineLoadingText: {
+    marginLeft: 8,
     color: '#666',
   },
   errorContainer: {

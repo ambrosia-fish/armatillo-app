@@ -18,7 +18,8 @@ import {
   verifyOAuthState,
   SECURITY_KEYS
 } from '../utils/securityUtils';
-import { API_URL, handlePendingResponse } from '../utils/testUserUtils';
+import { handlePendingResponse } from '../utils/testUserUtils';
+import { API_URL } from '../services/api';
 
 // Import mock PKCE implementation for testing
 import mockPKCE from '../utils/mockPKCE';
@@ -44,6 +45,7 @@ interface AuthContextType {
   handleOAuthCallback: (url: string) => Promise<void>;
   refreshTokenIfNeeded: () => Promise<boolean>;
   reportSuspiciousActivity: (reason: string) => Promise<void>;
+  checkTestUserStatus: (email: string) => Promise<boolean>;
 }
 
 // Create the context with a default undefined value
@@ -127,22 +129,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Load the user's authentication state on app start
   const loadAuthState = async () => {
     try {
+      console.log('Loading auth state...');
       const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
+      console.log('Stored token found:', storedToken ? 'yes' : 'no');
+      
       const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
+      console.log('Stored user found:', storedUser ? 'yes' : 'no');
 
       if (storedToken && storedUser) {
-        if (!await validateToken(storedToken)) {
+        const tokenValid = await validateToken(storedToken);
+        console.log('Token validation result:', tokenValid ? 'valid' : 'invalid');
+        
+        if (!tokenValid) {
+          console.log('Token validation failed, clearing auth state');
           await clearAuthState();
           return;
         }
         
         if (await isTokenExpired()) {
+          console.log('Token expired, attempting refresh');
           const refreshed = await refreshToken();
+          console.log('Token refresh result:', refreshed ? 'success' : 'failed');
           if (!refreshed) {
+            console.log('Token refresh failed, clearing auth state');
             await clearAuthState();
             return;
           }
         } else {
+          console.log('Token is still valid, using stored token');
           setToken(storedToken);
           scheduleTokenRefresh();
         }
@@ -152,6 +166,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (storedUser.displayName) {
           await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
         }
+      } else {
+        console.log('No stored auth credentials found');
       }
     } catch (error) {
       console.error('Failed to load authentication state:', error);
@@ -181,7 +197,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       );
       const refreshDelay = Math.max(refreshTime, 5000); // At least 5 seconds before expiry
       
+      console.log(`Scheduling token refresh in ${Math.round(refreshDelay / 1000)} seconds`);
+      
       tokenRefreshTimeout = setTimeout(async () => {
+        console.log('Executing scheduled token refresh');
         await refreshToken();
       }, refreshDelay);
     } catch (error) {
@@ -192,7 +211,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Clear authentication state
   const clearAuthState = async () => {
     try {
-      await storage.clear();
+      console.log('Clearing auth state');
+      await clearAuthTokens();
       setToken(null);
       setUser(null);
       
@@ -200,6 +220,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         clearTimeout(tokenRefreshTimeout);
         tokenRefreshTimeout = null;
       }
+      
+      console.log('Auth state cleared');
     } catch (error) {
       console.error('Error clearing auth state:', error);
     }
@@ -208,33 +230,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Refresh the access token
   const refreshToken = async (): Promise<boolean> => {
     try {
+      console.log('Attempting to refresh token');
       const refreshToken = await storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
       
-      if (!refreshToken) return false;
+      if (!refreshToken) {
+        console.log('No refresh token found');
+        return false;
+      }
       
-      // Fixed path - added /api for Railway backend
+      console.log('Making refresh token request to:', `${API_URL}/api/auth/refresh`);
       const response = await fetch(`${API_URL}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       });
       
+      console.log('Refresh token response status:', response.status);
+      
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('Server rejected refresh token, blacklisting');
           await blacklistToken(refreshToken, 'server_rejected_refresh');
+        } else {
+          console.log('Refresh token request failed with status:', response.status);
         }
         return false;
       }
       
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
       
-      if (!data.token) return false;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Error parsing token refresh response:', parseError);
+        console.log('Response was:', responseText);
+        return false;
+      }
+      
+      if (!data.token) {
+        console.log('No token in refresh response:', data);
+        return false;
+      }
+      
+      console.log('Successfully refreshed token');
       
       await storeAuthTokens(
         data.token,
         data.expiresIn || undefined,
         data.refreshToken || refreshToken
       );
+      
+      console.log('New token stored in secure storage');
       
       setToken(data.token);
       scheduleTokenRefresh();
@@ -248,20 +295,61 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Refresh token if needed (can be called externally)
   const refreshTokenIfNeeded = async (): Promise<boolean> => {
     try {
+      console.log('Checking if token refresh is needed');
       const currentToken = await storage.getItem(STORAGE_KEYS.TOKEN);
-      if (currentToken) {
-        if (!await validateToken(currentToken)) {
-          return await refreshToken();
-        }
-      }
       
-      if (await isTokenExpired()) {
+      if (!currentToken) {
+        console.log('No token found, refresh needed');
         return await refreshToken();
       }
       
+      if (!await validateToken(currentToken)) {
+        console.log('Token validation failed, refresh needed');
+        return await refreshToken();
+      }
+      
+      if (await isTokenExpired()) {
+        console.log('Token expired, refresh needed');
+        return await refreshToken();
+      }
+      
+      console.log('Token is valid and not expired, no refresh needed');
       return true;
     } catch (error) {
       console.error('Error in refreshTokenIfNeeded:', error);
+      return false;
+    }
+  };
+
+  // Check if a user is an approved test user
+  const checkTestUserStatus = async (email: string): Promise<boolean> => {
+    try {
+      // Call the backend to check if this user is an approved test user
+      const response = await fetch(`${API_URL}/api/test-users/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        console.error('Error checking test user status:', await response.text());
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      // If the user is not approved, handle the pending redirect
+      if (!data.approved) {
+        // Show the pending access screen with the appropriate message
+        router.replace({
+          pathname: '/auth/pending',
+          params: { message: data.message || 'Your access request is pending approval.' }
+        });
+      }
+      
+      return data.approved;
+    } catch (error) {
+      console.error('Error checking test user status:', error);
       return false;
     }
   };
@@ -274,7 +362,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await reportCompromisedToken(currentToken, reason);
         
         try {
-          // Fixed path - added /api for Railway backend
           await fetch(`${API_URL}/api/auth/report-security-event`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -347,7 +434,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('Missing PKCE code verifier');
         }
         
-        // Fixed path - added /api for Railway backend
+        console.log('Exchanging code for token at:', `${API_URL}/api/auth/token`);
         const tokenResponse = await fetch(`${API_URL}/api/auth/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -359,12 +446,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           })
         });
         
+        console.log('Token exchange response status:', tokenResponse.status);
+        
         if (!tokenResponse.ok) {
           authFailureCount++;
           throw new Error(`Failed to exchange code for token: ${await tokenResponse.text()}`);
         }
         
         const tokenData = await tokenResponse.json();
+        console.log('Token exchange successful, clearing code verifier');
         await mockPKCE.clearCodeVerifier();
         
         const newToken = tokenData.access_token || tokenData.token;
@@ -416,22 +506,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refreshToken: string | null
   ) => {
     try {
+      console.log('Processing received token');
+      
+      // Convert string expiresIn to number if needed
+      const expiresInNum = expiresIn ? parseInt(expiresIn, 10) : undefined;
+      
+      console.log('Storing tokens with expiration:', expiresInNum || 'default');
       await storeAuthTokens(
         newToken,
-        expiresIn ? parseInt(expiresIn, 10) : undefined,
+        expiresInNum,
         refreshToken || undefined
       );
       
+      console.log('Setting token in state');
       setToken(newToken);
       scheduleTokenRefresh();
       
-      // Fixed path - added /api for Railway backend
+      console.log('Fetching user info from:', `${API_URL}/api/auth/me`);
       const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${newToken}` },
       });
       
+      console.log('User info response status:', response.status);
+      
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('Unauthorized user info request, blacklisting token');
           await blacklistToken(newToken, 'unauthorized_user_fetch');
         }
         throw new Error(`Failed to fetch user data: ${response.status}`);
@@ -444,6 +544,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       const userObj = userData.user || userData;
+      console.log('User info received:', userObj.email);
       
       if (!userObj.id || !userObj.email) {
         throw new Error('User data missing required fields');
@@ -453,10 +554,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         userObj.displayName = userObj.email.split('@')[0] || 'Armatillo User';
       }
       
+      // Check if this is an approved test user
+      const isApproved = await checkTestUserStatus(userObj.email);
+      if (!isApproved) {
+        // The checkTestUserStatus function will handle the redirection to the pending page
+        return;
+      }
+      
+      console.log('Storing user object in secure storage');
       await storage.setObject(STORAGE_KEYS.USER, userObj);
       setUser(userObj);
       await storage.setItem(STORAGE_KEYS.USER_NAME, userObj.displayName);
       
+      console.log('Authentication complete, navigating to home');
       router.replace('/(tabs)');
     } catch (error) {
       console.error('Error processing token:', error);
@@ -469,7 +579,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      // Fixed path - added /api for Railway backend
       const response = await fetch(`${API_URL}/api/auth/dev-login`);
       
       if (!response.ok) {
@@ -543,7 +652,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const timestamp = Date.now();
       const randomNonce = Math.random().toString(36).substring(2);
       
-      // Fixed path - added /api for Railway backend
+      // Use the API_URL from the imported service
+      if (!API_URL) {
+        console.error('API_URL is undefined. Check API service configuration.');
+        throw new Error('API URL is not defined');
+      }
+      
+      console.log('Using API_URL:', API_URL);
+      
       const authUrl = `${API_URL}/api/auth/google-mobile?` + 
         `state=${encodeURIComponent(state)}` +
         `&code_challenge=${encodeURIComponent(codeChallenge)}` +
@@ -597,7 +713,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call server-side logout
       if (token) {
         try {
-          // Fixed path - added /api for Railway backend
           await fetch(`${API_URL}/api/auth/logout`, {
             method: 'POST',
             headers: {
@@ -640,7 +755,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     handleOAuthCallback: handleAuthResponse,
     refreshTokenIfNeeded,
-    reportSuspiciousActivity
+    reportSuspiciousActivity,
+    checkTestUserStatus
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

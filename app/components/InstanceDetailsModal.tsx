@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import OptionDictionaries, { OptionItem } from '../constants/optionDictionaries';
+import { useAuth } from '../context/AuthContext';
 
 // Define the Instance type
 interface Instance {
@@ -54,6 +55,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { refreshTokenIfNeeded } = useAuth();
 
   // Fetch instance details when modal is opened
   useEffect(() => {
@@ -63,13 +65,24 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       try {
         setLoading(true);
         setError(null);
+        
+        // Ensure token is fresh
+        await refreshTokenIfNeeded();
+        
+        console.log('Fetching instance details for ID:', instanceId);
         const data = await api.instances.getInstance(instanceId);
-        console.log('Instance data:', data); // Debug log
+        console.log('Instance data received:', data ? 'yes' : 'no');
         setInstance(data);
       } catch (err) {
         console.error('Error fetching instance details:', err);
-        setError('Failed to load details. Please try again.');
-        Alert.alert('Error', 'Failed to load instance details.');
+        
+        let errorMessage = 'Failed to load details. Please try again.';
+        if (err instanceof Error) {
+          errorMessage += '\n\nDetails: ' + err.message;
+        }
+        
+        setError(errorMessage);
+        Alert.alert('Error', errorMessage);
       } finally {
         setLoading(false);
       }
@@ -78,7 +91,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     if (isVisible && instanceId) {
       fetchInstanceDetails();
     }
-  }, [isVisible, instanceId]);
+  }, [isVisible, instanceId, refreshTokenIfNeeded]);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -192,7 +205,10 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
                 onPress={() => {
                   if (instanceId) {
                     setLoading(true);
-                    api.instances.getInstance(instanceId)
+                    setError(null);
+                    
+                    refreshTokenIfNeeded()
+                      .then(() => api.instances.getInstance(instanceId))
                       .then(data => setInstance(data))
                       .catch(err => {
                         console.error(err);
