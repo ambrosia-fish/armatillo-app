@@ -466,7 +466,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('Missing PKCE code verifier');
         }
         
+        // Get the appropriate redirect URI based on platform
+        const redirectUri = Platform.OS === 'web' 
+          ? `${window.location.origin}/auth/callback`
+          : 'armatillo://auth/callback';
+        
         console.log('Exchanging code for token at:', `${API_URL}/api/auth/token`);
+        console.log('Using redirect URI:', redirectUri);
+        
         const tokenResponse = await fetch(`${API_URL}/api/auth/token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -474,9 +481,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             grant_type: 'authorization_code',
             code: authCode,
             code_verifier: codeVerifier,
-            redirect_uri: Platform.OS === 'web' 
-              ? window.location.origin + '/auth/callback'
-              : 'armatillo://auth/callback'
+            redirect_uri: redirectUri
           })
         });
         
@@ -484,7 +489,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         if (!tokenResponse.ok) {
           authFailureCount++;
-          throw new Error(`Failed to exchange code for token: ${await tokenResponse.text()}`);
+          const errorText = await tokenResponse.text();
+          console.error('Token exchange error response:', errorText);
+          throw new Error(`Failed to exchange code for token: ${errorText}`);
         }
         
         const tokenData = await tokenResponse.json();
@@ -723,9 +730,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('Using API_URL:', API_URL);
       
       // Set redirect URL based on platform
-      const redirectUrl = Platform.OS === 'web' 
+      const redirectUri = Platform.OS === 'web' 
         ? `${window.location.origin}/auth/callback`
         : 'armatillo://auth/callback';
+      
+      console.log('Using redirect URI:', redirectUri);
       
       const authUrl = `${API_URL}/api/auth/google-mobile?` + 
         `state=${encodeURIComponent(state)}` +
@@ -735,7 +744,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         `&prompt=select_account` +
         `&nonce=${randomNonce}` +
         `&timestamp=${timestamp}` +
-        `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&use_incognito=true`;
       
       console.log('Opening OAuth URL:', authUrl);
@@ -744,7 +753,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (Platform.OS === 'web') {
         const result = await WebBrowser.openAuthSessionAsync(
           authUrl,
-          redirectUrl
+          redirectUri
         );
         
         // The web implementation will handle this differently, 
