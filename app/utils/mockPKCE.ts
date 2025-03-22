@@ -22,16 +22,20 @@ export function generateCodeChallenge(verifier: string): string {
 
 // Store the code verifier
 export async function storeCodeVerifier(verifier: string): Promise<void> {
+  console.log('Storing code verifier:', verifier);
   await storage.setItem(CODE_VERIFIER_STORAGE_KEY, verifier);
 }
 
 // Get the stored code verifier
 export async function getCodeVerifier(): Promise<string | null> {
-  return await storage.getItem(CODE_VERIFIER_STORAGE_KEY);
+  const verifier = await storage.getItem(CODE_VERIFIER_STORAGE_KEY);
+  console.log('Retrieved code verifier:', verifier);
+  return verifier;
 }
 
 // Clear the stored code verifier
 export async function clearCodeVerifier(): Promise<void> {
+  console.log('Clearing code verifier');
   await storage.removeItem(CODE_VERIFIER_STORAGE_KEY);
 }
 
