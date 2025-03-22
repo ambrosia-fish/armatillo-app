@@ -10,21 +10,33 @@ export default function AuthCallbackScreen() {
   const params = useLocalSearchParams();
   const { handleOAuthCallback } = useAuth();
   const token = params.token as string;
+  const code = params.code as string;
+  const state = params.state as string;
 
   useEffect(() => {
     // Process the OAuth callback
     const processCallback = async () => {
       try {
+        console.log('Processing auth callback with params:', { token, code, state });
+        
+        // Create full URL to pass to auth context
+        let callbackUrl = 'callback?';
         if (token) {
-          // If we received a token directly in the URL params,
-          // handle it using the auth context
-          await handleOAuthCallback(`callback?token=${token}`);
-          router.replace('/(tabs)');
+          callbackUrl += `token=${token}`;
+          if (state) callbackUrl += `&state=${state}`;
+        } else if (code) {
+          callbackUrl += `code=${code}`;
+          if (state) callbackUrl += `&state=${state}`;
         } else {
-          // If no token, something went wrong
-          console.error('No token found in callback URL');
+          // If no token or code, something went wrong
+          console.error('No token or code found in callback URL');
           router.replace('/login');
+          return;
         }
+        
+        // Handle the callback through auth context
+        await handleOAuthCallback(callbackUrl);
+        router.replace('/(tabs)');
       } catch (error) {
         console.error('Error processing callback:', error);
         router.replace('/login');
@@ -32,7 +44,7 @@ export default function AuthCallbackScreen() {
     };
 
     processCallback();
-  }, [token, handleOAuthCallback, router]);
+  }, [token, code, state, handleOAuthCallback, router]);
 
   return (
     <SafeAreaView style={styles.container}>
