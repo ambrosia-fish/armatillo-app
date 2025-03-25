@@ -16,10 +16,9 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useAuth } from './context/AuthContext';
-import api from './services/api';
 
 export default function LoginScreen() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { login, register, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -40,11 +39,10 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      const response = await api.auth.login(email, password);
-      console.log('Login successful:', response);
+      await login(email, password);
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      // Error is already handled in AuthContext
     } finally {
       setLoading(false);
     }
@@ -63,18 +61,17 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      const response = await api.auth.register({
+      await register({
         username,
         email,
         password,
         displayName: username
       });
-      console.log('Registration successful:', response);
       Alert.alert('Success', 'Account created successfully! Please log in.');
       setIsSignUp(false);
     } catch (error) {
       console.error('Registration error:', error);
-      Alert.alert('Registration Failed', 'Could not create account. Please try again.');
+      // Error is already handled in AuthContext
     } finally {
       setLoading(false);
     }
