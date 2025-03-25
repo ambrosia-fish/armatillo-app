@@ -6,7 +6,7 @@ This branch implements a simplified security model for the Armatillo App, focusi
 
 ### Username/Password Authentication
 
-- Removed Google OAuth implementation in favor of standard username/password authentication
+- Implemented standard username/password authentication
 - Created new login/signup UI with email, username, and password fields
 - Implemented form validation for login and registration
 
@@ -15,6 +15,7 @@ This branch implements a simplified security model for the Armatillo App, focusi
 - Streamlined token management using straightforward JWT handling
 - Removed complex validation and blacklisting features
 - Simplified storage to use AsyncStorage directly
+- Removed test user functionality
 
 ### Files Modified
 
@@ -26,28 +27,24 @@ This branch implements a simplified security model for the Armatillo App, focusi
 
 3. **`app/services/api.ts`**
    - Updated API service to use JWT authentication
-   - Removed Google OAuth endpoints
 
 4. **`app/context/AuthContext.tsx`**
    - Simplified authentication context for username/password auth
-   - Removed OAuth-specific logic
+   - Removed OAuth-specific logic and test user functionality
 
 5. **`app/login.tsx`**
    - Completely redesigned with username/password form
    - Added toggle for signup with additional fields
 
-6. **`app/auth/callback.tsx`**
-   - Simplified to just redirect to login screen
-
-7. **`app/components/AuthGuard.tsx`**
-   - Kept as is for route protection
-
 ### Files Removed
-- `app/utils/securityUtils.ts` - Removed OAuth security utilities
-- `app/utils/mockPKCE.ts` - Removed PKCE implementation
-- `app/utils/webBrowser.ts` - Removed web browser utilities for OAuth
-- `app/utils/webStorage.ts` - Removed web storage implementation
-- `app/utils/encryptionUtils.ts` - Removed encryption utilities
+- `app/utils/securityUtils.ts` - OAuth security utilities
+- `app/utils/mockPKCE.ts` - PKCE implementation
+- `app/utils/webBrowser.ts` - Web browser utilities for OAuth
+- `app/utils/webStorage.ts` - Web storage implementation
+- `app/utils/encryptionUtils.ts` - Encryption utilities
+- `app/utils/testUserUtils.ts` - Test user utilities
+- `app/auth/callback.tsx` - OAuth callback handler
+- `app/auth/pending.tsx` - Test user pending screen
 
 ### How to Test
 
