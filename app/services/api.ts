@@ -24,54 +24,8 @@ const API_BASE_PATH = '/api';
 const getAuthToken = async (): Promise<string | null> => {
   try {
     console.log('Getting auth token from storage');
-    
-    // Try to get token using the storage utility first
-    let token: string | null = null;
-    
-    try {
-      // First approach: Use AsyncStorage directly 
-      token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-      console.log('Token from AsyncStorage:', token ? 'found' : 'not found');
-    } catch (asyncError) {
-      console.error('Error accessing AsyncStorage directly:', asyncError);
-    }
-    
-    if (!token) {
-      // Some tokens are stored in SecureStore, so also try it directly
-      try {
-        // Check if expo-secure-store is available
-        const SecureStore = require('expo-secure-store');
-        token = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
-        console.log('Token from SecureStore:', token ? 'found' : 'not found');
-      } catch (secureStoreError) {
-        console.error('Error accessing SecureStore directly:', secureStoreError);
-      }
-    }
-    
-    // As a final fallback, try all possible token key names
-    if (!token) {
-      const possibleTokenKeys = [
-        STORAGE_KEYS.TOKEN,
-        'auth_token',
-        'token',
-        'accessToken',
-        'access_token'
-      ];
-      
-      for (const key of possibleTokenKeys) {
-        try {
-          const fallbackToken = await AsyncStorage.getItem(key);
-          if (fallbackToken) {
-            console.log(`Found token using fallback key: ${key}`);
-            token = fallbackToken;
-            break;
-          }
-        } catch (fallbackError) {
-          console.warn(`Error checking fallback token key ${key}:`, fallbackError);
-        }
-      }
-    }
-    
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    console.log('Token from AsyncStorage:', token ? 'found' : 'not found');
     return token;
   } catch (error) {
     console.error('Error retrieving auth token:', error);
@@ -108,7 +62,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     
     // Check if the response is JSON
     const contentType = response.headers.get('content-type');
-    console.log(`Content-Type:`, contentType);
     
     if (contentType && contentType.includes('application/json')) {
       const responseText = await response.text(); // Get raw text first
@@ -162,15 +115,6 @@ export const debugTokenStorage = async (): Promise<void> => {
       console.log('Error reading from AsyncStorage:', error);
     }
     
-    // Try to get token using SecureStore directly
-    try {
-      const SecureStore = require('expo-secure-store');
-      const secureToken = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
-      console.log('SecureStore token:', secureToken ? 'exists' : 'not found');
-    } catch (error) {
-      console.log('Error reading from SecureStore:', error);
-    }
-    
     // Check all AsyncStorage keys to find token
     try {
       const allKeys = await AsyncStorage.getAllKeys();
@@ -221,9 +165,6 @@ export const instancesApi = {
   createInstance: async (data: any) => {
     try {
       console.log('Creating instance with data:', JSON.stringify(data, null, 2));
-      
-      // First run token storage diagnosis
-      await debugTokenStorage();
       
       return await apiRequest('/instances', {
         method: 'POST',
@@ -316,6 +257,23 @@ export const authApi = {
       return await apiRequest('/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('logout error:', error);
+      throw error;
+    }
+  },
+  
+  // Google OAuth login
+  googleLogin: async (redirectUri: string) => {
+    try {
+      // Simple function to get the Google OAuth URL from the backend
+      return await apiRequest('/auth/google-mobile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Redirect-URI': redirectUri
+        },
+      });
+    } catch (error) {
+      console.error('Google login error:', error);
       throw error;
     }
   },
