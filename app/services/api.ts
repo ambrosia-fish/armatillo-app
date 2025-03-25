@@ -141,9 +141,6 @@ export const instancesApi = {
   // Get all instances for the current user
   getInstances: async () => {
     try {
-      // First run token storage diagnosis
-      await debugTokenStorage();
-      
       return await apiRequest('/instances', { method: 'GET' });
     } catch (error) {
       console.error('getInstances error:', error);
@@ -257,23 +254,6 @@ export const authApi = {
       return await apiRequest('/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('logout error:', error);
-      throw error;
-    }
-  },
-  
-  // Google OAuth login
-  googleLogin: async (redirectUri: string) => {
-    try {
-      // Simple function to get the Google OAuth URL from the backend
-      return await apiRequest('/auth/google-mobile', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Redirect-URI': redirectUri
-        },
-      });
-    } catch (error) {
-      console.error('Google login error:', error);
       throw error;
     }
   },
