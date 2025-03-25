@@ -1,47 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
 import { ensureValidToken } from '../utils/tokenRefresher';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import config from '../constants/config';
 
-// Your computer's IP address - CHANGE THIS to your actual IP address
-const LOCAL_IP = '192.168.1.X'; // Replace with your IP address
-
-// Configuration for different environments
-export const getApiUrl = () => {
-  // When running in development mode (local)
-  if (__DEV__) {
-    // Use appropriate connection based on how we're running
-    
-    // When using Expo Go on a physical device, use the IP address
-    if (Constants.appOwnership === 'expo') {
-      return `http://${LOCAL_IP}:3000`;
-    }
-    
-    // Use localhost for iOS simulator
-    if (Platform.OS === 'ios') {
-      return 'http://localhost:3000';
-    } 
-    // Use 10.0.2.2 for Android emulator (this maps to localhost on the host)
-    else if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:3000';
-    }
-    // For web development
-    else if (Platform.OS === 'web') {
-      return 'http://localhost:3000';
-    }
-    
-    // Fallback to development API
-    return 'https://armatillo-api-development.up.railway.app';
-  }
-  
-  // When running in production (deployed app)
-  return 'https://armatillo-api-production.up.railway.app';
-};
-
-// Base API URL
-export const API_URL = getApiUrl();
-const API_BASE_PATH = '/api';
+// Base API URL from centralized config
+export const API_URL = config.apiUrl;
+const API_BASE_PATH = config.apiBasePath;
 
 // Helper function to get authentication token
 const getAuthToken = async (): Promise<string | null> => {
@@ -82,14 +46,19 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     }
     
     const url = `${API_URL}${API_BASE_PATH}${endpoint}`;
-    console.log(`Making API request to: ${url}`);
+    
+    if (config.enableLogging) {
+      console.log(`Making API request to: ${url}`);
+    }
     
     const response = await fetch(url, {
       ...options,
       headers,
     });
     
-    console.log(`Response status for ${endpoint}:`, response.status);
+    if (config.enableLogging) {
+      console.log(`Response status for ${endpoint}:`, response.status);
+    }
     
     // Handle 401 Unauthorized errors (potential token issue)
     if (response.status === 401) {
@@ -104,7 +73,10 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     
     if (contentType && contentType.includes('application/json')) {
       const responseText = await response.text(); // Get raw text first
-      console.log(`Response for ${endpoint}:`, responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+      
+      if (config.enableLogging) {
+        console.log(`Response for ${endpoint}:`, responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+      }
       
       // Try to parse as JSON
       let data;
@@ -127,7 +99,10 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     } else {
       // Handle non-JSON responses
       const responseText = await response.text();
-      console.log(`Non-JSON response for ${endpoint}:`, responseText.substring(0, 200));
+      
+      if (config.enableLogging) {
+        console.log(`Non-JSON response for ${endpoint}:`, responseText.substring(0, 200));
+      }
       
       if (!response.ok) {
         throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
@@ -201,7 +176,9 @@ export const instancesApi = {
   // Create a new instance
   createInstance: async (data: any) => {
     try {
-      console.log('Creating instance with data:', JSON.stringify(data, null, 2));
+      if (config.enableLogging) {
+        console.log('Creating instance with data:', JSON.stringify(data, null, 2));
+      }
       
       return await apiRequest('/instances', {
         method: 'POST',
