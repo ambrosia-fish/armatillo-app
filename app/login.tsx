@@ -1,41 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Image, 
   TouchableOpacity, 
-  ActivityIndicator,
-  Alert,
-  Platform
+  ActivityIndicator
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Redirect } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './context/AuthContext';
-import api from './services/api';
-import { STORAGE_KEYS } from './utils/storage';
 
 export default function LoginScreen() {
-  const router = useRouter();
   const { login, isAuthenticated, isLoading } = useAuth();
-  const [loginAttempted, setLoginAttempted] = useState(false);
-
-  // Check for existing token on load
-  useEffect(() => {
-    const checkToken = async () => {
-      try {
-        // This will print out token storage state for debugging
-        await api.debug.debugTokenStorage();
-      } catch (error) {
-        console.error('Error checking token storage:', error);
-      }
-    };
-
-    checkToken();
-  }, []);
 
   // If already authenticated, redirect to home
   if (isAuthenticated && !isLoading) {
@@ -45,32 +24,9 @@ export default function LoginScreen() {
   // Handle login with Google
   const handleGoogleLogin = async () => {
     try {
-      setLoginAttempted(true);
-      console.log('Starting Google login flow');
-      
-      // Clear any existing tokens first
-      try {
-        // Use AsyncStorage directly to clear tokens before login
-        await AsyncStorage.removeItem(`${Platform.OS === 'web' ? 'secure_' : ''}${STORAGE_KEYS.TOKEN}`);
-        await AsyncStorage.removeItem(`${Platform.OS === 'web' ? 'secure_' : ''}${STORAGE_KEYS.REFRESH_TOKEN}`);
-        await AsyncStorage.removeItem(`${Platform.OS === 'web' ? 'secure_' : ''}${STORAGE_KEYS.TOKEN_EXPIRY}`);
-        console.log('Cleared existing tokens before login');
-      } catch (clearError) {
-        console.error('Error clearing tokens:', clearError);
-      }
-      
       await login();
     } catch (error) {
       console.error('Login error:', error);
-      if (Platform.OS === 'web') {
-        alert('Could not complete the login process. Please try again.');
-      } else {
-        Alert.alert(
-          'Login Failed',
-          'Could not complete the login process. Please try again.',
-          [{ text: 'OK' }]
-        );
-      }
     }
   };
 
