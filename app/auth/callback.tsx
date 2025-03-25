@@ -1,41 +1,28 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../context/AuthContext';
 
+/**
+ * This is a placeholder for OAuth callback.
+ * Since we've switched to username/password authentication,
+ * this just redirects to the login screen.
+ */
 export default function AuthCallbackScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const { handleOAuthCallback } = useAuth();
-  const token = params.token as string;
 
+  // Redirect to login page immediately
   useEffect(() => {
-    const processCallback = async () => {
-      try {
-        if (token) {
-          await handleOAuthCallback(`callback?token=${token}`);
-          router.replace('/(tabs)');
-        } else {
-          console.error('No token found in callback URL');
-          router.replace('/login');
-        }
-      } catch (error) {
-        console.error('Error processing callback:', error);
-        router.replace('/login');
-      }
-    };
-
-    processCallback();
-  }, [token, handleOAuthCallback, router]);
+    router.replace('/login');
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.content}>
         <ActivityIndicator size="large" color="#2a9d8f" />
-        <Text style={styles.text}>Completing sign in...</Text>
+        <Text style={styles.text}>Redirecting...</Text>
       </View>
     </SafeAreaView>
   );
