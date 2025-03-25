@@ -6,7 +6,7 @@ This branch implements a simplified security model for the Armatillo App, focusi
 
 ### Username/Password Authentication
 
-- Removed complex OAuth implementation in favor of standard username/password authentication
+- Removed Google OAuth implementation in favor of standard username/password authentication
 - Created new login/signup UI with email, username, and password fields
 - Implemented form validation for login and registration
 
@@ -42,10 +42,12 @@ This branch implements a simplified security model for the Armatillo App, focusi
 7. **`app/components/AuthGuard.tsx`**
    - Kept as is for route protection
 
-### Files Simplified (kept for backward compatibility)
-- `app/utils/securityUtils.ts` - Emptied but kept for imports
-- `app/utils/mockPKCE.ts` - Emptied but kept for imports
-- `app/utils/webBrowser.ts` - Emptied but kept for imports
+### Files Removed
+- `app/utils/securityUtils.ts` - Removed OAuth security utilities
+- `app/utils/mockPKCE.ts` - Removed PKCE implementation
+- `app/utils/webBrowser.ts` - Removed web browser utilities for OAuth
+- `app/utils/webStorage.ts` - Removed web storage implementation
+- `app/utils/encryptionUtils.ts` - Removed encryption utilities
 
 ### How to Test
 
