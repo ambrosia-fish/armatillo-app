@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './storage';
+import config from '../constants/config';
 
 /**
  * Token utilities for managing authentication tokens
  */
 
-// Default token expiration (1 hour in milliseconds)
-export const DEFAULT_TOKEN_EXPIRATION = 60 * 60 * 1000;
+// Default token expiration from config
+export const DEFAULT_TOKEN_EXPIRATION = config.authConfig.tokenExpiration;
 
 /**
  * Store authentication tokens along with expiration time
@@ -33,7 +34,9 @@ export async function storeAuthTokens(
       await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     }
 
-    console.log(`Token stored with expiration in ${expiresIn} seconds`);
+    if (config.enableLogging) {
+      console.log(`Token stored with expiration in ${expiresIn} seconds`);
+    }
   } catch (error) {
     console.error('Error storing auth tokens:', error);
     throw error;
@@ -42,10 +45,10 @@ export async function storeAuthTokens(
 
 /**
  * Check if the stored token is expired or about to expire
- * @param bufferMs Time buffer in milliseconds (default: 5 minutes)
+ * @param bufferMs Time buffer in milliseconds (default from config)
  * @returns True if token is expired or will expire within the buffer time
  */
-export async function isTokenExpired(bufferMs: number = 5 * 60 * 1000): Promise<boolean> {
+export async function isTokenExpired(bufferMs: number = config.authConfig.tokenRefreshBuffer): Promise<boolean> {
   try {
     // Get expiration timestamp
     const expiryTimeString = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
@@ -61,7 +64,7 @@ export async function isTokenExpired(bufferMs: number = 5 * 60 * 1000): Promise<
     // Token is expired if current time + buffer is greater than expiry time
     const isExpired = currentTime + bufferMs >= expiryTime;
     
-    if (isExpired) {
+    if (isExpired && config.enableLogging) {
       console.log('Token is expired or will expire soon');
     }
     
@@ -92,7 +95,10 @@ export async function clearAuthTokens(): Promise<void> {
       AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
       AsyncStorage.removeItem(STORAGE_KEYS.USER),
     ]);
-    console.log('Auth tokens cleared');
+    
+    if (config.enableLogging) {
+      console.log('Auth tokens cleared');
+    }
   } catch (error) {
     console.error('Error clearing auth tokens:', error);
     throw error;
