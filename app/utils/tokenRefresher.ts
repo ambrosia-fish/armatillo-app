@@ -2,6 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './storage';
 import { isTokenExpired, getRefreshToken, storeAuthTokens } from './tokenUtils';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+// Your computer's IP address - CHANGE THIS to your actual IP address
+const LOCAL_IP = '192.168.1.X'; // Replace with your IP address
 
 // Refresher service to handle token refresh
 // This can be imported and used to ensure a valid token before API requests
@@ -92,7 +96,12 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
 function getApiUrl(): string {
   // When running in development mode (local)
   if (__DEV__) {
-    // Use localhost for iOS simulator and local development
+    // When using Expo Go on a physical device, use the IP address
+    if (Constants.appOwnership === 'expo') {
+      return `http://${LOCAL_IP}:3000`;
+    }
+    
+    // Use localhost for iOS simulator
     if (Platform.OS === 'ios') {
       return 'http://localhost:3000';
     } 
