@@ -20,6 +20,3 @@ export { default as AuthGuard } from './AuthGuard';
 export { default as CancelFooter } from './CancelFooter';
 export { default as EmojiSelectionGrid } from './EmojiSelectionGrid';
 export { default as InstanceDetailsModal } from './InstanceDetailsModal';
-
-// Hook for using color scheme
-export { useColorScheme } from './useColorScheme';
