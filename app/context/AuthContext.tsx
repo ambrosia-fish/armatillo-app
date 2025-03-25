@@ -56,16 +56,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Load auth state from storage
   const loadAuthState = async () => {
     try {
+      console.log('Loading auth state...');
       const storedToken = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+      console.log('Stored token found:', storedToken ? 'yes' : 'no');
+      
       const storedUserJson = await AsyncStorage.getItem(STORAGE_KEYS.USER);
       const storedUser = storedUserJson ? JSON.parse(storedUserJson) : null;
+      console.log('Stored user found:', storedUser ? 'yes' : 'no');
 
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(storedUser);
+        
+        if (storedUser.displayName) {
+          await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
+        }
+      } else {
+        console.log('No stored auth credentials found');
       }
     } catch (error) {
-      console.error('Failed to load auth state:', error);
+      console.error('Failed to load authentication state:', error);
       await clearAuthState();
     } finally {
       setIsLoading(false);
@@ -75,9 +85,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Clear auth state
   const clearAuthState = async () => {
     try {
+      console.log('Clearing auth state');
       await clearAuthTokens();
       setToken(null);
       setUser(null);
+      console.log('Auth state cleared');
     } catch (error) {
       console.error('Error clearing auth state:', error);
     }
