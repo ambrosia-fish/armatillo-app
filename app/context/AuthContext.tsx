@@ -1,17 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
 import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
-import { API_URL } from '../services/api';
+import api from './services/api';
 
 // User data type
 interface User {
   id: string;
   email: string;
   displayName: string;
+  username?: string;
 }
 
 // Auth context state
@@ -20,9 +20,16 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  handleOAuthCallback: (url: string) => Promise<void>;
+}
+
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  displayName: string;
 }
 
 // Create context
@@ -37,31 +44,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [inProgress, setInProgress] = useState(false);
 
   // Computed property to check if user is authenticated
   const isAuthenticated = !!token && !!user;
-
-  // Set up deep linking listener
-  useEffect(() => {
-    const handleUrl = (event: { url: string }) => {
-      if (inProgress && event.url.includes('auth/callback')) {
-        handleAuthResponse(event.url);
-      }
-    };
-
-    const subscription = Linking.addEventListener('url', handleUrl);
-
-    // Check web URL for callback
-    if (Platform.OS === 'web') {
-      const url = window.location.href;
-      if (url.includes('auth/callback')) {
-        handleAuthResponse(url);
-      }
-    }
-
-    return () => subscription.remove();
-  }, [inProgress]);
 
   // Load auth state on start
   useEffect(() => {
@@ -98,129 +83,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  // Process token and user data
-  const processAuthData = async (
-    newToken: string,
-    expiresIn: string | null,
-    refreshToken: string | null
-  ) => {
+  // Process auth response from API
+  const processAuthResponse = async (authResponse: any) => {
     try {
+      const { token, user, expiresIn, refreshToken } = authResponse;
+      
+      if (!token || !user) {
+        throw new Error('Invalid authentication response');
+      }
+      
       // Store tokens
-      const expiresInNum = expiresIn ? parseInt(expiresIn, 10) : undefined;
-      await storeAuthTokens(newToken, expiresInNum, refreshToken || undefined);
-      setToken(newToken);
-      
-      // Fetch user info
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${newToken}` },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user: ${response.status}`);
-      }
-      
-      const userData = await response.json();
-      const userObj = userData.user || userData;
-      
-      if (!userObj.displayName) {
-        userObj.displayName = userObj.email.split('@')[0] || 'User';
-      }
+      await storeAuthTokens(
+        token,
+        expiresIn || undefined,
+        refreshToken || undefined
+      );
       
       // Store user data
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userObj));
-      setUser(userObj);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      
+      // Update state
+      setToken(token);
+      setUser(user);
       
       // Navigate to home
       router.replace('/(tabs)');
     } catch (error) {
-      console.error('Error processing auth data:', error);
+      console.error('Error processing auth response:', error);
       throw error;
     }
   };
 
-  // Handle OAuth callback URL
-  const handleAuthResponse = async (url: string) => {
+  // Login with username/password
+  const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       
-      // Extract parameters from URL
-      let token, expiresIn, refreshToken;
-      const params = Platform.OS === 'web' 
-        ? new URL(url).searchParams
-        : new URLSearchParams(url.split('?')[1]);
-      
-      token = params.get('token');
-      expiresIn = params.get('expires_in');
-      refreshToken = params.get('refresh_token');
-      
-      if (!token) {
-        throw new Error('No token received');
-      }
-      
-      await processAuthData(token, expiresIn, refreshToken);
-      
-      // Clean up URL on web
-      if (Platform.OS === 'web') {
-        window.history.replaceState({}, document.title, '/');
-      }
+      const response = await api.auth.login(email, password);
+      await processAuthResponse(response);
     } catch (error) {
-      console.error('Auth callback error:', error);
-      Alert.alert('Authentication Failed', 'Please try again.');
+      console.error('Login error:', error);
+      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      throw error;
     } finally {
       setIsLoading(false);
-      setInProgress(false);
     }
   };
 
-  // Initiate login
-  const login = async () => {
+  // Register new user
+  const register = async (userData: RegisterData) => {
     try {
       setIsLoading(true);
-      setInProgress(true);
       
-      // Clear previous session
-      await clearAuthState();
-
-      // Create redirect URL
-      const redirectUrl = Platform.OS === 'web' 
-        ? `${window.location.origin}/auth/callback`
-        : 'armatillo://auth/callback';
-
-      // Get OAuth URL
-      const response = await fetch(`${API_URL}/api/auth/google-mobile?redirect_uri=${encodeURIComponent(redirectUrl)}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to start login');
-      }
-      
-      const data = await response.json();
-      const authUrl = data.url || data.authUrl;
-      
-      if (!authUrl) {
-        throw new Error('No auth URL provided');
-      }
-      
-      // Handle login based on platform
-      if (Platform.OS === 'web') {
-        window.location.href = authUrl;
-      } else {
-        const result = await WebBrowser.openAuthSessionAsync(
-          authUrl,
-          'armatillo://auth/callback'
-        );
-        
-        if (result.type === 'success' && result.url) {
-          await handleAuthResponse(result.url);
-        } else {
-          setIsLoading(false);
-          setInProgress(false);
-        }
-      }
+      const response = await api.auth.register(userData);
+      return response;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Registration error:', error);
+      Alert.alert('Registration Failed', 'Could not create account. Please try again.');
+      throw error;
+    } finally {
       setIsLoading(false);
-      setInProgress(false);
-      Alert.alert('Login Failed', 'Please try again.');
     }
   };
 
@@ -232,13 +154,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Call server logout
       if (token) {
         try {
-          await fetch(`${API_URL}/api/auth/logout`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-          });
+          await api.auth.logout();
         } catch (error) {
           console.warn('Logout endpoint error:', error);
         }
@@ -267,8 +183,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     isAuthenticated,
     login,
-    logout,
-    handleOAuthCallback: handleAuthResponse,
+    register,
+    logout
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
