@@ -1,16 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
 import { ensureValidToken } from '../utils/tokenRefresher';
+import { Platform } from 'react-native';
 
 // Configuration for different environments
 export const getApiUrl = () => {
   // When running in development mode (local)
   if (__DEV__) {
-    // Use the development deployment on Railway
+    // Use localhost for iOS simulator and local development
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:3000';
+    } 
+    // Use 10.0.2.2 for Android emulator (this maps to localhost on the host)
+    else if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:3000';
+    }
+    // For web development
+    else if (Platform.OS === 'web') {
+      return 'http://localhost:3000';
+    }
+    // Fallback to development API
     return 'https://armatillo-api-development.up.railway.app';
-    
-    // Uncomment this if you want to use a local server instead
-    // return 'http://localhost:3000';
   }
   
   // When running in production (deployed app)
@@ -123,6 +133,7 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 export const debugTokenStorage = async (): Promise<void> => {
   try {
     console.log('=== DEBUG TOKEN STORAGE ===');
+    console.log('Current API URL:', API_URL);
     
     // Try to get token using AsyncStorage directly
     try {
