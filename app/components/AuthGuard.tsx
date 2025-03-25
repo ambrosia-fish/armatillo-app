@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter, Redirect } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 
 interface AuthGuardProps {
@@ -13,7 +13,6 @@ interface AuthGuardProps {
  */
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
 
   // If loading, show a loading spinner
   if (isLoading) {
