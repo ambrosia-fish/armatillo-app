@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import InstanceDetailsModal from '../components/InstanceDetailsModal';
 import { useFocusEffect } from '@react-navigation/native';
+import { ensureValidToken } from '../utils/tokenRefresher';
 
 // Define the Instance type based on your backend data structure
 interface Instance {
@@ -44,7 +45,7 @@ export default function HistoryScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
-  const { isAuthenticated, refreshTokenIfNeeded, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Function to fetch instances from API
   const fetchInstances = async () => {
@@ -60,7 +61,7 @@ export default function HistoryScreen() {
       }
       
       // Make sure token is valid before making the request
-      const tokenRefreshed = await refreshTokenIfNeeded();
+      const tokenRefreshed = await ensureValidToken();
       console.log('Token refresh status:', tokenRefreshed ? 'refreshed' : 'not needed');
       
       // Fetch instances
