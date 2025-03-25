@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import storage, { STORAGE_KEYS } from './storage';
+import storage from './storage';
 
 // Add new storage keys for security parameters
 export const SECURITY_KEYS = {
@@ -23,7 +23,6 @@ export function generateRandomString(length: number = 32): string {
       result += chars[randomBytes[i] % chars.length];
     }
     
-    console.log(`Generated random string of length ${length}`);
     return result;
   } catch (error) {
     console.error('Error generating random string:', error);
@@ -50,18 +49,9 @@ export async function generateOAuthState(): Promise<string> {
     
     // Generate a new random state
     const state = generateRandomString(32);
-    console.log(`Generated new OAuth state: ${state}`);
     
-    // Store it in secure storage
+    // Store it in storage
     await storage.setItem(SECURITY_KEYS.OAUTH_STATE, state);
-    
-    // Verify it was stored correctly
-    const storedState = await storage.getItem(SECURITY_KEYS.OAUTH_STATE);
-    if (storedState !== state) {
-      console.warn(`Warning: Stored state (${storedState}) doesn't match generated state (${state})`);
-    } else {
-      console.log('OAuth state successfully stored in secure storage');
-    }
     
     return state;
   } catch (error) {
@@ -85,32 +75,20 @@ export async function verifyOAuthState(callbackState: string | null): Promise<bo
       return false;
     }
     
-    console.log(`Verifying OAuth state: ${callbackState}`);
-    
     // Get the stored state
     const storedState = await storage.getItem(SECURITY_KEYS.OAUTH_STATE);
     
     // If no stored state, fail validation
     if (!storedState) {
-      console.error('No stored state parameter found in secure storage');
+      console.error('No stored state parameter found in storage');
       return false;
     }
-    
-    console.log(`Stored state: ${storedState}`);
-    console.log(`Callback state: ${callbackState}`);
     
     // Compare stored state with callback state
     const isValid = storedState === callbackState;
     
     // Clear the stored state regardless of outcome (one-time use)
     await storage.removeItem(SECURITY_KEYS.OAUTH_STATE);
-    console.log('Cleared stored OAuth state');
-    
-    if (!isValid) {
-      console.error(`OAuth state validation failed: stored=${storedState}, callback=${callbackState}`);
-    } else {
-      console.log('OAuth state validation successful');
-    }
     
     return isValid;
   } catch (error) {
@@ -121,128 +99,10 @@ export async function verifyOAuthState(callbackState: string | null): Promise<bo
   }
 }
 
-/**
- * Convert buffer to plain string (to get bytes)
- */
-function arrayBufferToString(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  return Array.from(bytes)
-    .map(byte => String.fromCharCode(byte))
-    .join('');
-}
-
-/**
- * Generate a code challenge from a code verifier using SHA-256
- * @param codeVerifier The code verifier string
- * @returns Promise resolving to the code challenge string
- */
-export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
-  try {
-    // Generate the SHA-256 hash of the code verifier
-    const hashBuffer = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      codeVerifier
-    );
-    
-    // Convert the hash buffer to a byte string
-    const hashString = arrayBufferToString(hashBuffer);
-    
-    // Base64 encode the hash string
-    const base64 = btoa(hashString);
-    
-    // Convert to base64url
-    const codeChallenge = base64
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-    
-    console.log(`Code verifier: ${codeVerifier}`);
-    console.log(`Generated code challenge: ${codeChallenge}`);
-    
-    return codeChallenge;
-  } catch (error) {
-    console.error('Error generating code challenge:', error);
-    throw error;
-  }
-}
-
-/**
- * Generate PKCE code verifier and code challenge
- * For OAuth security against code interception attacks
- * @returns Promise resolving to an object with code verifier and code challenge
- */
-export async function generatePKCEChallenge(): Promise<{ codeVerifier: string, codeChallenge: string }> {
-  try {
-    console.log('Generating PKCE challenge...');
-    
-    // Generate code verifier (random string between 43-128 chars)
-    // RFC 7636 recommends at least 43 characters, we use 64 for good security
-    const codeVerifier = generateRandomString(64);
-    console.log(`Generated code verifier (length ${codeVerifier.length}): ${codeVerifier}`);
-    
-    // Store the code verifier securely
-    await storage.setItem(SECURITY_KEYS.CODE_VERIFIER, codeVerifier);
-    
-    // Verify it was stored correctly
-    const storedVerifier = await storage.getItem(SECURITY_KEYS.CODE_VERIFIER);
-    if (storedVerifier !== codeVerifier) {
-      console.warn(`Warning: Stored code verifier doesn't match generated verifier`);
-    } else {
-      console.log('Code verifier successfully stored in secure storage');
-    }
-    
-    // Generate code challenge using SHA-256
-    const codeChallenge = await generateCodeChallenge(codeVerifier);
-    console.log(`Generated code challenge using SHA-256: ${codeChallenge}`);
-    
-    return { codeVerifier, codeChallenge };
-  } catch (error) {
-    console.error('Failed to generate PKCE challenge:', error);
-    throw error;
-  }
-}
-
-/**
- * Get the stored code verifier for PKCE token exchange
- * @returns Promise resolving to the code verifier or null if not found
- */
-export async function getStoredCodeVerifier(): Promise<string | null> {
-  try {
-    const verifier = await storage.getItem(SECURITY_KEYS.CODE_VERIFIER);
-    
-    if (verifier) {
-      console.log(`Retrieved stored code verifier: ${verifier}`);
-    } else {
-      console.error('No code verifier found in storage');
-    }
-    
-    return verifier;
-  } catch (error) {
-    console.error('Error getting stored code verifier:', error);
-    return null;
-  }
-}
-
-/**
- * Clear the stored code verifier
- * Should be called after token exchange is complete
- */
-export async function clearCodeVerifier(): Promise<void> {
-  try {
-    await storage.removeItem(SECURITY_KEYS.CODE_VERIFIER);
-    console.log('Code verifier cleared');
-  } catch (error) {
-    console.error('Error clearing code verifier:', error);
-  }
-}
-
 // Default export for compatibility with routes
 export default {
   generateRandomString,
   generateOAuthState,
   verifyOAuthState,
-  generatePKCEChallenge,
-  getStoredCodeVerifier,
-  clearCodeVerifier,
   SECURITY_KEYS
 };
