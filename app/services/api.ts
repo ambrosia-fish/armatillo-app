@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
+import { ensureValidToken } from '../utils/tokenRefresher';
 
 // Configuration for different environments
 export const getApiUrl = () => {
@@ -33,9 +34,14 @@ const getAuthToken = async (): Promise<string | null> => {
   }
 };
 
-// Generic API request handler with authentication
+// Generic API request handler with authentication and token refresh
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   try {
+    // Try to ensure we have a valid token before making the request
+    // This will automatically refresh the token if needed
+    const isValidToken = await ensureValidToken();
+    
+    // Get the (potentially refreshed) token
     const token = await getAuthToken();
     
     const headers: HeadersInit = {
@@ -47,7 +53,10 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     } else {
-      console.warn(`Making request to ${endpoint} without authentication token`);
+      // If we still don't have a token after refresh attempt, log warning
+      if (!isValidToken) {
+        console.warn(`Making request to ${endpoint} without valid authentication token`);
+      }
     }
     
     const url = `${API_URL}${API_BASE_PATH}${endpoint}`;
@@ -59,6 +68,14 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     });
     
     console.log(`Response status for ${endpoint}:`, response.status);
+    
+    // Handle 401 Unauthorized errors (potential token issue)
+    if (response.status === 401) {
+      // We already tried to refresh the token before making the request,
+      // so this 401 means our refresh token is likely invalid too
+      console.error('Authentication failed (401) even after token refresh attempt');
+      // Could trigger a logout event here
+    }
     
     // Check if the response is JSON
     const contentType = response.headers.get('content-type');
