@@ -1,62 +1,63 @@
 # Armatillo App Security Rework
 
-This branch implements a simplified security model for the Armatillo App, focusing on clean JWT authentication with minimal complexity.
+This branch implements a simplified security model for the Armatillo App, focusing on username/password authentication with JWT tokens.
 
 ## Changes Made
 
-### Simplified Authentication Flow
+### Username/Password Authentication
 
-- Removed complex PKCE implementation in favor of standard JWT-based authentication
-- Streamlined OAuth process for Google login
-- Simplified token management and storage
+- Removed complex OAuth implementation in favor of standard username/password authentication
+- Created new login/signup UI with email, username, and password fields
+- Implemented form validation for login and registration
+
+### Simplified Security
+
+- Streamlined token management using straightforward JWT handling
+- Removed complex validation and blacklisting features
+- Simplified storage to use AsyncStorage directly
 
 ### Files Modified
 
 1. **`app/utils/tokenUtils.ts`**
    - Simplified token utilities to handle basic JWT token operations
-   - Removed complex validation and blacklisting features
 
 2. **`app/utils/storage.ts`**
    - Simplified storage to use AsyncStorage directly
-   - Removed encryption and complex storage mechanisms
 
 3. **`app/services/api.ts`**
-   - Updated API service to use simplified token handling
-   - Streamlined request authentication
+   - Updated API service to use JWT authentication
+   - Removed Google OAuth endpoints
 
 4. **`app/context/AuthContext.tsx`**
-   - Dramatically reduced complexity of authentication context
-   - Simplified login, logout, and token refresh processes
+   - Simplified authentication context for username/password auth
+   - Removed OAuth-specific logic
 
-5. **`app/auth/callback.tsx`**
-   - Simplified OAuth callback handling
+5. **`app/login.tsx`**
+   - Completely redesigned with username/password form
+   - Added toggle for signup with additional fields
 
-6. **`app/login.tsx`**
-   - Streamlined login screen functionality
+6. **`app/auth/callback.tsx`**
+   - Simplified to just redirect to login screen
 
 7. **`app/components/AuthGuard.tsx`**
-   - Simplified route protection mechanism
+   - Kept as is for route protection
 
-### Files Removed
-- No longer need the following utils:
-  - `mockPKCE.ts`
-  - `webBrowser.ts` (can use expo-web-browser directly)
-  - `webStorage.ts`
-  - `encryptionUtils.ts`
+### Files Simplified (kept for backward compatibility)
+- `app/utils/securityUtils.ts` - Emptied but kept for imports
+- `app/utils/mockPKCE.ts` - Emptied but kept for imports
+- `app/utils/webBrowser.ts` - Emptied but kept for imports
 
-## How to Test
+### How to Test
 
 1. Run the application in development mode
-2. Try to log in with Google OAuth
-3. Verify that authentication persists between app restarts
-4. Verify that protected routes are still protected
-5. Test the token refresh mechanism
+2. Try creating a new account using the sign-up form
+3. Try logging in with email and password
+4. Verify that authentication persists between app restarts
+5. Verify that protected routes are still protected
 
 ## API Integration
 
 This security rework aligns with the updated Armatillo API that now uses a simplified authentication model with:
 - JWT tokens for authentication
 - CORS protection
-- Google OAuth for authentication
-
-For more details, see the "Armatillo API Integration Guide" in the project documentation.
+- Username/password login
