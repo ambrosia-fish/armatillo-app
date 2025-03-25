@@ -1,11 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './storage';
 import { isTokenExpired, getRefreshToken, storeAuthTokens } from './tokenUtils';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-
-// Your computer's IP address - CHANGE THIS to your actual IP address
-const LOCAL_IP = '192.168.1.X'; // Replace with your IP address
+import config from '../constants/config';
 
 // Refresher service to handle token refresh
 // This can be imported and used to ensure a valid token before API requests
@@ -24,7 +20,7 @@ export async function ensureValidToken(): Promise<boolean> {
     }
 
     // Check if token is expired or about to expire
-    const expired = await isTokenExpired();
+    const expired = await isTokenExpired(config.authConfig.tokenRefreshBuffer);
     if (!expired) {
       return true; // Token is still valid
     }
@@ -56,8 +52,13 @@ export async function ensureValidToken(): Promise<boolean> {
  */
 async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
   try {
-    const API_URL = getApiUrl();
-    const response = await fetch(`${API_URL}/api/auth/refresh`, {
+    const url = `${config.apiUrl}${config.apiBasePath}/auth/refresh`;
+    
+    if (config.enableLogging) {
+      console.log(`Refreshing token at: ${url}`);
+    }
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,43 +83,15 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
       data.refreshToken // May be the same or a new refresh token
     );
 
-    console.log('Token refreshed successfully');
+    if (config.enableLogging) {
+      console.log('Token refreshed successfully');
+    }
+    
     return true;
   } catch (error) {
     console.error('Token refresh failed:', error);
     return false;
   }
-}
-
-/**
- * Get the API URL based on environment
- */
-function getApiUrl(): string {
-  // When running in development mode (local)
-  if (__DEV__) {
-    // When using Expo Go on a physical device, use the IP address
-    if (Constants.appOwnership === 'expo') {
-      return `http://${LOCAL_IP}:3000`;
-    }
-    
-    // Use localhost for iOS simulator
-    if (Platform.OS === 'ios') {
-      return 'http://localhost:3000';
-    } 
-    // Use 10.0.2.2 for Android emulator (this maps to localhost on the host)
-    else if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:3000';
-    }
-    // For web development
-    else if (Platform.OS === 'web') {
-      return 'http://localhost:3000';
-    }
-    // Fallback to development API
-    return 'https://armatillo-api-development.up.railway.app';
-  }
-  
-  // When running in production (deployed app)
-  return 'https://armatillo-api-production.up.railway.app';
 }
 
 export default { ensureValidToken };
