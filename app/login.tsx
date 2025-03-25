@@ -4,9 +4,7 @@ import {
   Text, 
   StyleSheet, 
   Image, 
-  TouchableOpacity, 
   ActivityIndicator,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useAuth } from './context/AuthContext';
 
+// Import themed components
+import Button from './components/Button';
+import Input from './components/Input';
+import Card from './components/Card';
+import theme from './constants/theme';
+
 export default function LoginScreen() {
   const { login, register, isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState('');
@@ -25,15 +29,45 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   // If already authenticated, redirect to home
   if (isAuthenticated && !isLoading) {
     return <Redirect href="/(tabs)" />;
   }
 
+  // Validate form inputs
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (isSignUp) {
+      if (!username) {
+        newErrors.username = 'Username is required';
+      }
+      
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+    if (!validateForm()) {
       return;
     }
 
@@ -49,13 +83,7 @@ export default function LoginScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!username || !email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+    if (!validateForm()) {
       return;
     }
 
@@ -82,6 +110,7 @@ export default function LoginScreen() {
     // Clear fields when switching modes
     setPassword('');
     setConfirmPassword('');
+    setErrors({});
   };
 
   return (
@@ -104,72 +133,73 @@ export default function LoginScreen() {
           </View>
           
           {/* Login form */}
-          <View style={styles.formContainer}>
+          <Card containerStyle={styles.formCard}>
             <Text style={styles.formTitle}>
               {isSignUp ? 'Create an Account' : 'Sign in to continue'}
             </Text>
             
             {isLoading || loading ? (
-              <ActivityIndicator size="large" color="#2a9d8f" style={styles.loading} />
+              <ActivityIndicator size="large" color={theme.colors.primary.main} style={styles.loading} />
             ) : (
               <>
                 {isSignUp && (
-                  <TextInput 
-                    style={styles.input}
-                    placeholder="Username"
+                  <Input 
+                    label="Username"
+                    placeholder="Enter your username"
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
+                    error={errors.username}
                   />
                 )}
 
-                <TextInput 
-                  style={styles.input}
-                  placeholder="Email"
+                <Input 
+                  label="Email"
+                  placeholder="Enter your email"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  error={errors.email}
                 />
 
-                <TextInput 
-                  style={styles.input}
-                  placeholder="Password"
+                <Input 
+                  label="Password"
+                  placeholder="Enter your password"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
+                  error={errors.password}
                 />
 
                 {isSignUp && (
-                  <TextInput 
-                    style={styles.input}
-                    placeholder="Confirm Password"
+                  <Input 
+                    label="Confirm Password"
+                    placeholder="Confirm your password"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry
+                    error={errors.confirmPassword}
                   />
                 )}
 
-                <TouchableOpacity 
-                  style={styles.primaryButton}
+                <Button 
+                  title={isSignUp ? 'Sign Up' : 'Login'}
                   onPress={isSignUp ? handleSignUp : handleLogin}
-                >
-                  <Text style={styles.buttonText}>
-                    {isSignUp ? 'Sign Up' : 'Login'}
-                  </Text>
-                </TouchableOpacity>
+                  size="large"
+                  loading={loading}
+                  style={styles.actionButton}
+                />
 
-                <TouchableOpacity 
-                  style={styles.secondaryButton}
+                <Button 
+                  title={isSignUp ? 'Already have an account? Login' : 'New user? Create an account'}
                   onPress={toggleSignUp}
-                >
-                  <Text style={styles.secondaryButtonText}>
-                    {isSignUp ? 'Already have an account? Login' : 'New user? Create an account'}
-                  </Text>
-                </TouchableOpacity>
+                  variant="text"
+                  size="medium"
+                />
               </>
             )}
-          </View>
+          </Card>
           
           <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
@@ -192,93 +222,67 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
   },
   logo: {
     width: 100,
     height: 100,
     resizeMode: 'contain',
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
   appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2a9d8f',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.xxxl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.primary.main,
+    marginBottom: theme.spacing.xs,
   },
   tagline: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
-  formContainer: {
-    marginBottom: 30,
+  formCard: {
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.xl,
   },
   formTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 24,
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
-    color: '#333',
+    color: theme.colors.text.primary,
   },
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  primaryButton: {
-    backgroundColor: '#2a9d8f',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    color: '#2a9d8f',
-    fontSize: 14,
-    fontWeight: '500',
+  actionButton: {
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   privacyContainer: {
     marginTop: 'auto',
-    marginBottom: 10,
+    marginBottom: theme.spacing.md,
   },
   privacyText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   privacyLink: {
-    color: '#2a9d8f',
-    fontWeight: '500',
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   loading: {
-    marginVertical: 30,
+    marginVertical: theme.spacing.xl,
   },
 });
