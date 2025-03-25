@@ -98,9 +98,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Process auth response from API
   const processAuthResponse = async (authResponse: any) => {
     try {
-      const { token, user, expiresIn, refreshToken } = authResponse;
+      // Make sure we're using the correct structure from the API guide
+      // The response structure should match:
+      // {
+      //   success: true,
+      //   token: "access_jwt_token",
+      //   refreshToken: "refresh_jwt_token",
+      //   expiresIn: 3600,
+      //   user: {
+      //     id: "user_id",
+      //     email: "user@example.com",
+      //     displayName: "User Name"
+      //   }
+      // }
       
-      if (!token || !user) {
+      const { success, token, user, expiresIn, refreshToken } = authResponse;
+      
+      if (!success || !token || !user) {
         throw new Error('Invalid authentication response');
       }
       
@@ -148,6 +162,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       
       const response = await api.auth.register(userData);
+      
+      // Check if registration was successful
+      if (response.success) {
+        // If the API returns tokens on registration, process them
+        if (response.token && response.user) {
+          await processAuthResponse(response);
+          return response;
+        }
+        
+        // Otherwise, return success and let the user login manually
+        Alert.alert('Success', 'Account created successfully! Please log in.');
+      }
+      
       return response;
     } catch (error) {
       console.error('Registration error:', error);
