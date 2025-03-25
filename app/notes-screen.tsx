@@ -11,11 +11,12 @@ import { useFormContext } from './context/FormContext';
 import { useAuth } from './context/AuthContext';
 import api from './services/api';
 import storage, { STORAGE_KEYS } from './utils/storage';
+import { ensureValidToken } from './utils/tokenRefresher';
 
 export default function NotesScreen() {
   const router = useRouter();
   const { formData, updateFormData, resetFormData } = useFormContext();
-  const { user, refreshTokenIfNeeded } = useAuth();
+  const { user } = useAuth();
   
   // Track loading state for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +53,7 @@ export default function NotesScreen() {
       setIsSubmitting(true);
       
       // Ensure token is valid
-      await refreshTokenIfNeeded();
+      await ensureValidToken();
       
       // Get user info from auth context or AsyncStorage
       let userName = '';
