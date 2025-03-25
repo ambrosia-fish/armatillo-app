@@ -2,12 +2,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
 import { ensureValidToken } from '../utils/tokenRefresher';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+// Your computer's IP address - CHANGE THIS to your actual IP address
+const LOCAL_IP = '192.168.1.X'; // Replace with your IP address
 
 // Configuration for different environments
 export const getApiUrl = () => {
   // When running in development mode (local)
   if (__DEV__) {
-    // Use localhost for iOS simulator and local development
+    // Use appropriate connection based on how we're running
+    
+    // When using Expo Go on a physical device, use the IP address
+    if (Constants.appOwnership === 'expo') {
+      return `http://${LOCAL_IP}:3000`;
+    }
+    
+    // Use localhost for iOS simulator
     if (Platform.OS === 'ios') {
       return 'http://localhost:3000';
     } 
@@ -19,6 +30,7 @@ export const getApiUrl = () => {
     else if (Platform.OS === 'web') {
       return 'http://localhost:3000';
     }
+    
     // Fallback to development API
     return 'https://armatillo-api-development.up.railway.app';
   }
