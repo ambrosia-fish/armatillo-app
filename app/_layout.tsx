@@ -8,11 +8,12 @@ import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
 import { AuthProvider } from './context/AuthContext';
 import crashRecovery from './utils/crashRecovery';
 import { ErrorBoundary } from './ErrorBoundary';
+import theme from './constants/theme';
 
 export {
   // Use our custom error boundary
@@ -234,13 +235,12 @@ function RootLayoutNav() {
   }, [router]);
 
   // Screen options for BFRB tracking flow
-  // This hides previous screens when a new screen is displayed
   const screenOptions = {
     presentation: 'card',
     animation: 'slide_from_bottom',
     headerShown: false,
     cardStyle: { 
-      backgroundColor: '#fff' 
+      backgroundColor: theme.colors.background.primary
     },
     cardOverlayEnabled: true,
     cardStyleInterpolator: ({ current: { progress } }) => ({
@@ -278,7 +278,7 @@ function RootLayoutNav() {
             />
             <Stack.Screen 
               name="strength-screen" 
-              options={screenOptions}  // Just use the standard screenOptions
+              options={screenOptions}
             />
             <Stack.Screen 
               name="detail-screen" 
@@ -311,33 +311,30 @@ function RootLayoutNav() {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.background.modal,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.lg,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...theme.shadows.lg,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2a9d8f',
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.sm,
+    color: theme.colors.primary.main,
   },
   modalText: {
-    fontSize: 16,
-    marginBottom: 20,
-    lineHeight: 22,
+    fontSize: theme.typography.fontSize.md,
+    marginBottom: theme.spacing.lg,
+    lineHeight: theme.typography.lineHeight.normal,
+    color: theme.colors.text.primary,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -345,20 +342,20 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 5,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
-    marginHorizontal: 5,
+    marginHorizontal: theme.spacing.xs,
   },
   restoreButton: {
-    backgroundColor: '#2a9d8f',
+    backgroundColor: theme.colors.primary.main,
   },
   discardButton: {
-    backgroundColor: '#e76f51',
+    backgroundColor: theme.colors.secondary.main,
   },
   buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: theme.colors.neutral.white,
+    fontWeight: theme.typography.fontWeight.bold,
+    fontSize: theme.typography.fontSize.md,
   },
 });
