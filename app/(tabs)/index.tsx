@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -49,47 +49,48 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   title: {
     fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     textAlign: 'center',
     marginTop: theme.spacing.sm,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   subtitle: {
     fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
     marginBottom: theme.spacing.xl,
     color: theme.colors.text.secondary,
-  },
+  } as TextStyle,
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.xl,
-  },
+  } as ViewStyle,
   logo: {
     width: 200,
     height: 200,
-  },
+  } as ImageStyle,
   welcomeCard: {
     ...theme.componentStyles.card.container,
     marginBottom: theme.spacing.xl,
-  },
+  } as ViewStyle,
   welcomeTitle: {
     ...theme.componentStyles.card.title,
-  },
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
   welcomeText: {
     ...theme.componentStyles.card.content,
     lineHeight: theme.typography.lineHeight.normal,
-  },
+  } as TextStyle,
   addButtonContainer: {
     position: 'absolute',
     bottom: theme.spacing.xxxl,
     left: 0,
     right: 0,
     alignItems: 'center',
-  },
+  } as ViewStyle,
   addButton: {
     width: 60,
     height: 60,
@@ -98,5 +99,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...theme.shadows.md,
-  },
+  } as ViewStyle,
 });
