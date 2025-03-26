@@ -40,8 +40,8 @@ export default function StrengthScreen() {
       intentionType
     });
     
-    // Navigate to next screen
-    router.push('/detail-screen');
+    // Navigate to next screen with updated path
+    router.push('/screens/modals/detail-screen');
   };
   
   // Get description text based on strength value
