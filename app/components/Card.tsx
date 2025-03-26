@@ -67,16 +67,18 @@ const Card: React.FC<CardProps> = ({
 const styles = StyleSheet.create({
   container: {
     ...theme.componentStyles.card.container,
-  },
+  } as ViewStyle,
   title: {
     ...theme.componentStyles.card.title,
-  },
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
   subtitle: {
     ...theme.componentStyles.card.subtitle,
-  },
+    fontWeight: theme.typography.fontWeight.medium as '500',
+  } as TextStyle,
   content: {
     marginTop: theme.spacing.sm,
-  },
+  } as ViewStyle,
 });
 
 export default Card;
