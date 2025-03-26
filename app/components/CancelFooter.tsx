@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '../constants/theme';
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   cancelButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -50,11 +50,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.utility.error,
-  },
+  } as ViewStyle,
   cancelButtonText: {
     color: theme.colors.utility.error,
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontWeight: theme.typography.fontWeight.medium as '500',
     marginLeft: theme.spacing.xs,
-  },
+  } as TextStyle,
 });
