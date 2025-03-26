@@ -1,9 +1,8 @@
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import theme from '../constants/theme';
+import { useColorScheme } from '../hooks/useColorScheme';
 import AuthGuard from '../components/AuthGuard';
 
 export default function TabLayout() {
@@ -13,8 +12,13 @@ export default function TabLayout() {
     <AuthGuard>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-          headerShown: useClientOnlyValue(false, true),
+          tabBarActiveTintColor: theme.colors.primary.main,
+          tabBarInactiveTintColor: theme.colors.text.tertiary,
+          headerShown: false,
+          tabBarStyle: {
+            borderTopColor: theme.colors.border.light,
+            backgroundColor: theme.colors.background.primary,
+          }
         }}>
         <Tabs.Screen
           name="progress"
