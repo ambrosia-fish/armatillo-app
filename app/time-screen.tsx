@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, Platform, ViewStyle, TextStyle } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -136,38 +136,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   content: {
     flex: 1,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   optionsCard: {
     marginBottom: theme.spacing.xl,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   cardTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.md,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   optionButton: {
     marginVertical: theme.spacing.xs,
     padding: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border.light,
-  },
+  } as ViewStyle,
   selectedOption: {
     backgroundColor: theme.colors.primary.main,
     borderColor: theme.colors.primary.main,
-  },
+  } as ViewStyle,
   optionText: {
     fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   selectedOptionText: {
     color: theme.colors.primary.contrast,
-    fontWeight: theme.typography.fontWeight.bold,
-  }
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle
 });
