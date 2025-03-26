@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Alert, TextStyle, ViewStyle } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -193,21 +193,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   content: {
     flex: 1,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   card: {
     marginBottom: theme.spacing.xl,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   cardTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.sm,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   textInput: {
     borderWidth: 1,
     borderColor: theme.colors.border.input,
@@ -218,15 +218,15 @@ const styles = StyleSheet.create({
     minHeight: 150,
     textAlignVertical: 'top',
     backgroundColor: theme.colors.background.secondary,
-  },
+  } as ViewStyle,
   infoText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.lg,
     textAlign: 'center',
-  },
+  } as TextStyle,
   saveButton: {
     marginTop: theme.spacing.sm,
     alignSelf: 'stretch',
-  },
+  } as ViewStyle,
 });
