@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Header, Card, Button } from './components';
 import api from './services/api';
 import { useAuth } from './context/AuthContext';
+import { ensureValidToken } from './utils/tokenRefresher';
+import theme from './constants/theme';
 
 // Define the Instance type
 interface Instance {
@@ -27,7 +29,6 @@ interface Instance {
 export default function DetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { refreshTokenIfNeeded } = useAuth();
   const { id } = params;
   
   const [instance, setInstance] = useState<Instance | null>(null);
@@ -44,7 +45,7 @@ export default function DetailScreen() {
 
       try {
         setLoading(true);
-        await refreshTokenIfNeeded();
+        await ensureValidToken();
         const data = await api.instances.getInstance(id as string);
         setInstance(data);
         setLoading(false);
@@ -62,7 +63,7 @@ export default function DetailScreen() {
     };
 
     fetchInstance();
-  }, [id, refreshTokenIfNeeded]);
+  }, [id]);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -89,24 +90,23 @@ export default function DetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Instance Details</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <Header 
+        title="Instance Details"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+      />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
+        <View style={styles.centeredContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary.main} />
           <Text style={styles.loadingText}>Loading details...</Text>
         </View>
       ) : error ? (
-        <View style={styles.errorContainer}>
+        <View style={styles.centeredContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
+          <Button
+            title="Retry"
+            variant="primary"
             onPress={() => {
               if (id) {
                 setLoading(true);
@@ -120,14 +120,13 @@ export default function DetailScreen() {
                   .finally(() => setLoading(false));
               }
             }}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
+            style={styles.retryButton}
+          />
         </View>
       ) : instance ? (
         <ScrollView style={styles.content}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>When</Text>
+          <Card containerStyle={styles.card}>
+            <Text style={styles.cardTitle}>When</Text>
             <Text style={styles.dateText}>{formatDate(instance.createdAt)}</Text>
             
             {instance.duration && (
@@ -140,10 +139,10 @@ export default function DetailScreen() {
                 </Text>
               </View>
             )}
-          </View>
+          </Card>
           
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>BFRB Details</Text>
+          <Card containerStyle={styles.card}>
+            <Text style={styles.cardTitle}>BFRB Details</Text>
             
             {instance.urgeStrength !== undefined && (
               <View style={styles.infoRow}>
@@ -156,10 +155,10 @@ export default function DetailScreen() {
               <Text style={styles.infoLabel}>Type:</Text>
               <Text style={styles.infoValue}>{getBehaviorType()}</Text>
             </View>
-          </View>
+          </Card>
           
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Environment</Text>
+          <Card containerStyle={styles.card}>
+            <Text style={styles.cardTitle}>Environment</Text>
             
             {instance.selectedEnvironments && instance.selectedEnvironments.length > 0 && (
               <View style={styles.infoRow}>
@@ -173,10 +172,10 @@ export default function DetailScreen() {
                 </View>
               </View>
             )}
-          </View>
+          </Card>
           
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Mental & Physical State</Text>
+          <Card containerStyle={styles.card}>
+            <Text style={styles.cardTitle}>Mental & Physical State</Text>
             
             {instance.selectedEmotions && instance.selectedEmotions.length > 0 && (
               <View style={styles.infoRow}>
@@ -216,17 +215,17 @@ export default function DetailScreen() {
                 </View>
               </View>
             )}
-          </View>
+          </Card>
           
           {instance.notes && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Notes</Text>
+            <Card containerStyle={styles.card}>
+              <Text style={styles.cardTitle}>Notes</Text>
               <Text style={styles.notesText}>{instance.notes}</Text>
-            </View>
+            </Card>
           )}
         </ScrollView>
       ) : (
-        <View style={styles.emptyState}>
+        <View style={styles.centeredContainer}>
           <Text style={styles.emptyStateText}>No instance details found</Text>
         </View>
       )}
@@ -239,69 +238,51 @@ export default function DetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    backgroundColor: theme.colors.background.primary,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: theme.spacing.lg,
   },
-  section: {
-    marginBottom: 20,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.xl,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    paddingBottom: 4,
+  card: {
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.lg,
+  },
+  cardTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border.light,
   },
   dateText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#555',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: theme.spacing.md,
     alignItems: 'flex-start',
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#444',
-    fontWeight: '500',
-    marginRight: 8,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium,
+    marginRight: theme.spacing.md,
     minWidth: 120,
   },
   infoValue: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
     flex: 1,
   },
   tagContainer: {
@@ -310,61 +291,39 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tag: {
-    backgroundColor: '#e9f5f3',
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: theme.colors.primary.light,
+    borderRadius: theme.borderRadius.xl,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
     margin: 2,
   },
   tagText: {
-    fontSize: 12,
-    color: '#2a9d8f',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.primary.dark,
   },
   notesText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    lineHeight: theme.typography.lineHeight.relaxed,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
   emptyStateText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.tertiary,
+    textAlign: 'center',
   },
   errorText: {
-    color: '#d32f2f',
-    marginBottom: 16,
+    color: theme.colors.utility.error,
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.md,
   },
   retryButton: {
-    backgroundColor: '#2a9d8f',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+    marginTop: theme.spacing.md,
   },
 });
