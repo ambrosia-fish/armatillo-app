@@ -63,19 +63,20 @@ const Input = forwardRef<TextInput, InputProps>(({
 const styles = StyleSheet.create({
   container: {
     ...theme.componentStyles.input.container,
-  },
+  } as ViewStyle,
   label: {
     ...theme.componentStyles.input.label,
-  },
+    fontWeight: theme.typography.fontWeight.medium as '500',
+  } as TextStyle,
   input: {
     ...theme.componentStyles.input.field,
-  },
+  } as ViewStyle,
   inputError: {
     borderColor: theme.colors.utility.error,
-  },
+  } as ViewStyle,
   errorText: {
     ...theme.componentStyles.input.errorText,
-  },
+  } as TextStyle,
 });
 
 export default Input;
