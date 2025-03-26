@@ -111,32 +111,33 @@ const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     ...theme.componentStyles.header.container,
-  },
+  } as ViewStyle,
   leftContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-  },
+  } as ViewStyle,
   rightContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-  },
+  } as ViewStyle,
   title: {
     ...theme.componentStyles.header.title,
     flex: 2,
     textAlign: 'center',
-  },
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
   iconButton: {
     ...theme.componentStyles.header.icon,
-  },
+  } as ViewStyle,
   actionText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontWeight: theme.typography.fontWeight.medium as '500',
     color: theme.colors.primary.main,
-  },
+  } as TextStyle,
 });
 
 export default Header;
