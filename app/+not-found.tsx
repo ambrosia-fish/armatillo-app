@@ -1,5 +1,5 @@
 import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 import { Text, View } from '@/components/Themed';
 
@@ -24,17 +24,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-  },
+  } as ViewStyle,
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-  },
+    fontWeight: 'bold' as '700',
+  } as TextStyle,
   link: {
     marginTop: 15,
     paddingVertical: 15,
-  },
+  } as ViewStyle,
   linkText: {
     fontSize: 14,
     color: '#2e78b7',
-  },
+  } as TextStyle,
 });
