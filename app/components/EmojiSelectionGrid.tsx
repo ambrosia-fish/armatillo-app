@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
   },
   selectedLabel: {
     color: theme.colors.primary.main,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontWeight: theme.typography.fontWeight.medium as '500',
   },
 });
