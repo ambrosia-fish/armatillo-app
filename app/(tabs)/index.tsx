@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import theme from '../constants/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function HomeScreen() {
       {/* Centered Add Button */}
       <View style={styles.addButtonContainer}>
         <TouchableOpacity style={styles.addButton} onPress={addNewEntry}>
-          <Ionicons name="add" size={32} color="white" />
+          <Ionicons name="add" size={32} color={theme.colors.primary.contrast} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -46,51 +47,45 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.background.primary,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: theme.typography.fontSize.xxl,
+    fontWeight: theme.typography.fontWeight.bold,
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
+    color: theme.colors.text.primary,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
+    color: theme.colors.text.secondary,
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   logo: {
     width: 200,
     height: 200,
   },
   welcomeCard: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...theme.componentStyles.card.container,
+    marginBottom: theme.spacing.xl,
   },
   welcomeTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    ...theme.componentStyles.card.title,
   },
   welcomeText: {
-    fontSize: 16,
-    lineHeight: 24,
+    ...theme.componentStyles.card.content,
+    lineHeight: theme.typography.lineHeight.normal,
   },
   addButtonContainer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: theme.spacing.xxxl,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -98,14 +93,10 @@ const styles = StyleSheet.create({
   addButton: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: '#2a9d8f',
+    borderRadius: theme.borderRadius.circle,
+    backgroundColor: theme.colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...theme.shadows.md,
   },
 });
