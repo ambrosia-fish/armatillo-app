@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { sensoryOptions } from './constants/optionDictionaries';
+import { Header, Card, Button, Input } from './components';
 import EmojiSelectionGrid from './components/EmojiSelectionGrid';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
@@ -12,6 +12,7 @@ import { useAuth } from './context/AuthContext';
 import api from './services/api';
 import storage, { STORAGE_KEYS } from './utils/storage';
 import { ensureValidToken } from './utils/tokenRefresher';
+import theme from './constants/theme';
 
 export default function NotesScreen() {
   const router = useRouter();
@@ -138,36 +139,19 @@ export default function NotesScreen() {
     }
   };
 
-  const handleSensorySelection = (id: string) => {
-    setSelectedSensoryTriggers(prevSelected => {
-      if (prevSelected.includes(id)) {
-        return prevSelected.filter(item => item !== id);
-      }
-      return [...prevSelected, id];
-    });
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top','bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Additional Notes</Text>
-        <TouchableOpacity 
-          onPress={handleSave} 
-          style={[styles.saveButton, isSubmitting && styles.disabledButton]} 
-          disabled={isSubmitting}
-        >
-          <Text style={styles.saveButtonText}>
-            {isSubmitting ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <Header 
+        title="Additional Notes"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        rightText={isSubmitting ? "Saving..." : "Save"}
+        onRightPress={handleSave}
+      />
       
       <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Any additional notes?</Text>
+        <Card containerStyle={styles.card}>
+          <Text style={styles.cardTitle}>Any additional notes?</Text>
           <TextInput
             style={styles.textInput}
             multiline
@@ -175,23 +159,23 @@ export default function NotesScreen() {
             placeholder="Add any additional notes, observations, or context..."
             value={notes}
             onChangeText={setNotes}
+            placeholderTextColor={theme.colors.text.tertiary}
           />
-        </View>
+        </Card>
         
-        <View style={styles.section}>
+        <Card containerStyle={styles.card}>
           <Text style={styles.infoText}>
             This is the last step. Press "Save" to record this BFRB instance.
           </Text>
-          <TouchableOpacity 
-            style={[styles.saveFullButton, isSubmitting && styles.disabledButton]} 
+          <Button 
+            title={isSubmitting ? "Saving..." : "Save Instance"}
+            variant="primary"
+            size="large"
             onPress={handleSave}
             disabled={isSubmitting}
-          >
-            <Text style={styles.saveFullButtonText}>
-              {isSubmitting ? 'Saving...' : 'Save Instance'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            style={styles.saveButton}
+          />
+        </Card>
       </ScrollView>
       
       {/* Add Cancel Footer with reset */}
@@ -208,86 +192,41 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    padding: 8,
-  },
-  saveButtonText: {
-    color: '#2a9d8f',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  disabledButton: {
-    opacity: 0.6,
+    backgroundColor: theme.colors.background.primary,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: theme.spacing.lg,
   },
-  section: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  card: {
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
+  cardTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.sm,
+    color: theme.colors.text.primary,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderColor: theme.colors.border.input,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
     minHeight: 150,
     textAlignVertical: 'top',
+    backgroundColor: theme.colors.background.secondary,
   },
   infoText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
   },
-  saveFullButton: {
-    backgroundColor: '#2a9d8f',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
+  saveButton: {
+    marginTop: theme.spacing.sm,
+    alignSelf: 'stretch',
   },
-  saveFullButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  }
 });
