@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TextStyle, ViewStyle } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -239,91 +239,91 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   content: {
     flex: 1,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.xl,
-  },
+  } as ViewStyle,
   card: {
     marginBottom: theme.spacing.lg,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   cardTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
     paddingBottom: theme.spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.light,
-  },
+  } as TextStyle,
   dateText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.md,
-  },
+  } as TextStyle,
   infoRow: {
     flexDirection: 'row',
     marginBottom: theme.spacing.md,
     alignItems: 'flex-start',
-  },
+  } as ViewStyle,
   infoLabel: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontWeight: theme.typography.fontWeight.medium as '500',
     marginRight: theme.spacing.md,
     minWidth: 120,
-  },
+  } as TextStyle,
   infoValue: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
     flex: 1,
-  },
+  } as TextStyle,
   tagContainer: {
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
+  } as ViewStyle,
   tag: {
     backgroundColor: theme.colors.primary.light,
     borderRadius: theme.borderRadius.xl,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.xs,
     margin: 2,
-  },
+  } as ViewStyle,
   tagText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.primary.dark,
-  },
+  } as TextStyle,
   notesText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
     lineHeight: theme.typography.lineHeight.relaxed,
-  },
+  } as TextStyle,
   loadingText: {
     marginTop: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-  },
+  } as TextStyle,
   emptyStateText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.tertiary,
     textAlign: 'center',
-  },
+  } as TextStyle,
   errorText: {
     color: theme.colors.utility.error,
     marginBottom: theme.spacing.lg,
     textAlign: 'center',
     fontSize: theme.typography.fontSize.md,
-  },
+  } as TextStyle,
   retryButton: {
     marginTop: theme.spacing.md,
-  },
+  } as ViewStyle,
 });
