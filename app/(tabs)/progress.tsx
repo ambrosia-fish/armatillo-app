@@ -7,7 +7,9 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   RefreshControl,
-  Alert
+  Alert,
+  ViewStyle,
+  TextStyle
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -257,18 +259,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.background.secondary,
-  },
+  } as ViewStyle,
   title: {
     fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.lg,
     textAlign: 'center',
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   card: {
     ...theme.componentStyles.card.container,
     marginBottom: theme.spacing.md,
-  },
+  } as ViewStyle,
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -277,59 +279,59 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.light,
     paddingBottom: theme.spacing.sm,
-  },
+  } as ViewStyle,
   date: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.medium,
-  },
+    fontWeight: theme.typography.fontWeight.medium as '500',
+  } as TextStyle,
   cardContent: {
     marginTop: theme.spacing.xs,
-  },
+  } as ViewStyle,
   infoRow: {
     flexDirection: 'row',
     marginBottom: theme.spacing.xs,
-  },
+  } as ViewStyle,
   infoLabel: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.primary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontWeight: theme.typography.fontWeight.medium as '500',
     marginRight: theme.spacing.sm,
     minWidth: 100,
-  },
+  } as TextStyle,
   infoValue: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     flex: 1,
-  },
+  } as TextStyle,
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.xl,
-  },
+  } as ViewStyle,
   emptyStateText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginTop: theme.spacing.lg,
     color: theme.colors.text.secondary,
-  },
+  } as TextStyle,
   emptyStateSubtext: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.tertiary,
     textAlign: 'center',
     marginTop: theme.spacing.sm,
-  },
+  } as TextStyle,
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   loadingText: {
     marginTop: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-  },
+  } as TextStyle,
   inlineLoadingContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -338,31 +340,31 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.borderRadius.sm,
     marginBottom: theme.spacing.md,
-  },
+  } as ViewStyle,
   inlineLoadingText: {
     marginLeft: theme.spacing.sm,
     color: theme.colors.text.secondary,
-  },
+  } as TextStyle,
   errorContainer: {
     backgroundColor: '#ffebee',
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.sm,
     marginBottom: theme.spacing.lg,
     alignItems: 'center',
-  },
+  } as ViewStyle,
   errorText: {
     color: theme.colors.utility.error,
     marginBottom: theme.spacing.sm,
     textAlign: 'center',
-  },
+  } as TextStyle,
   retryButton: {
     backgroundColor: theme.colors.utility.error,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.xs,
-  },
+  } as ViewStyle,
   retryButtonText: {
     color: theme.colors.neutral.white,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
 });
