@@ -89,8 +89,8 @@ export default function FeelingsScreen() {
       selectedSensations
     });
     
-    // Navigate to next screen
-    router.push('/thoughts-screen');
+    // Navigate to next screen with updated path
+    router.push('/screens/tracking/thoughts-screen');
   };
   
   return (
