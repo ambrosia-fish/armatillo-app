@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextStyle, ViewStyle } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -160,31 +160,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   content: {
     flex: 1,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   card: {
     marginBottom: theme.spacing.xl,
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   cardTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.sm,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   cardSubtitle: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.lg,
-  },
+  } as TextStyle,
   strengthOptionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: theme.spacing.sm,
-  },
+  } as ViewStyle,
   strengthOption: {
     width: 30,
     height: 30,
@@ -194,33 +194,33 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   selectedOption: {
     backgroundColor: theme.colors.primary.main,
     borderColor: theme.colors.primary.main,
-  },
+  } as ViewStyle,
   strengthOptionText: {
     textAlign: 'center',
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   selectedOptionText: {
     color: theme.colors.primary.contrast,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
   strengthLabelsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: theme.spacing.xs,
-  },
+  } as ViewStyle,
   strengthLabel: {
     color: theme.colors.text.secondary,
     fontSize: theme.typography.fontSize.sm,
-  },
+  } as TextStyle,
   intentionOptionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
+  } as ViewStyle,
   intentionOption: {
     flex: 1,
     marginHorizontal: theme.spacing.xs,
@@ -231,12 +231,12 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   intentionOptionText: {
     textAlign: 'center',
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   presetsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -246,13 +246,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border.light,
     borderStyle: 'dashed',
-  },
+  } as ViewStyle,
   emptyPresetsText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.tertiary,
     marginBottom: theme.spacing.md,
-  },
+  } as TextStyle,
   newPresetButton: {
     marginTop: theme.spacing.xs,
-  },
+  } as ViewStyle,
 });
