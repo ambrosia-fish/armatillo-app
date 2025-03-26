@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, Text, ViewStyle, TextStyle } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from './context/AuthContext';
 
@@ -34,10 +34,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-  },
+  } as ViewStyle,
   text: {
     marginTop: 16,
     fontSize: 16,
     color: '#666',
-  },
+  } as TextStyle,
 });
