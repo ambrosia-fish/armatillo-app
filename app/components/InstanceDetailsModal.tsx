@@ -7,37 +7,29 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert
+  Alert,
+  TextStyle,
+  ViewStyle
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import OptionDictionaries, { OptionItem } from '../constants/optionDictionaries';
-import { useAuth } from '../context/AuthContext';
+import { ensureValidToken } from '../utils/tokenRefresher';
+import { Button } from './index';
+import theme from '../constants/theme';
 
-// Define the Instance type
+// Simplified Instance type
 interface Instance {
   _id: string;
-  userId?: string;
   createdAt: string;
-  time?: string | Date;
   urgeStrength?: number;
   intentionType?: string;
   duration?: string | number;
-  timeAgo?: string;
-  // New fields based on the MongoDB data
   selectedEnvironments?: string[];
   selectedEmotions?: string[];
   selectedSensations?: string[];
   selectedThoughts?: string[];
-  // Legacy fields
-  automatic?: boolean;
-  location?: string;
-  activity?: string;
-  feelings?: string[];
-  physicalSensations?: string[];
-  thoughts?: string[];
-  environment?: string[];
   notes?: string;
 }
 
@@ -55,81 +47,39 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refreshTokenIfNeeded } = useAuth();
 
-  // Fetch instance details when modal is opened
+  // Fetch instance details
   useEffect(() => {
-    const fetchInstanceDetails = async () => {
-      if (!instanceId) return;
-      
+    if (!isVisible || !instanceId) return;
+    
+    const fetchInstance = async () => {
       try {
         setLoading(true);
-        setError(null);
-        
-        // Ensure token is fresh
-        await refreshTokenIfNeeded();
-        
-        console.log('Fetching instance details for ID:', instanceId);
+        await ensureValidToken();
         const data = await api.instances.getInstance(instanceId);
-        console.log('Instance data received:', data ? 'yes' : 'no');
         setInstance(data);
       } catch (err) {
-        console.error('Error fetching instance details:', err);
-        
-        let errorMessage = 'Failed to load details. Please try again.';
-        if (err instanceof Error) {
-          errorMessage += '\n\nDetails: ' + err.message;
-        }
-        
-        setError(errorMessage);
-        Alert.alert('Error', errorMessage);
+        console.error('Error fetching instance:', err);
+        setError('Failed to load details');
       } finally {
         setLoading(false);
       }
     };
 
-    if (isVisible && instanceId) {
-      fetchInstanceDetails();
-    }
-  }, [isVisible, instanceId, refreshTokenIfNeeded]);
+    fetchInstance();
+  }, [isVisible, instanceId]);
 
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Get option label and emoji by ID
-  const getOptionDetails = (optionId: string, optionsList: OptionItem[]): { label: string, emoji: string } => {
-    const option = optionsList.find(opt => opt.id === optionId);
-    return option 
-      ? { label: option.label, emoji: option.emoji } 
-      : { label: optionId, emoji: '' }; // Fallback to ID if not found
-  };
-  
-  // Render array items with emojis
-  const renderListWithEmojis = (items?: string[], optionsList?: OptionItem[]) => {
-    if (!items || items.length === 0 || !optionsList) {
-      return <Text style={styles.infoValue}>None</Text>;
-    }
+  // Render items with emojis
+  const renderItems = (items?: string[], optionsList?: OptionItem[]) => {
+    if (!items?.length || !optionsList) return <Text style={styles.infoValue as TextStyle}>None</Text>;
     
     return (
-      <View style={styles.listContainer}>
-        {items.map((itemId, index) => {
-          const { label, emoji } = getOptionDetails(itemId, optionsList);
+      <View style={styles.tagContainer as ViewStyle}>
+        {items.map((id, index) => {
+          const option = optionsList.find(opt => opt.id === id) || { label: id, emoji: '📝' };
           return (
-            <View key={index} style={styles.listItem}>
-              <Text style={styles.emoji}>{emoji}</Text>
-              <Text style={styles.listItemText}>{label}</Text>
+            <View key={index} style={styles.tag as ViewStyle}>
+              <Text style={styles.tagText as TextStyle}>{option.emoji} {option.label}</Text>
             </View>
           );
         })}
@@ -137,40 +87,15 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     );
   };
 
-  // Get the behavior type (automatic/intentional)
-  const getBehaviorType = () => {
-    if (instance?.intentionType) {
-      return instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional';
-    } else if (instance?.automatic !== undefined) {
-      return instance.automatic ? 'Automatic' : 'Deliberate';
-    }
-    return 'Unknown';
-  };
-
-  // Get feeling items (handles both selectedEmotions and feelings array)
-  const getFeelingsArray = () => {
-    return instance?.selectedEmotions || instance?.feelings || [];
-  };
-
-  // Get physical sensations (handles both selectedSensations and physicalSensations array)
-  const getSensationsArray = () => {
-    return instance?.selectedSensations || instance?.physicalSensations || [];
-  };
-
-  // Get thoughts (handles both selectedThoughts and thoughts array)
-  const getThoughtsArray = () => {
-    return instance?.selectedThoughts || instance?.thoughts || [];
-  };
-
-  // Get environments (handles both selectedEnvironments and environment array)
-  const getEnvironmentsArray = () => {
-    return instance?.selectedEnvironments || instance?.environment || [];
-  };
-
-  // Format duration
-  const formatDuration = (duration?: string | number) => {
-    if (!duration) return 'Unknown';
-    return typeof duration === 'number' ? `${duration} minutes` : duration;
+  // Format date
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -180,134 +105,106 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       visible={isVisible}
       onRequestClose={onClose}
     >
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
+      <View style={styles.centeredView as ViewStyle}>
+        <View style={styles.modalView as ViewStyle}>
           {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#333" />
+          <View style={styles.header as ViewStyle}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton as ViewStyle}>
+              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.title}>Instance Details</Text>
-            <View style={{ width: 40 }} />
+            <Text style={styles.title as TextStyle}>Instance Details</Text>
+            <View style={{ width: 24 }} />
           </View>
 
           {/* Content */}
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#0000ff" />
-              <Text style={styles.loadingText}>Loading details...</Text>
+            <View style={styles.centered as ViewStyle}>
+              <ActivityIndicator size="large" color={theme.colors.primary.main} />
+              <Text style={styles.message as TextStyle}>Loading...</Text>
             </View>
           ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity 
-                style={styles.retryButton}
-                onPress={() => {
-                  if (instanceId) {
-                    setLoading(true);
-                    setError(null);
-                    
-                    refreshTokenIfNeeded()
-                      .then(() => api.instances.getInstance(instanceId))
-                      .then(data => setInstance(data))
-                      .catch(err => {
-                        console.error(err);
-                        setError('Failed to load details. Please try again.');
-                      })
-                      .finally(() => setLoading(false));
-                  }
-                }}
-              >
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
+            <View style={styles.centered as ViewStyle}>
+              <Text style={styles.errorText as TextStyle}>{error}</Text>
+              <Button 
+                title="Retry" 
+                variant="primary" 
+                onPress={() => setError(null)}
+              />
             </View>
-          ) : instance ? (
-            <ScrollView style={styles.scrollView}>
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>When</Text>
-                <Text style={styles.dateText}>{formatDate(instance.createdAt)}</Text>
-                
-                {(instance.duration || instance.timeAgo) && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Duration:</Text>
-                    <Text style={styles.infoValue}>{formatDuration(instance.duration)}</Text>
+          ) : !instance ? (
+            <View style={styles.centered as ViewStyle}>
+              <Text style={styles.message as TextStyle}>No details found</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.content as ViewStyle}>
+              {/* When */}
+              <View style={styles.section as ViewStyle}>
+                <Text style={styles.sectionTitle as TextStyle}>When</Text>
+                <Text style={styles.dateText as TextStyle}>{formatDate(instance.createdAt)}</Text>
+                {instance.duration && (
+                  <View style={styles.row as ViewStyle}>
+                    <Text style={styles.label as TextStyle}>Duration:</Text>
+                    <Text style={styles.value as TextStyle}>
+                      {typeof instance.duration === 'number' 
+                        ? `${instance.duration} min` 
+                        : instance.duration}
+                    </Text>
                   </View>
                 )}
               </View>
               
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>BFRB Details</Text>
-                
-                {instance.urgeStrength !== undefined && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Urge Strength:</Text>
-                    <Text style={styles.infoValue}>{instance.urgeStrength}/10</Text>
+              {/* Details */}
+              <View style={styles.section as ViewStyle}>
+                <Text style={styles.sectionTitle as TextStyle}>BFRB Details</Text>
+                {instance.urgeStrength && (
+                  <View style={styles.row as ViewStyle}>
+                    <Text style={styles.label as TextStyle}>Urge Strength:</Text>
+                    <Text style={styles.value as TextStyle}>{instance.urgeStrength}/10</Text>
                   </View>
                 )}
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Type:</Text>
-                  <Text style={styles.infoValue}>{getBehaviorType()}</Text>
+                <View style={styles.row as ViewStyle}>
+                  <Text style={styles.label as TextStyle}>Type:</Text>
+                  <Text style={styles.value as TextStyle}>
+                    {instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
+                  </Text>
                 </View>
               </View>
               
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Environment</Text>
-                
-                {instance.location && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Location:</Text>
-                    <Text style={styles.infoValue}>{instance.location}</Text>
-                  </View>
-                )}
-                
-                {instance.activity && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Activity:</Text>
-                    <Text style={styles.infoValue}>{instance.activity}</Text>
-                  </View>
-                )}
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Environment:</Text>
-                  {renderListWithEmojis(getEnvironmentsArray(), OptionDictionaries.environmentOptions)}
-                </View>
+              {/* Environment */}
+              <View style={styles.section as ViewStyle}>
+                <Text style={styles.sectionTitle as TextStyle}>Environment</Text>
+                {renderItems(instance.selectedEnvironments, OptionDictionaries.environmentOptions)}
               </View>
               
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Mental & Physical State</Text>
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Feelings:</Text>
-                  {renderListWithEmojis(getFeelingsArray(), OptionDictionaries.feelingOptions)}
-                </View>
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Physical Sensations:</Text>
-                  {renderListWithEmojis(getSensationsArray(), OptionDictionaries.sensationOptions)}
-                </View>
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Thoughts:</Text>
-                  {renderListWithEmojis(getThoughtsArray(), OptionDictionaries.thoughtOptions)}
-                </View>
+              {/* Feelings */}
+              <View style={styles.section as ViewStyle}>
+                <Text style={styles.sectionTitle as TextStyle}>Feelings</Text>
+                {renderItems(instance.selectedEmotions, OptionDictionaries.feelingOptions)}
               </View>
               
+              {/* Sensations */}
+              <View style={styles.section as ViewStyle}>
+                <Text style={styles.sectionTitle as TextStyle}>Physical Sensations</Text>
+                {renderItems(instance.selectedSensations, OptionDictionaries.sensationOptions)}
+              </View>
+              
+              {/* Thoughts */}
+              <View style={styles.section as ViewStyle}>
+                <Text style={styles.sectionTitle as TextStyle}>Thoughts</Text>
+                {renderItems(instance.selectedThoughts, OptionDictionaries.thoughtOptions)}
+              </View>
+              
+              {/* Notes */}
               {instance.notes && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Notes</Text>
-                  <Text style={styles.notesText}>{instance.notes}</Text>
+                <View style={styles.section as ViewStyle}>
+                  <Text style={styles.sectionTitle as TextStyle}>Notes</Text>
+                  <Text style={styles.notes as TextStyle}>{instance.notes}</Text>
                 </View>
               )}
             </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No instance details found</Text>
-            </View>
           )}
         </View>
       </View>
-      <StatusBar style="dark" />
     </Modal>
   );
 };
@@ -317,133 +214,103 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
+    backgroundColor: theme.colors.background.modal,
   },
   modalView: {
-    backgroundColor: 'white',
-    borderRadius: 20,
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.lg,
     width: '90%',
     maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
+    ...theme.shadows.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border.light,
   },
   closeButton: {
-    padding: 8,
+    padding: theme.spacing.sm,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.text.primary,
   },
-  scrollView: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  content: {
+    padding: theme.spacing.lg,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    paddingBottom: 4,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.bold as '700', 
+    color: theme.colors.text.primary,
+    paddingBottom: theme.spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border.light,
+    marginBottom: theme.spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+  },
+  label: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    width: 120,
+  },
+  value: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    flex: 1,
   },
   dateText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#555',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
   },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'flex-start',
+  notes: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    lineHeight: theme.typography.lineHeight.relaxed,
   },
-  infoLabel: {
-    fontSize: 14,
-    color: '#444',
-    fontWeight: '500',
-    marginRight: 8,
-    minWidth: 120,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  listContainer: {
-    flex: 1,
-  },
-  listItem: {
-    flexDirection: 'row',
-    marginBottom: 6,
+  centered: {
+    padding: theme.spacing.xxl,
     alignItems: 'center',
   },
-  emoji: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  listItemText: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  notesText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    padding: 20,
-    alignItems: 'center',
+  message: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.md,
   },
   errorText: {
-    color: '#d32f2f',
-    marginBottom: 8,
-    textAlign: 'center',
+    color: theme.colors.utility.error,
+    marginBottom: theme.spacing.md,
   },
-  retryButton: {
-    backgroundColor: '#d32f2f',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  tag: {
+    backgroundColor: theme.colors.primary.light,
+    borderRadius: theme.borderRadius.xl,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    margin: 2,
+  },
+  tagText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.primary.dark,
+  },
+  infoValue: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.tertiary,
   },
 });
 
