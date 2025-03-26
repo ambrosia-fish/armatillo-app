@@ -87,8 +87,8 @@ export default function TimeScreen() {
       duration: duration
     });
     
-    // Navigate to next screen
-    router.push('/strength-screen');
+    // Navigate to next screen with updated path
+    router.push('/screens/tracking/strength-screen');
   };
   
   return (
