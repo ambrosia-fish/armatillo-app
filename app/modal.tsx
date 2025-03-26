@@ -3,7 +3,8 @@ import { Platform, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 're
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Text, View } from '@/components/Themed';
+import { Text, View } from './components';
+import theme from './constants/theme';
 
 export default function ModalScreen() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function ModalScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#333" />
+          <Ionicons name="close" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.title}>Modal</Text>
         <View style={{ width: 40 }} />
@@ -31,33 +32,33 @@ export default function ModalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.background.secondary,
   } as ViewStyle,
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
+    borderBottomColor: theme.colors.border.light,
+    backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
   closeButton: {
-    padding: 8,
+    padding: theme.spacing.sm,
   } as ViewStyle,
   title: {
-    fontSize: 18,
-    fontWeight: 'bold' as '700',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
   } as TextStyle,
   content: {
     flex: 1,
-    padding: 16,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   text: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
   } as TextStyle,
 });
