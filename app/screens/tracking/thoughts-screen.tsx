@@ -54,8 +54,8 @@ export default function ThoughtsScreen() {
       selectedThoughts
     });
     
-    // Navigate to next screen
-    router.push('/notes-screen');
+    // Navigate to next screen with updated path
+    router.push('/screens/tracking/notes-screen');
   };
   
   return (
