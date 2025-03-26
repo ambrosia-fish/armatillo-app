@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
@@ -132,24 +132,24 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.background.secondary,
-  },
+  } as ViewStyle,
   title: {
     fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.xl,
     textAlign: 'center',
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   profileSection: {
     alignItems: 'center',
     marginBottom: theme.spacing.xl,
-  },
+  } as ViewStyle,
   profileImage: {
     width: 80,
     height: 80,
     borderRadius: theme.borderRadius.circle,
     marginBottom: theme.spacing.md,
-  },
+  } as ImageStyle,
   profileImagePlaceholder: {
     width: 80,
     height: 80,
@@ -158,49 +158,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: theme.spacing.md,
-  },
+  } as ViewStyle,
   profileInitials: {
     fontSize: theme.typography.fontSize.xxxl,
     color: theme.colors.primary.contrast,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
   profileName: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.xs,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   profileEmail: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-  },
+  } as TextStyle,
   section: {
     marginBottom: theme.spacing.xl,
-  },
+  } as ViewStyle,
   sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.sm,
     marginLeft: theme.spacing.xs,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   card: {
     backgroundColor: theme.colors.background.card,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
     ...theme.shadows.sm
-  },
+  } as ViewStyle,
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.light,
-  },
+  } as ViewStyle,
   settingText: {
     fontSize: theme.typography.fontSize.md,
     flex: 1,
     marginLeft: theme.spacing.lg,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
 });
