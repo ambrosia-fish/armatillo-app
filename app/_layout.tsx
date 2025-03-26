@@ -6,7 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 
 import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.lg,
-  },
+  } as ViewStyle,
   modalContent: {
     backgroundColor: theme.colors.background.card,
     borderRadius: theme.borderRadius.md,
@@ -323,39 +323,39 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     ...theme.shadows.lg,
-  },
+  } as ViewStyle,
   modalTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.sm,
     color: theme.colors.primary.main,
-  },
+  } as TextStyle,
   modalText: {
     fontSize: theme.typography.fontSize.md,
     marginBottom: theme.spacing.lg,
     lineHeight: theme.typography.lineHeight.normal,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
+  } as ViewStyle,
   button: {
     flex: 1,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
     marginHorizontal: theme.spacing.xs,
-  },
+  } as ViewStyle,
   restoreButton: {
     backgroundColor: theme.colors.primary.main,
-  },
+  } as ViewStyle,
   discardButton: {
     backgroundColor: theme.colors.secondary.main,
-  },
+  } as ViewStyle,
   buttonText: {
     color: theme.colors.neutral.white,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     fontSize: theme.typography.fontSize.md,
-  },
+  } as TextStyle,
 });
