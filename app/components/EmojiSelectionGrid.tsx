@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { OptionItem } from '../constants/optionDictionaries';
+import theme from '../constants/theme';
 
 interface EmojiSelectionGridProps {
   options: OptionItem[];
@@ -54,29 +55,30 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: '31%',
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background.primary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedItem: {
-    borderColor: '#2a9d8f',
+    borderColor: theme.colors.primary.main,
     borderWidth: 1,
   },
   emoji: {
-    fontSize: 24,
-    marginBottom: 4,
+    fontSize: theme.typography.fontSize.xxl,
+    marginBottom: theme.spacing.xs,
   },
   label: {
     textAlign: 'center',
-    fontSize: 14,
-    color: '#333',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
   },
   selectedLabel: {
-    color: '#2a9d8f',
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.medium,
   },
 });
