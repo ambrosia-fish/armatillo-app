@@ -8,7 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert
+  Alert,
+  ViewStyle,
+  TextStyle,
+  ImageStyle
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -223,66 +226,66 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   keyboardView: {
     flex: 1,
-  },
+  } as ViewStyle,
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.lg,
-  },
+  } as ViewStyle,
   logoContainer: {
     alignItems: 'center',
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.xl,
-  },
+  } as ViewStyle,
   logo: {
     width: 100,
     height: 100,
     resizeMode: 'contain',
     marginBottom: theme.spacing.md,
-  },
+  } as ImageStyle,
   appName: {
     fontSize: theme.typography.fontSize.xxxl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     color: theme.colors.primary.main,
     marginBottom: theme.spacing.xs,
-  },
+  } as TextStyle,
   tagline: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-  },
+  } as TextStyle,
   formCard: {
     marginBottom: theme.spacing.xl,
     padding: theme.spacing.xl,
-  },
+  } as ViewStyle,
   formTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     marginBottom: theme.spacing.lg,
     textAlign: 'center',
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   actionButton: {
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.md,
-  },
+  } as ViewStyle,
   privacyContainer: {
     marginTop: 'auto',
     marginBottom: theme.spacing.md,
-  },
+  } as ViewStyle,
   privacyText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-  },
+  } as TextStyle,
   privacyLink: {
     color: theme.colors.primary.main,
-    fontWeight: theme.typography.fontWeight.medium,
-  },
+    fontWeight: theme.typography.fontWeight.medium as '500',
+  } as TextStyle,
   loading: {
     marginVertical: theme.spacing.xl,
-  },
+  } as ViewStyle,
 });
