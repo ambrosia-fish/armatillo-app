@@ -261,43 +261,43 @@ function RootLayoutNav() {
               options={{ headerShown: false }} 
             />
             <Stack.Screen 
-              name="modal" 
+              name="screens/modals/modal" 
               options={{ presentation: 'modal' }} 
             />
             
             {/* Authentication Screens */}
             <Stack.Screen
-              name="login"
+              name="screens/auth/login"
               options={{ headerShown: false }}
             />
             
             {/* BFRB Tracking Flow Screens */}
             <Stack.Screen 
-              name="time-screen" 
+              name="screens/tracking/time-screen" 
               options={screenOptions} 
             />
             <Stack.Screen 
-              name="strength-screen" 
+              name="screens/tracking/strength-screen" 
               options={screenOptions}
             />
             <Stack.Screen 
-              name="detail-screen" 
+              name="screens/modals/detail-screen" 
               options={screenOptions} 
             />
             <Stack.Screen 
-              name="environment-screen" 
+              name="screens/tracking/environment-screen" 
               options={screenOptions} 
             />
             <Stack.Screen 
-              name="feelings-screen" 
+              name="screens/tracking/feelings-screen" 
               options={screenOptions} 
             />
             <Stack.Screen 
-              name="thoughts-screen" 
+              name="screens/tracking/thoughts-screen" 
               options={screenOptions} 
             />
             <Stack.Screen 
-              name="notes-screen" 
+              name="screens/tracking/notes-screen" 
               options={screenOptions} 
             />
           </Stack>
