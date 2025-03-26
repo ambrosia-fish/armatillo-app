@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
-  },
+  } as ViewStyle,
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -42,22 +42,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     backgroundColor: '#fff',
-  },
+  } as ViewStyle,
   closeButton: {
     padding: 8,
-  },
+  } as ViewStyle,
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-  },
+    fontWeight: 'bold' as '700',
+  } as TextStyle,
   content: {
     flex: 1,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  } as ViewStyle,
   text: {
     fontSize: 16,
     textAlign: 'center',
-  },
+  } as TextStyle,
 });
