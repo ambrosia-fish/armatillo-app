@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Header, Card, Button } from './components';
 import CancelFooter from './components/CancelFooter';
 import { useFormContext } from './context/FormContext';
+import theme from './constants/theme';
 
 export default function StrengthScreen() {
   const router = useRouter();
@@ -62,37 +63,36 @@ export default function StrengthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Add the header back */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>About the Instance</Text>
-        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
+      <Header 
+        title="About the Instance"
+        leftIcon="arrow-back"
+        onLeftPress={() => router.back()}
+        rightText="Next"
+        onRightPress={handleNext}
+      />
       
       <ScrollView style={styles.content}>
         {/* Presets Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Presets</Text>
-          <Text style={styles.sectionSubtitle}>Save time by using common patterns</Text>
+        <Card containerStyle={styles.card}>
+          <Text style={styles.cardTitle}>Presets</Text>
+          <Text style={styles.cardSubtitle}>Save time by using common patterns</Text>
           
           <View style={styles.presetsContainer}>
             <Text style={styles.emptyPresetsText}>No presets available yet</Text>
-            <TouchableOpacity 
-              style={styles.newPresetButton}
+            <Button 
+              title="+ New Preset"
+              variant="text"
+              size="small"
               disabled={true}
-            >
-              <Text style={styles.newPresetButtonText}>+ New Preset</Text>
-            </TouchableOpacity>
+              onPress={() => {}}
+              style={styles.newPresetButton}
+            />
           </View>
-        </View>
+        </Card>
         
         {/* Urge Strength Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How strong was the urge?</Text>
+        <Card containerStyle={styles.card}>
+          <Text style={styles.cardTitle}>How strong was the urge?</Text>
           <View style={styles.strengthOptionsContainer}>
             {renderStrengthOptions()}
           </View>
@@ -100,14 +100,14 @@ export default function StrengthScreen() {
             <Text style={styles.strengthLabel}>Mild</Text>
             <Text style={styles.strengthLabel}>Strong</Text>
           </View>
-        </View>
+        </Card>
         
         {/* Intention Type Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Was it intentional or automatic?</Text>
+        <Card containerStyle={styles.card}>
+          <Text style={styles.cardTitle}>Was it intentional or automatic?</Text>
           <View style={styles.intentionOptionsContainer}>
-            <TouchableOpacity
-              style={[
+            <Card
+              containerStyle={[
                 styles.intentionOption,
                 intentionType === 'intentional' && styles.selectedOption,
               ]}
@@ -121,9 +121,9 @@ export default function StrengthScreen() {
               >
                 Intentional
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
+            </Card>
+            <Card
+              containerStyle={[
                 styles.intentionOption,
                 intentionType === 'automatic' && styles.selectedOption,
               ]}
@@ -137,9 +137,9 @@ export default function StrengthScreen() {
               >
                 Automatic
               </Text>
-            </TouchableOpacity>
+            </Card>
           </View>
-        </View>
+        </Card>
       </ScrollView>
       
       {/* Add Cancel Footer */}
@@ -159,96 +159,63 @@ export default function StrengthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
-    // Ensure no shadow or elevation
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  backButton: {
-    padding: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  nextButton: {
-    padding: 8,
-  },
-  nextButtonText: {
-    color: '#2a9d8f',
-    fontWeight: 'bold',
-    fontSize: 16,
+    backgroundColor: theme.colors.background.primary,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: theme.spacing.lg,
   },
-  section: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  card: {
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  cardTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.sm,
+    color: theme.colors.text.primary,
   },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
+  cardSubtitle: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.lg,
   },
   strengthOptionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   strengthOption: {
     width: 30,
     height: 30,
-    borderRadius: 15,
-    backgroundColor: '#fff',
+    borderRadius: theme.borderRadius.circle,
+    backgroundColor: theme.colors.background.primary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedOption: {
-    backgroundColor: '#2a9d8f',
-    borderColor: '#2a9d8f',
+    backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.main,
   },
   strengthOptionText: {
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
   },
   selectedOptionText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: theme.colors.primary.contrast,
+    fontWeight: theme.typography.fontWeight.bold,
   },
   strengthLabelsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   strengthLabel: {
-    color: '#666',
-    fontSize: 14,
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.fontSize.sm,
   },
   intentionOptionsContainer: {
     flexDirection: 'row',
@@ -256,45 +223,36 @@ const styles = StyleSheet.create({
   },
   intentionOption: {
     flex: 1,
-    marginHorizontal: 5,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    marginHorizontal: theme.spacing.xs,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background.primary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
   intentionOptionText: {
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
   },
-  // New styles for presets section
   presetsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 10,
-    padding: 15,
-    borderRadius: 8,
+    marginVertical: theme.spacing.sm,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border.light,
     borderStyle: 'dashed',
   },
   emptyPresetsText: {
-    fontSize: 16,
-    color: '#999',
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.tertiary,
+    marginBottom: theme.spacing.md,
   },
   newPresetButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
-    opacity: 0.6,
-  },
-  newPresetButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    marginTop: theme.spacing.xs,
   },
 });
