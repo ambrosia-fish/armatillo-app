@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  View, 
-  Text, 
   StyleSheet, 
   Image, 
   ActivityIndicator,
@@ -16,11 +14,11 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/app/context/AuthContext';
 
 // Import themed components
-import { Button, Input, Card } from '../../components';
-import theme from '../../constants/theme';
+import { View, Text, Button, Input, Card } from '@/app/components';
+import theme from '@/app/constants/theme';
 
 export default function LoginScreen() {
   const { login, register, isAuthenticated, isLoading } = useAuth();
