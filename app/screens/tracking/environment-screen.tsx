@@ -66,7 +66,7 @@ export default function EnvironmentScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/screens/tracking/feelings-screen');
+    router.push('/screens/tracking/mental-screen');
   };
   
   return (
