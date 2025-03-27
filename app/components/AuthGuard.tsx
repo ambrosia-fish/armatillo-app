@@ -27,7 +27,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    return <Redirect href="/login" />;
+    return <Redirect href="/screens/auth/login" />;
   }
 
   // If authenticated, render the children
