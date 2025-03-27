@@ -1,16 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import theme from '../constants/theme';
+import theme from '@/app/constants/theme';
+import { View, Text } from '@/app/components';
 
 export default function HomeScreen() {
   const router = useRouter();
   
   const addNewEntry = () => {
     // Navigate to the time screen with updated path
-    router.push('/time-screen');
+    router.push('/screens/tracking/time-screen');
   };
 
   return (
