@@ -10,7 +10,6 @@ import {
   TextInput
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 
 import { useFormContext } from '@/app/context/FormContext';
@@ -83,22 +82,6 @@ export default function SensoryScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={styles.backButton}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-back" size={24} color={theme.colors.primary.main} />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>Sensory Triggers</Text>
-        
-        <View style={styles.headerRight} />
-      </View>
-      
       <ScrollView 
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
@@ -168,7 +151,6 @@ export default function SensoryScreen() {
           accessibilityLabel="Cancel"
           accessibilityRole="button"
         >
-          <Ionicons name="close-circle-outline" size={18} color={theme.colors.secondary.main} />
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
@@ -180,26 +162,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text.primary,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerRight: {
-    width: 40,
   },
   content: {
     flex: 1,
