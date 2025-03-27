@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
-import theme from '../constants/theme';
+import { useAuth } from '@/app/context/AuthContext';
+import theme from '@/app/constants/theme';
 
 interface AuthGuardProps {
   children: React.ReactNode;
