@@ -3,8 +3,8 @@
  */
 
 import { Text as DefaultText, View as DefaultView, TextStyle, ViewStyle } from 'react-native';
-import theme from '../constants/theme';
-import { useColorScheme } from '../hooks/useColorScheme';
+import theme from '@/app/constants/theme';
+import { useColorScheme } from '@/app/hooks/useColorScheme';
 
 // Types for themed components
 type ThemeProps = {
