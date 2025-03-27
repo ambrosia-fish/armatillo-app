@@ -249,6 +249,7 @@ function RootLayoutNav() {
       color: theme.colors.text.primary,
     },
     headerTintColor: theme.colors.primary.main,
+    headerBackTitle: 'Back',
   };
 
   // Screen options for BFRB tracking flow
@@ -294,7 +295,8 @@ function RootLayoutNav() {
               name="screens/tracking/time-screen" 
               options={{
                 ...screenOptions,
-                title: "Time & Duration"
+                title: "Time & Duration",
+                headerBackTitle: "Home" // Override back button text for first screen
               }} 
             />
             <Stack.Screen 
