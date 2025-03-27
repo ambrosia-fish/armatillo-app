@@ -9,7 +9,7 @@ import {
   TextStyle,
   TouchableOpacity
 } from 'react-native';
-import theme from '../constants/theme';
+import theme from '@/app/constants/theme';
 
 interface CardProps extends ViewProps {
   title?: string;
