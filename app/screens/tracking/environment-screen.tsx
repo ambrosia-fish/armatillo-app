@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: theme.colors.background.card,
