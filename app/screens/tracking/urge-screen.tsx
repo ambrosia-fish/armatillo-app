@@ -70,14 +70,23 @@ export default function UrgeScreen() {
     router.push('/screens/tracking/environment-screen');
   };
   
-  // Get color for urge strength
-  const getUrgeColor = (value: number) => {
-    if (value <= 3) {
-      return theme.colors.status.low;
-    } else if (value <= 6) {
-      return theme.colors.status.medium;
+  // Get appropriate button style for urge strength - only color buttons up to selected level
+  const getUrgeButtonStyle = (value: number) => {
+    const selected = parseInt(urgeStrength, 10);
+    
+    if (value > selected) {
+      // Empty/unfilled for buttons to the right of selection
+      return { 
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: '#dddddd'
+      };
     } else {
-      return theme.colors.status.high;
+      // Orange gradient with increasing opacity for buttons up to selection
+      const opacity = 0.3 + ((value / 10) * 0.7); // Opacity from 0.3 to 1.0
+      return { 
+        backgroundColor: `rgba(231, 111, 81, ${opacity})` // Orange color with variable opacity
+      };
     }
   };
   
@@ -108,7 +117,7 @@ export default function UrgeScreen() {
                   key={level.id}
                   style={[
                     styles.urgeButton,
-                    { backgroundColor: getUrgeColor(level.value) },
+                    getUrgeButtonStyle(level.value),
                     urgeStrength === level.id && styles.urgeButtonSelected
                   ]}
                   onPress={() => setUrgeStrength(level.id)}
@@ -235,6 +244,8 @@ const styles = StyleSheet.create({
   urgeScale: {
     flexDirection: 'row',
     height: 40,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   urgeButton: {
     flex: 1,
