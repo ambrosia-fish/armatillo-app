@@ -9,7 +9,7 @@ import {
   TextStyle,
   TouchableOpacityProps
 } from 'react-native';
-import theme from '../constants/theme';
+import theme from '@/app/constants/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'text';
 export type ButtonSize = 'small' | 'medium' | 'large';
