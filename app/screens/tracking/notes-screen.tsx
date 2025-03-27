@@ -13,11 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { Text, Button, Card, Header, CancelFooter, EmojiSelectionGrid } from '../../components';
-import { useFormContext } from '../../context/FormContext';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
-import theme from '../../constants/theme';
+import { Text, Button, Card, Header, CancelFooter, EmojiSelectionGrid } from '@/app/components';
+import { useFormContext } from '@/app/context/FormContext';
+import { useAuth } from '@/app/context/AuthContext';
+import api from '@/app/services/api';
+import theme from '@/app/constants/theme';
 
 // Sensory trigger options
 const triggerOptions = [
