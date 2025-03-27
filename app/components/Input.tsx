@@ -9,7 +9,7 @@ import {
   ViewStyle,
   TextStyle
 } from 'react-native';
-import theme from '../constants/theme';
+import theme from '@/app/constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
