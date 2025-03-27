@@ -122,11 +122,33 @@ export default function HistoryScreen() {
     }).join(', ');
   };
 
+  // Format date for CSV (MM/DD/YYYY format)
+  const formatCSVDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'numeric', 
+      day: 'numeric', 
+      year: 'numeric'
+    });
+  };
+
+  // Format time for CSV (HH:MM:SS AM/PM format)
+  const formatCSVTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+
   // Function to convert instances to CSV format
   const convertToCSV = (data: Instance[]) => {
     // Define CSV headers
     const headers = [
       'Date',
+      'Time',
       'Urge Strength',
       'Type',
       'Duration',
@@ -183,7 +205,8 @@ export default function HistoryScreen() {
 
       // Create row with proper data types and escaped quotes
       const row = [
-        new Date(instance.createdAt).toLocaleString(), // Date
+        formatCSVDate(instance.createdAt), // Date only
+        formatCSVTime(instance.createdAt), // Time only
         instance.urgeStrength !== undefined ? instance.urgeStrength : '', // Urge Strength
         escapeField(type), // Type
         escapeField(duration), // Duration
