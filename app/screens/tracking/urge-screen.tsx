@@ -17,16 +17,16 @@ import theme from '@/app/constants/theme';
 
 // Urge strength levels
 const urgeStrengthLevels = [
-  { id: '1', value: 1, label: '1 - Mild urge' },
-  { id: '2', value: 2, label: '2' },
-  { id: '3', value: 3, label: '3' },
-  { id: '4', value: 4, label: '4' },
-  { id: '5', value: 5, label: '5' },
-  { id: '6', value: 6, label: '6' },
-  { id: '7', value: 7, label: '7' },
-  { id: '8', value: 8, label: '8' },
-  { id: '9', value: 9, label: '9' },
-  { id: '10', value: 10, label: '10 - Strong urge' },
+  { id: '1', value: 1, label: '1', description: 'Very Mild' },
+  { id: '2', value: 2, label: '2', description: 'Mild' },
+  { id: '3', value: 3, label: '3', description: 'Mild' },
+  { id: '4', value: 4, label: '4', description: 'Moderate' },
+  { id: '5', value: 5, label: '5', description: 'Moderate' },
+  { id: '6', value: 6, label: '6', description: 'Moderate' },
+  { id: '7', value: 7, label: '7', description: 'Strong' },
+  { id: '8', value: 8, label: '8', description: 'Strong' },
+  { id: '9', value: 9, label: '9', description: 'Very Strong' },
+  { id: '10', value: 10, label: '10', description: 'Very Strong' },
 ];
 
 // Intention types
@@ -71,14 +71,14 @@ export default function UrgeScreen() {
     router.push('/screens/tracking/environment-screen');
   };
   
-  // Get label color based on urge strength
-  const getUrgeColorStyle = (value: number) => {
+  // Get color for urge strength
+  const getUrgeColor = (value: number) => {
     if (value <= 3) {
-      return { backgroundColor: theme.colors.status.low };
+      return theme.colors.status.low;
     } else if (value <= 6) {
-      return { backgroundColor: theme.colors.status.medium };
+      return theme.colors.status.medium;
     } else {
-      return { backgroundColor: theme.colors.status.high };
+      return theme.colors.status.high;
     }
   };
   
@@ -113,32 +113,33 @@ export default function UrgeScreen() {
             Rate the strength of your urge/compulsion before the BFRB.
           </Text>
           
-          {/* Urge Strength Indicator */}
-          <View style={styles.strengthIndicator}>
-            <Text style={styles.strengthLabel}>Low</Text>
-            <View style={styles.strengthBars}>
+          {/* Urge Strength Scale */}
+          <View style={styles.urgeContainer}>
+            <View style={styles.urgeLabels}>
+              <Text style={styles.urgeEndLabel}>Low</Text>
+              <Text style={styles.urgeEndLabel}>High</Text>
+            </View>
+            <View style={styles.urgeScale}>
               {urgeStrengthLevels.map((level) => (
                 <TouchableOpacity
                   key={level.id}
                   style={[
-                    styles.strengthBar,
-                    getUrgeColorStyle(level.value),
-                    urgeStrength === level.id && styles.selectedStrengthBar
+                    styles.urgeButton,
+                    { backgroundColor: getUrgeColor(level.value) },
+                    urgeStrength === level.id && styles.urgeButtonSelected
                   ]}
                   onPress={() => setUrgeStrength(level.id)}
                   activeOpacity={0.7}
-                  accessibilityLabel={`Urge strength level ${level.label}`}
+                  accessibilityLabel={`Urge strength level ${level.value}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: urgeStrength === level.id }}
                 />
               ))}
             </View>
-            <Text style={styles.strengthLabel}>High</Text>
+            <Text style={styles.selectedUrgeText}>
+              {parseInt(urgeStrength) ? `${urgeStrength} - ${urgeStrengthLevels.find(l => l.id === urgeStrength)?.description || 'Medium'} urge` : 'Select strength'}
+            </Text>
           </View>
-          
-          <Text style={styles.selectedStrengthText}>
-            {urgeStrength ? `${urgeStrength} - ${urgeStrengthLevels.find(l => l.id === urgeStrength)?.label.split(' - ')[1] || 'Medium urge'}` : 'Select strength'}
-          </Text>
         </View>
         
         <View style={styles.card}>
@@ -147,14 +148,14 @@ export default function UrgeScreen() {
             Did you engage in the behavior automatically (without thinking) or intentionally (with awareness)?
           </Text>
           
-          {/* Intention Type Selection */}
-          <View style={styles.intentionOptions}>
+          {/* Intention Type Options */}
+          <View style={styles.intentionContainer}>
             {intentionTypes.map((type) => (
               <TouchableOpacity
                 key={type.id}
                 style={[
-                  styles.intentionOption,
-                  intentionType === type.id && styles.selectedIntentionOption
+                  styles.intentionButton,
+                  intentionType === type.id && styles.intentionButtonSelected
                 ]}
                 onPress={() => setIntentionType(type.id)}
                 activeOpacity={0.7}
@@ -164,13 +165,13 @@ export default function UrgeScreen() {
               >
                 <Text style={[
                   styles.intentionLabel,
-                  intentionType === type.id && styles.selectedIntentionLabel
+                  intentionType === type.id && styles.intentionLabelSelected
                 ]}>
                   {type.label}
                 </Text>
                 <Text style={[
                   styles.intentionDescription,
-                  intentionType === type.id && styles.selectedIntentionDescription
+                  intentionType === type.id && styles.intentionDescriptionSelected
                 ]}>
                   {type.description}
                 </Text>
@@ -237,6 +238,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: theme.colors.background.card,
@@ -256,55 +258,54 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginBottom: 16,
   },
-  strengthIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  urgeContainer: {
     marginVertical: 8,
   },
-  strengthLabel: {
+  urgeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  urgeEndLabel: {
     fontSize: 14,
     color: theme.colors.text.secondary,
-    width: 40,
   },
-  strengthBars: {
-    flex: 1,
+  urgeScale: {
     flexDirection: 'row',
     height: 40,
-    marginHorizontal: 8,
   },
-  strengthBar: {
+  urgeButton: {
     flex: 1,
-    marginHorizontal: 2,
+    marginHorizontal: 1,
     borderRadius: 4,
   },
-  selectedStrengthBar: {
+  urgeButtonSelected: {
     borderWidth: 2,
     borderColor: theme.colors.text.primary,
   },
-  selectedStrengthText: {
+  selectedUrgeText: {
     textAlign: 'center',
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 8,
+    marginTop: 12,
     color: theme.colors.text.primary,
   },
-  intentionOptions: {
+  intentionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 8,
+    gap: 12,
   },
-  intentionOption: {
+  intentionButton: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
+    backgroundColor: theme.colors.background.secondary,
     borderWidth: 1,
     borderColor: theme.colors.border.input,
-    marginHorizontal: 4,
-    backgroundColor: theme.colors.background.secondary,
   },
-  selectedIntentionOption: {
-    borderColor: theme.colors.primary.main,
+  intentionButtonSelected: {
     backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.main,
   },
   intentionLabel: {
     fontSize: 16,
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: 'center',
   },
-  selectedIntentionLabel: {
+  intentionLabelSelected: {
     color: theme.colors.primary.contrast,
   },
   intentionDescription: {
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
-  selectedIntentionDescription: {
+  intentionDescriptionSelected: {
     color: theme.colors.primary.contrast,
   },
   footer: {
