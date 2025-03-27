@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, ViewStyle, TextStyle, TextInput } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Stack } from 'expo-router';
 
 import { Text, Button, Card, Header, CancelFooter, EmojiSelectionGrid } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
@@ -65,13 +66,15 @@ export default function PhysicalScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <StatusBar style="auto" />
       
-      <Header 
-        title="Physical State" 
-        leftIcon="arrow-back"
-        onLeftPress={() => router.back()}
+      {/* Hide the default navigation header and use Stack.Screen to configure it */}
+      <Stack.Screen 
+        options={{
+          title: "Physical State",
+          headerBackTitle: "Back"
+        }}
       />
       
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
