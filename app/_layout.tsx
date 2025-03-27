@@ -12,7 +12,7 @@ import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
 import { AuthProvider } from './context/AuthContext';
 import crashRecovery from './utils/crashRecovery';
-import { ErrorBoundary } from './ErrorBoundary';
+import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
 
 export {
@@ -189,10 +189,12 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <RootLayoutNav />
-      <RecoveryModal />
-    </>
+    <ErrorBoundary>
+      <>
+        <RootLayoutNav />
+        <RecoveryModal />
+      </>
+    </ErrorBoundary>
   );
 }
 
