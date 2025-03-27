@@ -14,22 +14,8 @@ import * as SecureStore from 'expo-secure-store';
 
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
+import { thoughtOptions } from '@/app/constants/optionDictionaries';
 
-// Thought pattern options
-const thoughtOptions = [
-  { id: 'perfectionism', label: 'Perfectionism', emoji: '✨' },
-  { id: 'selfCritical', label: 'Self-Critical', emoji: '👎' },
-  { id: 'worrying', label: 'Worrying', emoji: '😟' },
-  { id: 'ruminating', label: 'Ruminating', emoji: '🔄' },
-  { id: 'allOrNothing', label: 'All-or-Nothing', emoji: '⚫️⚪️' },
-  { id: 'catastrophizing', label: 'Catastrophizing', emoji: '💥' },
-  { id: 'comparing', label: 'Comparing', emoji: '⚖️' },
-  { id: 'shouldStatements', label: 'Should Statements', emoji: '📝' },
-  { id: 'mindReading', label: 'Mind Reading', emoji: '🔮' },
-  { id: 'blackAndWhite', label: 'Black & White', emoji: '🌓' },
-  { id: 'personalizing', label: 'Personalizing', emoji: '🎯' },
-  { id: 'needForControl', label: 'Need for Control', emoji: '🎮' },
-];
 
 export default function ThoughtsScreen() {
   const router = useRouter();

@@ -14,25 +14,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
-
-// Emotion options
-const emotionOptions = [
-  { id: 'stressed', label: 'Stressed', emoji: '😥' },
-  { id: 'anxious', label: 'Anxious', emoji: '😰' },
-  { id: 'frustrated', label: 'Frustrated', emoji: '😤' },
-  { id: 'angry', label: 'Angry', emoji: '😠' },
-  { id: 'bored', label: 'Bored', emoji: '😒' },
-  { id: 'tired', label: 'Tired', emoji: '😴' },
-  { id: 'sad', label: 'Sad', emoji: '😢' },
-  { id: 'happy', label: 'Happy', emoji: '😊' },
-  { id: 'excited', label: 'Excited', emoji: '🤩' },
-  { id: 'content', label: 'Content', emoji: '😌' },
-  { id: 'calm', label: 'Calm', emoji: '😌' },
-  { id: 'embarrassed', label: 'Embarrassed', emoji: '😳' },
-  { id: 'overwhelmed', label: 'Overwhelmed', emoji: '🥴' },
-  { id: 'distracted', label: 'Distracted', emoji: '🤔' },
-  { id: 'focused', label: 'Focused', emoji: '🧐' },
-];
+import { emotionOptions } from '@/app/constants/optionDictionaries';
 
 export default function MentalScreen() {
   const router = useRouter();

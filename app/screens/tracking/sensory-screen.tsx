@@ -14,22 +14,9 @@ import * as SecureStore from 'expo-secure-store';
 
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
+import { triggerOptions } from '@/app/constants/optionDictionaries';
 
-// Sensory trigger options
-const triggerOptions = [
-  { id: 'visual', label: 'Visual', emoji: '👁️' },
-  { id: 'touch', label: 'Touch', emoji: '👆' },
-  { id: 'sound', label: 'Sound', emoji: '👂' },
-  { id: 'taste', label: 'Taste', emoji: '👅' },
-  { id: 'smell', label: 'Smell', emoji: '👃' },
-  { id: 'mirror', label: 'Mirror', emoji: '🪞' },
-  { id: 'screen', label: 'Screen', emoji: '📱' },
-  { id: 'texture', label: 'Texture', emoji: '🧶' },
-  { id: 'light', label: 'Light', emoji: '💡' },
-  { id: 'noise', label: 'Noise', emoji: '🔊' },
-  { id: 'temperature', label: 'Temperature', emoji: '🌡️' },
-  { id: 'clothing', label: 'Clothing', emoji: '👕' },
-];
+
 
 export default function SensoryScreen() {
   const router = useRouter();

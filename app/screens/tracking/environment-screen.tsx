@@ -14,25 +14,8 @@ import * as SecureStore from 'expo-secure-store';
 
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
+import { environmentOptions } from '@/app/constants/optionDictionaries';
 
-// Environment options
-const environmentOptions = [
-  { id: 'home', label: 'Home', emoji: '🏠' },
-  { id: 'work', label: 'Work', emoji: '💼' },
-  { id: 'school', label: 'School', emoji: '🏫' },
-  { id: 'car', label: 'Car', emoji: '🚗' },
-  { id: 'public', label: 'Public', emoji: '🏙️' },
-  { id: 'bathroom', label: 'Bathroom', emoji: '🚿' },
-  { id: 'bedroom', label: 'Bedroom', emoji: '🛏️' },
-  { id: 'kitchen', label: 'Kitchen', emoji: '🍽️' },
-  { id: 'livingRoom', label: 'Living Room', emoji: '🛋️' },
-  { id: 'computer', label: 'Computer', emoji: '💻' },
-  { id: 'phone', label: 'Phone', emoji: '📱' },
-  { id: 'desk', label: 'Desk', emoji: '🖥️' },
-  { id: 'mirror', label: 'Mirror', emoji: '🪞' },
-  { id: 'tv', label: 'TV/Media', emoji: '📺' },
-  { id: 'social', label: 'Social Event', emoji: '👥' },
-];
 
 export default function EnvironmentScreen() {
   const router = useRouter();

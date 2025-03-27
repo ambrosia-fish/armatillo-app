@@ -14,25 +14,8 @@ import * as SecureStore from 'expo-secure-store';
 
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
+import { sensationOptions } from '@/app/constants/optionDictionaries';
 
-// Physical sensation options
-const sensationOptions = [
-  { id: 'tense', label: 'Tense Muscles', emoji: '💪' },
-  { id: 'sweaty', label: 'Sweaty', emoji: '💦' },
-  { id: 'restless', label: 'Restless', emoji: '🦵' },
-  { id: 'shaky', label: 'Shaky', emoji: '👐' },
-  { id: 'heartRacing', label: 'Heart Racing', emoji: '💓' },
-  { id: 'breathing', label: 'Fast Breathing', emoji: '😮‍💨' },
-  { id: 'hot', label: 'Hot', emoji: '🔥' },
-  { id: 'cold', label: 'Cold', emoji: '❄️' },
-  { id: 'tired', label: 'Physically Tired', emoji: '🥱' },
-  { id: 'energetic', label: 'Energetic', emoji: '⚡' },
-  { id: 'itchy', label: 'Itchy', emoji: '👆' },
-  { id: 'tingling', label: 'Tingling', emoji: '✨' },
-  { id: 'pain', label: 'Pain', emoji: '🤕' },
-  { id: 'hungry', label: 'Hungry', emoji: '🍽️' },
-  { id: 'nauseous', label: 'Nauseous', emoji: '🤢' },
-];
 
 export default function PhysicalScreen() {
   const router = useRouter();
