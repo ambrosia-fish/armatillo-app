@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Platform, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, Platform, ViewStyle, TextStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { StatusBar } from 'expo-status-bar';
 import { Picker } from '@react-native-picker/picker';
 
-import { Text, Button, Card, Header, CancelFooter } from '../../components';
-import { useFormContext } from '../../context/FormContext';
-import theme from '../../constants/theme';
+import { Text, View, Button, Card, Header, CancelFooter } from '@/app/components';
+import { useFormContext } from '@/app/context/FormContext';
+import theme from '@/app/constants/theme';
 
 // Duration options in minutes
 const durationOptions = [1, 2, 3, 5, 10, 15, 30, 60];
@@ -88,7 +88,7 @@ export default function TimeScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/strength-screen');
+    router.push('/screens/tracking/strength-screen');
   };
   
   return (
