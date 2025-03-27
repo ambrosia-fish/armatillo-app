@@ -10,7 +10,7 @@ export default function HomeScreen() {
   
   const addNewEntry = () => {
     // Navigate to the time screen with updated path
-    router.push('/screens/tracking/time-screen');
+    router.push('/time-screen');
   };
 
   return (
