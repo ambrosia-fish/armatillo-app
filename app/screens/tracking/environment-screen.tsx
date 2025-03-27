@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, TextInput, ViewStyle, TextStyle } from 'react-native';
+import { View, StyleSheet, FlatList, TextInput, ViewStyle, TextStyle, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -79,7 +79,7 @@ export default function EnvironmentScreen() {
         onLeftPress={() => router.back()}
       />
       
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <Card containerStyle={styles.card}>
           <Text style={styles.cardTitle}>Where were you?</Text>
           <Text style={styles.cardDescription}>
@@ -103,7 +103,7 @@ export default function EnvironmentScreen() {
             numberOfLines={3}
           />
         </Card>
-      </View>
+      </ScrollView>
       
       <View style={styles.footer}>
         <Button
@@ -126,7 +126,10 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   content: {
     flex: 1,
+  } as ViewStyle,
+  scrollContent: {
     padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   } as ViewStyle,
   card: {
     marginBottom: theme.spacing.lg,
