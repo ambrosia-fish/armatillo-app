@@ -67,7 +67,7 @@ export const getApiUrl = (): string => {
   if (environment === 'development') {
     // For physical devices using Expo Go, the developer would need to set their local IP here
     // or preferably via app.config.js or environment variables
-    const localIp = Constants.expoConfig?.extra?.localIp || '192.168.1.1';
+    const localIp = Constants.expoConfig?.extra?.localIp || '192.168.0.101';
     
     if (Constants.appOwnership === 'expo') {
       return `http://${localIp}:3000`;
