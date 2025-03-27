@@ -228,18 +228,18 @@ const styles = StyleSheet.create({
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -4,
+    marginHorizontal: -6,
+    justifyContent: 'space-between',
+    gap: 12,
   },
   timeOptionButton: {
-    flex: 1,
-    margin: 4,
+    width: '45%',
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
     backgroundColor: theme.colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: '45%',
   },
   timeOptionButtonSelected: {
     backgroundColor: theme.colors.primary.main,
