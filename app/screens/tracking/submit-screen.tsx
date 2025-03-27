@@ -102,7 +102,7 @@ export default function SubmitScreen() {
         // Show message about not being logged in
         Alert.alert(
           'Not Logged In',
-          'You need to be logged in to save your data. This session was not saved to the cloud but has been stored locally.',
+          'You need to be logged in to save your data to the cloud. This session was saved locally on your device.',
           [
             { 
               text: 'OK', 
@@ -241,6 +241,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: theme.colors.background.card,
