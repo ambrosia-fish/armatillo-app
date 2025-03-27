@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Platform, ViewStyle, TextStyle, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, ViewStyle, TextStyle, ScrollView, TouchableOpacity, Dimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { Text, View, Button, Card, Header, CancelFooter } from '@/app/components';
+import { Text, Button, CancelFooter } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
 
@@ -106,19 +106,25 @@ export default function TimeScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       
-      <Header 
-        title="Time & Duration" 
-        leftIcon="close"
-        onLeftPress={() => router.back()}
-      />
+      {/* Header */}
+      <View style={styles.header}>
+        <Button 
+          onPress={() => router.back()} 
+          variant="icon" 
+          icon="x" 
+          style={styles.closeButton}
+        />
+        <Text style={styles.headerTitle}>Time & Duration</Text>
+        <View style={styles.placeholder} />
+      </View>
       
-      <ScrollView style={styles.content}>
-        <Card containerStyle={styles.card}>
-          <Text style={styles.cardTitle}>When did it happen?</Text>
-          <Text style={styles.cardDescription}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>When did it happen?</Text>
+          <Text style={styles.sectionDescription}>
             Please select the approximate time when the BFRB instance occurred.
           </Text>
           
@@ -127,11 +133,11 @@ export default function TimeScreen() {
             selectedTimeOptionIndex,
             (index) => setSelectedTimeOptionIndex(index)
           )}
-        </Card>
+        </View>
         
-        <Card containerStyle={styles.card}>
-          <Text style={styles.cardTitle}>How long did it last?</Text>
-          <Text style={styles.cardDescription}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>How long did it last?</Text>
+          <Text style={styles.sectionDescription}>
             Please select the approximate duration of the BFRB instance.
           </Text>
           
@@ -140,7 +146,7 @@ export default function TimeScreen() {
             selectedDurationIndex,
             (index) => setSelectedDurationIndex(index)
           )}
-        </Card>
+        </View>
       </ScrollView>
       
       <View style={styles.footer}>
@@ -166,21 +172,51 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
-  content: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  } as ViewStyle,
+  headerTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  } as TextStyle,
+  closeButton: {
+    padding: 0,
+  } as ViewStyle,
+  placeholder: {
+    width: 24, // Same width as the close button for balanced header
+  } as ViewStyle,
+  scrollView: {
     flex: 1,
+  } as ViewStyle,
+  contentContainer: {
     padding: theme.spacing.lg,
   } as ViewStyle,
-  card: {
+  section: {
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
-    padding: theme.spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   } as ViewStyle,
-  cardTitle: {
+  sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
     fontWeight: theme.typography.fontWeight.bold as '700',
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,
   } as TextStyle,
-  cardDescription: {
+  sectionDescription: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.lg,
