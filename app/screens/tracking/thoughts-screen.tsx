@@ -62,7 +62,7 @@ export default function ThoughtsScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/screens/tracking/notes-screen');
+    router.push('/screens/tracking/submit-screen');
   };
   
   return (
