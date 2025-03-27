@@ -1,158 +1,108 @@
-import React, { ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ViewStyle, TextStyle } from 'react-native';
-import { ErrorBoundary as ExpoErrorBoundary } from 'expo-router';
-import crashRecovery from './utils/crashRecovery';
-import theme from './constants/theme';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+import { errorService } from './services/ErrorService';
 
-interface ErrorBoundaryProps {
+interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onReset?: () => void;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: React.ErrorInfo | null;
 }
 
-/**
- * Custom error boundary with secure state cleanup
- * This extends the Expo Router ErrorBoundary with additional security features
- */
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
+class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = {
+      hasError: false,
+      error: null
+    };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+  static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Log the error and save important state
-    console.error('Application error:', error, errorInfo);
-    this.setState({ errorInfo });
-    
-    // Perform secure state cleanup in case of corruption
-    this.performSecureCleanup(error);
+    // Log the error to our error service
+    errorService.handleError(error, {
+      source: 'ui',
+      level: 'critical',
+      context: { 
+        componentStack: errorInfo.componentStack,
+        component: 'ErrorBoundary' 
+      }
+    });
   }
-  
-  /**
-   * Perform secure state cleanup when an error occurs
-   */
-  async performSecureCleanup(error: Error): Promise<void> {
-    try {
-      // Store minimal error info for crash recovery
-      await crashRecovery.saveCurrentAppState({
-        error: {
-          message: error.message,
-          stack: error.stack,
-          timestamp: Date.now()
-        }
-      });
-      
-      // Perform partial state cleanup
-      // We keep some keys like authentication tokens to avoid forcing re-login
-      const keysToKeep = [
-        'auth_token', 
-        'auth_refresh_token',
-        'user_data'
-      ];
-      
-      await crashRecovery.secureStateCleanup(keysToKeep);
-    } catch (cleanupError) {
-      console.error('Error during secure cleanup:', cleanupError);
+
+  resetErrorBoundary = (): void => {
+    if (this.props.onReset) {
+      this.props.onReset();
     }
-  }
-  
-  /**
-   * Reset the error state and retry the app
-   */
-  handleRetry = (): void => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ hasError: false, error: null });
   };
 
-  render(): React.ReactNode {
+  render() {
     if (this.state.hasError) {
-      // Render fallback UI with retry button
+      // Render custom fallback UI if provided
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      // Default fallback UI
       return (
-        <SafeAreaView style={styles.container}>
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorTitle}>Oops, Something Went Wrong</Text>
-            <Text style={styles.errorMessage}>
-              The app encountered an unexpected error. Your data has been safely preserved.
-            </Text>
-            <Text style={styles.errorDetails}>
-              {this.state.error && this.state.error.message}
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={this.handleRetry}
-            >
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
+        <View style={styles.container}>
+          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.subtitle}>
+            We're sorry, but an unexpected error occurred.
+          </Text>
+          <View style={styles.errorDetails}>
+            <Text style={styles.errorMessage}>{this.state.error?.message}</Text>
           </View>
-        </SafeAreaView>
+          <Button title="Try Again" onPress={this.resetErrorBoundary} />
+        </View>
       );
     }
 
-    // Use the Expo Router ErrorBoundary for the rest of the app
-    return (
-      <ExpoErrorBoundary 
-        onError={(error: Error) => {
-          // Also perform secure cleanup when Expo Router catches errors
-          this.performSecureCleanup(error);
-        }}
-      >
-        {this.props.children}
-      </ExpoErrorBoundary>
-    );
+    return this.props.children;
   }
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  } as ViewStyle,
-  errorContainer: {
-    flex: 1,
-    padding: theme.spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
-  } as ViewStyle,
-  errorTitle: {
-    fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-    marginBottom: theme.spacing.lg,
-    color: theme.colors.utility.error,
+    padding: 20,
+    backgroundColor: '#f8f9fa'
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#dc3545'
+  },
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 20,
     textAlign: 'center',
-  } as TextStyle,
-  errorMessage: {
-    fontSize: theme.typography.fontSize.md,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-    color: theme.colors.text.primary,
-  } as TextStyle,
+    color: '#343a40'
+  },
   errorDetails: {
-    fontSize: theme.typography.fontSize.sm,
-    marginBottom: theme.spacing.xxl,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
-  } as TextStyle,
-  retryButton: {
-    backgroundColor: theme.colors.primary.main,
-    paddingHorizontal: theme.spacing.xxl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-  } as ViewStyle,
-  retryButtonText: {
-    color: theme.colors.neutral.white,
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-  } as TextStyle,
+    backgroundColor: '#f1f1f1',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    width: '100%'
+  },
+  errorMessage: {
+    color: '#6c757d',
+    fontSize: 14
+  }
 });
 
 export default ErrorBoundary;
