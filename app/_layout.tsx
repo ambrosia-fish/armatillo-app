@@ -236,11 +236,27 @@ function RootLayoutNav() {
     }
   }, [router]);
 
+  // Common header styles
+  const headerStyles = {
+    headerStyle: {
+      backgroundColor: theme.colors.background.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.light,
+    },
+    headerTitleStyle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.colors.text.primary,
+    },
+    headerTintColor: theme.colors.primary.main,
+  };
+
   // Screen options for BFRB tracking flow
   const screenOptions = {
     presentation: 'card',
     animation: 'slide_from_bottom',
-    headerShown: false,
+    headerShown: true, // Now showing headers
+    ...headerStyles,
     cardStyle: { 
       backgroundColor: theme.colors.background.primary
     },
@@ -276,31 +292,66 @@ function RootLayoutNav() {
             {/* BFRB Tracking Flow Screens */}
             <Stack.Screen 
               name="screens/tracking/time-screen" 
-              options={screenOptions} 
+              options={{
+                ...screenOptions,
+                title: "Time & Duration"
+              }} 
             />
             <Stack.Screen 
-              name="screens/tracking/strength-screen" 
-              options={screenOptions}
-            />
-            <Stack.Screen 
-              name="screens/modals/detail-screen" 
-              options={screenOptions} 
+              name="screens/tracking/urge-screen" 
+              options={{
+                ...screenOptions,
+                title: "Urge & Intention"
+              }} 
             />
             <Stack.Screen 
               name="screens/tracking/environment-screen" 
-              options={screenOptions} 
+              options={{
+                ...screenOptions,
+                title: "Environment"
+              }} 
             />
             <Stack.Screen 
-              name="screens/tracking/feelings-screen" 
-              options={screenOptions} 
+              name="screens/tracking/mental-screen" 
+              options={{
+                ...screenOptions,
+                title: "Mental State"
+              }} 
             />
             <Stack.Screen 
               name="screens/tracking/thoughts-screen" 
-              options={screenOptions} 
+              options={{
+                ...screenOptions,
+                title: "Thought Patterns"
+              }} 
             />
             <Stack.Screen 
-              name="screens/tracking/notes-screen" 
-              options={screenOptions} 
+              name="screens/tracking/physical-screen" 
+              options={{
+                ...screenOptions,
+                title: "Physical Sensations"
+              }} 
+            />
+            <Stack.Screen 
+              name="screens/tracking/sensory-screen" 
+              options={{
+                ...screenOptions,
+                title: "Sensory Triggers"
+              }} 
+            />
+            <Stack.Screen 
+              name="screens/tracking/submit-screen" 
+              options={{
+                ...screenOptions,
+                title: "Final Details"
+              }} 
+            />
+            <Stack.Screen 
+              name="screens/modals/detail-screen" 
+              options={{
+                ...screenOptions,
+                title: "Details"
+              }} 
             />
           </Stack>
         </ThemeProvider>
