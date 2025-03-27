@@ -7,7 +7,9 @@ import {
   RefreshControl,
   Alert,
   ViewStyle,
-  TextStyle
+  TextStyle,
+  Share,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +20,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ensureValidToken } from '@/app/utils/tokenRefresher';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 // Define the Instance type based on your backend data structure
 interface Instance {
@@ -42,6 +46,7 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
   
   // Modal state management
   const [modalVisible, setModalVisible] = useState(false);
@@ -97,6 +102,108 @@ export default function HistoryScreen() {
       setLoading(false);
       setRefreshing(false);
       setInitialLoad(false);
+    }
+  };
+
+  // Function to convert instances to CSV format
+  const convertToCSV = (data: Instance[]) => {
+    // Define CSV headers
+    const headers = [
+      'Date',
+      'Urge Strength',
+      'Type',
+      'Location',
+      'Activity',
+      'Feelings',
+      'Thoughts',
+      'Environment',
+      'Notes'
+    ];
+
+    // Create CSV content starting with headers
+    let csvContent = headers.join(',') + '\n';
+
+    // Add data rows
+    data.forEach(instance => {
+      const row = [
+        new Date(instance.createdAt).toLocaleString(), // Date
+        instance.urgeStrength !== undefined ? instance.urgeStrength : '', // Urge Strength
+        instance.automatic !== undefined ? (instance.automatic ? 'Automatic' : 'Deliberate') : '', // Type
+        instance.location ? `"${instance.location.replace(/"/g, '""')}"` : '', // Location (escape quotes)
+        instance.activity ? `"${instance.activity.replace(/"/g, '""')}"` : '', // Activity (escape quotes)
+        instance.feelings ? `"${instance.feelings.join(', ').replace(/"/g, '""')}"` : '', // Feelings (escape quotes)
+        instance.thoughts ? `"${instance.thoughts.replace(/"/g, '""')}"` : '', // Thoughts (escape quotes)
+        instance.environment ? `"${instance.environment.join(', ').replace(/"/g, '""')}"` : '', // Environment (escape quotes)
+        instance.notes ? `"${instance.notes.replace(/"/g, '""')}"` : '' // Notes (escape quotes)
+      ];
+      
+      csvContent += row.join(',') + '\n';
+    });
+
+    return csvContent;
+  };
+
+  // Function to export instances as CSV
+  const exportInstancesAsCSV = async () => {
+    try {
+      if (instances.length === 0) {
+        Alert.alert('No Data', 'There is no history data to export.');
+        return;
+      }
+
+      setExportLoading(true);
+
+      // Convert instances to CSV format
+      const csvContent = convertToCSV(instances);
+      
+      // Generate file name with current date
+      const fileName = `armatillo_history_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      if (Platform.OS === 'web') {
+        // For web: create a download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For mobile: save file and share
+        const fileUri = FileSystem.documentDirectory + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+          encoding: FileSystem.EncodingType.UTF8
+        });
+        
+        // Check if sharing is available
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Export Tracking History',
+            UTI: 'public.comma-separated-values-text'
+          });
+        } else {
+          // Fallback to Share API if Sharing is not available
+          await Share.share({
+            title: 'Armatillo History Data',
+            message: 'Armatillo History Data: ' + csvContent
+          });
+        }
+      }
+      
+      console.log('CSV export completed');
+    } catch (err) {
+      console.error('Error exporting CSV:', err);
+      Alert.alert(
+        'Export Failed',
+        'Could not export data. Please try again later.'
+      );
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -225,7 +332,7 @@ export default function HistoryScreen() {
           data={instances}
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={instances.length === 0 ? { flex: 1 } : { paddingBottom: theme.spacing.lg }}
+          contentContainerStyle={instances.length === 0 ? { flex: 1 } : { paddingBottom: theme.spacing.xxl }}
           ListEmptyComponent={!loading ? EmptyState : null}
           refreshControl={
             <RefreshControl
@@ -242,6 +349,24 @@ export default function HistoryScreen() {
           ) : null}
         />
       )}
+      
+      {/* Export CSV Button */}
+      <View style={styles.exportButtonContainer}>
+        <TouchableOpacity 
+          style={styles.exportButton}
+          onPress={exportInstancesAsCSV}
+          disabled={loading || refreshing || exportLoading || instances.length === 0}
+        >
+          {exportLoading ? (
+            <ActivityIndicator size="small" color={theme.colors.primary.contrast} />
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={18} color={theme.colors.primary.contrast} />
+              <Text style={styles.exportButtonText}>Export as CSV</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
       
       {/* Instance Details Modal */}
       <InstanceDetailsModal 
@@ -365,5 +490,29 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: theme.colors.neutral.white,
     fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
+  exportButtonContainer: {
+    position: 'absolute',
+    bottom: theme.spacing.lg,
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: Platform.OS === 'ios' ? theme.spacing.lg : theme.spacing.sm,
+  } as ViewStyle,
+  exportButton: {
+    backgroundColor: theme.colors.primary.main,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xxl,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadows.sm,
+  } as ViewStyle,
+  exportButtonText: {
+    color: theme.colors.primary.contrast,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    marginLeft: theme.spacing.sm,
   } as TextStyle,
 });
