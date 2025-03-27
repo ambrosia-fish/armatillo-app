@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
 import api from '../services/api';
+import { errorService } from '../services/ErrorService';
 
 // User data type
 interface User {
@@ -73,7 +74,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('No stored auth credentials found');
       }
     } catch (error) {
-      console.error('Failed to load authentication state:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        displayToUser: false,
+        context: { action: 'loadAuthState' }
+      });
       await clearAuthState();
     } finally {
       setIsLoading(false);
@@ -89,7 +94,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       console.log('Auth state cleared');
     } catch (error) {
-      console.error('Error clearing auth state:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        displayToUser: false,
+        context: { action: 'clearAuthState' }
+      });
     }
   };
 
@@ -133,7 +142,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Navigate to home
       router.replace('/(tabs)');
     } catch (error) {
-      console.error('Error processing auth response:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        level: 'error',
+        context: { action: 'processAuthResponse' }
+      });
       throw error;
     }
   };
@@ -146,7 +159,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await api.auth.login(email, password);
       await processAuthResponse(response);
     } catch (error) {
-      console.error('Login error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        level: 'error',
+        context: { action: 'login', email }
+      });
       Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
       throw error;
     } finally {
@@ -175,7 +192,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return response;
     } catch (error) {
-      console.error('Registration error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        level: 'error',
+        context: { action: 'register', email: userData.email }
+      });
       Alert.alert('Registration Failed', 'Could not create account. Please try again.');
       throw error;
     } finally {
@@ -193,7 +214,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           await api.auth.logout();
         } catch (error) {
-          console.warn('Logout endpoint error:', error);
+          errorService.handleError(error, {
+            source: 'auth',
+            level: 'warning',
+            displayToUser: false,
+            context: { action: 'serverLogout' }
+          });
         }
       }
       
@@ -207,7 +233,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         router.replace('/screens/auth/login');
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        context: { action: 'logout' }
+      });
       Alert.alert('Logout Failed', 'Please try again.');
     } finally {
       setIsLoading(false);
