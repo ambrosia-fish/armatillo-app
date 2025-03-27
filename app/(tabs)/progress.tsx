@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  View, 
-  Text, 
   StyleSheet, 
   FlatList, 
   TouchableOpacity, 
@@ -13,12 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import InstanceDetailsModal from '../components/InstanceDetailsModal';
+import { useAuth } from '@/app/context/AuthContext';
+import api from '@/app/services/api';
+import { InstanceDetailsModal } from '@/app/components';
 import { useFocusEffect } from '@react-navigation/native';
-import { ensureValidToken } from '../utils/tokenRefresher';
-import theme from '../constants/theme';
+import { ensureValidToken } from '@/app/utils/tokenRefresher';
+import theme from '@/app/constants/theme';
+import { View, Text } from '@/app/components';
 
 // Define the Instance type based on your backend data structure
 interface Instance {
@@ -346,7 +345,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
   } as TextStyle,
   errorContainer: {
-    backgroundColor: '#ffebee',
+    backgroundColor: theme.colors.utility.error + '15', // Using error color with opacity
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.sm,
     marginBottom: theme.spacing.lg,
