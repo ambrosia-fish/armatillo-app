@@ -16,18 +16,18 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.contentContainer}>
+      <View style={styles.headerContainer}>
         <Text style={styles.title}>Armatillo</Text>
         <Text style={styles.subtitle}>BFRB Habit Reversal Tracker</Text>
-        
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../assets/images/armatillo-placeholder-logo.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
+      </View>
+      
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image 
+          source={require('../../assets/images/armatillo-placeholder-logo.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
       
       {/* Centered Add Button */}
@@ -46,33 +46,31 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  headerContainer: {
     alignItems: 'center',
-    paddingBottom: 100, // Add space to account for the add button
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   } as ViewStyle,
   title: {
     fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold as '700',
     textAlign: 'center',
-    marginTop: theme.spacing.sm,
     color: theme.colors.text.primary,
   } as TextStyle,
   subtitle: {
     fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
-    marginBottom: theme.spacing.xl,
     color: theme.colors.text.secondary,
   } as TextStyle,
   logoContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: theme.spacing.xl,
+    paddingBottom: 80, // Add space to account for the add button
   } as ViewStyle,
   logo: {
-    width: 200,
-    height: 200,
+    width: 280,
+    height: 280,
   } as ImageStyle,
   welcomeCard: {
     ...theme.componentStyles.card.container,
