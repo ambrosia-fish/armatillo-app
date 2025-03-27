@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { OptionItem } from '../constants/optionDictionaries';
-import theme from '../constants/theme';
+import { StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { OptionItem } from '@/app/constants/optionDictionaries';
+import theme from '@/app/constants/theme';
+import { View, Text } from './Themed';
 
 interface EmojiSelectionGridProps {
   items: OptionItem[];
@@ -52,7 +53,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-  },
+    backgroundColor: 'transparent',
+  } as ViewStyle,
   gridItem: {
     width: '31%',
     marginBottom: theme.spacing.sm,
@@ -63,22 +65,22 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   selectedItem: {
     borderColor: theme.colors.primary.main,
     borderWidth: 1,
-  },
+  } as ViewStyle,
   emoji: {
     fontSize: theme.typography.fontSize.xxl,
     marginBottom: theme.spacing.xs,
-  },
+  } as TextStyle,
   label: {
     textAlign: 'center',
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.primary,
-  },
+  } as TextStyle,
   selectedLabel: {
     color: theme.colors.primary.main,
     fontWeight: theme.typography.fontWeight.medium as '500',
-  },
+  } as TextStyle,
 });
