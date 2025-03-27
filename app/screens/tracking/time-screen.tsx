@@ -1,94 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Platform, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, Platform, ViewStyle, TextStyle, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { StatusBar } from 'expo-status-bar';
-import { Picker } from '@react-native-picker/picker';
 
 import { Text, View, Button, Card, Header, CancelFooter } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
 
+// When did it happen options: relative times in minutes
+const timeOptions = [
+  { label: 'Now', value: 0 },
+  { label: '15m ago', value: 15 },
+  { label: '30m ago', value: 30 },
+  { label: '1hr ago', value: 60 },
+  { label: '2hrs ago', value: 120 },
+  { label: '3hrs ago', value: 180 },
+  { label: '6hrs ago', value: 360 },
+  { label: '12hrs ago', value: 720 },
+  { label: 'Yesterday', value: 1440 }, // 24 hours ago
+];
+
 // Duration options in minutes
-const durationOptions = [1, 2, 3, 5, 10, 15, 30, 60];
+const durationOptions = [
+  { label: '1m', value: 1 },
+  { label: '5m', value: 5 },
+  { label: '10m', value: 10 },
+  { label: '15m', value: 15 },
+  { label: '20m', value: 20 },
+  { label: '30m', value: 30 },
+  { label: '45m', value: 45 },
+  { label: '1hr', value: 60 },
+  { label: '2hrs', value: 120 },
+];
 
 export default function TimeScreen() {
   const router = useRouter();
   const { formData, updateFormData } = useFormContext();
   
-  // Default to current time if not set
-  const [selectedDate, setSelectedDate] = useState<Date>(
-    formData.time || new Date()
+  // Calculate time based on minutes ago from now
+  const getTimeFromMinutesAgo = (minutesAgo: number): Date => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - minutesAgo);
+    return date;
+  };
+
+  // Default to "now" if not set
+  const [selectedTimeOptionIndex, setSelectedTimeOptionIndex] = useState(
+    timeOptions.findIndex(option => 
+      option.value === 0
+    ) || 0
   );
   
   // Duration in minutes, default to 5 minutes if not set
-  const [duration, setDuration] = useState<number>(
-    formData.duration as number || 5
+  const [selectedDurationIndex, setSelectedDurationIndex] = useState(
+    durationOptions.findIndex(option => 
+      option.value === (formData.duration as number || 5)
+    ) || 1 // Default to 5 minutes (index 1)
   );
-  
-  // Show date picker - used for Android which doesn't show the picker by default
-  const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
-  const [showTimePicker, setShowTimePicker] = useState(Platform.OS === 'ios');
-  
-  // For Android, we need to show the picker when the user taps the button
-  const showPicker = (type: 'date' | 'time') => {
-    if (type === 'date') {
-      setShowDatePicker(true);
-    } else {
-      setShowTimePicker(true);
-    }
-  };
-  
-  // Handle date/time changes
-  const onChange = (event: any, selectedValue?: Date) => {
-    if (Platform.OS === 'android') {
-      if (event.type === 'dismissed') {
-        // User cancelled the picker
-        setShowDatePicker(false);
-        setShowTimePicker(false);
-        return;
-      }
-    }
-    
-    const currentDate = selectedValue || selectedDate;
-    setSelectedDate(currentDate);
-    
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-      setShowTimePicker(false);
-    }
-  };
-  
-  // Format time for display
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  };
-  
-  // Format date for display
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-  };
   
   // Handle continue button
   const handleContinue = () => {
+    // Get the selected time based on minutes ago
+    const eventTime = getTimeFromMinutesAgo(timeOptions[selectedTimeOptionIndex].value);
+    
     // Update form data with time and duration
     updateFormData({
-      time: selectedDate,
-      duration: duration
+      time: eventTime,
+      duration: durationOptions[selectedDurationIndex].value
     });
     
     // Navigate to next screen with updated path
     router.push('/screens/tracking/strength-screen');
+  };
+
+  // Render option buttons in a grid
+  const renderOptionButtons = (
+    options: { label: string; value: number }[],
+    selectedIndex: number,
+    onSelect: (index: number) => void
+  ) => {
+    return (
+      <View style={styles.optionsGrid}>
+        {options.map((option, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.optionButton,
+              selectedIndex === index && styles.selectedOptionButton
+            ]}
+            onPress={() => onSelect(index)}
+          >
+            <Text 
+              style={[
+                styles.optionButtonText,
+                selectedIndex === index && styles.selectedOptionButtonText
+              ]}
+            >
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
   };
   
   return (
@@ -101,50 +115,17 @@ export default function TimeScreen() {
         onLeftPress={() => router.back()}
       />
       
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         <Card containerStyle={styles.card}>
           <Text style={styles.cardTitle}>When did it happen?</Text>
           <Text style={styles.cardDescription}>
-            Please select the approximate date and time when the BFRB instance occurred.
+            Please select the approximate time when the BFRB instance occurred.
           </Text>
           
-          {Platform.OS === 'android' && (
-            <View style={styles.androidButtonContainer}>
-              <Button 
-                title={`Date: ${formatDate(selectedDate)}`}
-                onPress={() => showPicker('date')}
-                variant="secondary"
-                style={styles.dateTimeButton}
-              />
-              
-              <Button 
-                title={`Time: ${formatTime(selectedDate)}`}
-                onPress={() => showPicker('time')}
-                variant="secondary"
-                style={styles.dateTimeButton}
-              />
-            </View>
-          )}
-          
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              onChange={onChange}
-              maximumDate={new Date()}
-              style={styles.dateTimePicker}
-            />
-          )}
-          
-          {showTimePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="time"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onChange}
-              style={styles.dateTimePicker}
-            />
+          {renderOptionButtons(
+            timeOptions,
+            selectedTimeOptionIndex,
+            (index) => setSelectedTimeOptionIndex(index)
           )}
         </Card>
         
@@ -154,37 +135,13 @@ export default function TimeScreen() {
             Please select the approximate duration of the BFRB instance.
           </Text>
           
-          <View style={styles.pickerContainer}>
-            {Platform.OS === 'ios' ? (
-              <Picker
-                selectedValue={duration}
-                onValueChange={(itemValue) => setDuration(Number(itemValue))}
-                itemStyle={styles.pickerItem}
-              >
-                {durationOptions.map((option) => (
-                  <Picker.Item 
-                    key={option} 
-                    label={`${option} ${option === 1 ? 'minute' : 'minutes'}`} 
-                    value={option} 
-                  />
-                ))}
-              </Picker>
-            ) : (
-              <Button
-                title={`Duration: ${duration} ${duration === 1 ? 'minute' : 'minutes'}`}
-                onPress={() => {
-                  // For Android, we'd typically show a modal with options
-                  // This is simplified for the example
-                  const nextIndex = (durationOptions.indexOf(duration) + 1) % durationOptions.length;
-                  setDuration(durationOptions[nextIndex]);
-                }}
-                variant="secondary"
-                style={styles.dateTimeButton}
-              />
-            )}
-          </View>
+          {renderOptionButtons(
+            durationOptions,
+            selectedDurationIndex,
+            (index) => setSelectedDurationIndex(index)
+          )}
         </Card>
-      </View>
+      </ScrollView>
       
       <View style={styles.footer}>
         <Button
@@ -199,6 +156,10 @@ export default function TimeScreen() {
     </SafeAreaView>
   );
 }
+
+// Calculate the width for 3 buttons per row with spacing
+const screenWidth = Dimensions.get('window').width;
+const buttonWidth = (screenWidth - (theme.spacing.lg * 2) - (theme.spacing.lg * 2) - (theme.spacing.md * 2)) / 3;
 
 const styles = StyleSheet.create({
   container: {
@@ -224,26 +185,33 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.lg,
   } as TextStyle,
-  dateTimePicker: {
-    marginTop: theme.spacing.md,
-    marginBottom: Platform.OS === 'ios' ? theme.spacing.xl : 0,
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   } as ViewStyle,
-  androidButtonContainer: {
-    marginBottom: theme.spacing.lg,
-  } as ViewStyle,
-  dateTimeButton: {
+  optionButton: {
+    width: buttonWidth,
+    paddingVertical: theme.spacing.md,
     marginBottom: theme.spacing.md,
-  } as ViewStyle,
-  pickerContainer: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     borderColor: theme.colors.border.input,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.background.secondary,
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
-  pickerItem: {
+  selectedOptionButton: {
+    backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.dark,
+  } as ViewStyle,
+  optionButtonText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
+  } as TextStyle,
+  selectedOptionButtonText: {
+    color: theme.colors.text.inverse,
+    fontWeight: theme.typography.fontWeight.bold as '700',
   } as TextStyle,
   footer: {
     padding: theme.spacing.lg,
