@@ -21,11 +21,6 @@ const timeOptions = [
   { id: '15m', label: '15m ago' },
   { id: '30m', label: '30m ago' },
   { id: '1hr', label: '1hr ago' },
-  { id: '2hrs', label: '2hrs ago' },
-  { id: '3hrs', label: '3hrs ago' },
-  { id: '6hrs', label: '6hrs ago' },
-  { id: '12hrs', label: '12hrs ago' },
-  { id: 'yesterday', label: 'Yesterday' },
 ];
 
 // Duration options
@@ -34,11 +29,6 @@ const durationOptions = [
   { id: '5m', label: '5m', value: 5 },
   { id: '10m', label: '10m', value: 10 },
   { id: '15m', label: '15m', value: 15 },
-  { id: '20m', label: '20m', value: 20 },
-  { id: '30m', label: '30m', value: 30 },
-  { id: '45m', label: '45m', value: 45 },
-  { id: '1hr', label: '1hr', value: 60 },
-  { id: '2hr', label: '2hr+', value: 120 },
 ];
 
 export default function TimeScreen() {
@@ -58,16 +48,6 @@ export default function TimeScreen() {
         return new Date(now.getTime() - 30 * 60 * 1000);
       case '1hr':
         return new Date(now.getTime() - 60 * 60 * 1000);
-      case '2hrs':
-        return new Date(now.getTime() - 2 * 60 * 60 * 1000);
-      case '3hrs':
-        return new Date(now.getTime() - 3 * 60 * 60 * 1000);
-      case '6hrs':
-        return new Date(now.getTime() - 6 * 60 * 60 * 1000);
-      case '12hrs':
-        return new Date(now.getTime() - 12 * 60 * 60 * 1000);
-      case 'yesterday':
-        return new Date(now.getTime() - 24 * 60 * 60 * 1000);
       default:
         return now;
     }
@@ -153,8 +133,8 @@ export default function TimeScreen() {
               <TouchableOpacity
                 key={option.id}
                 style={[
-                  styles.optionButton,
-                  selectedTime === option.id && styles.optionButtonSelected
+                  styles.timeOptionButton,
+                  selectedTime === option.id && styles.timeOptionButtonSelected
                 ]}
                 onPress={() => setSelectedTime(option.id)}
                 activeOpacity={0.7}
@@ -163,8 +143,8 @@ export default function TimeScreen() {
                 accessibilityState={{ selected: selectedTime === option.id }}
               >
                 <Text style={[
-                  styles.optionButtonText,
-                  selectedTime === option.id && styles.optionButtonTextSelected
+                  styles.timeOptionText,
+                  selectedTime === option.id && styles.timeOptionTextSelected
                 ]}>
                   {option.label}
                 </Text>
@@ -185,8 +165,8 @@ export default function TimeScreen() {
               <TouchableOpacity
                 key={option.id}
                 style={[
-                  styles.optionButton,
-                  selectedDuration === option.id && styles.optionButtonSelected
+                  styles.timeOptionButton,
+                  selectedDuration === option.id && styles.timeOptionButtonSelected
                 ]}
                 onPress={() => setSelectedDuration(option.id)}
                 activeOpacity={0.7}
@@ -195,8 +175,8 @@ export default function TimeScreen() {
                 accessibilityState={{ selected: selectedDuration === option.id }}
               >
                 <Text style={[
-                  styles.optionButtonText,
-                  selectedDuration === option.id && styles.optionButtonTextSelected
+                  styles.timeOptionText,
+                  selectedDuration === option.id && styles.timeOptionTextSelected
                 ]}>
                   {option.label}
                 </Text>
@@ -263,6 +243,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: theme.colors.background.card,
@@ -286,11 +267,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -4,
-    marginVertical: -4,
   },
-  optionButton: {
+  timeOptionButton: {
     flex: 1,
-    minWidth: '33%',
     margin: 4,
     paddingVertical: 12,
     paddingHorizontal: 8,
@@ -298,17 +277,19 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: '45%',
   },
-  optionButtonSelected: {
+  timeOptionButtonSelected: {
     backgroundColor: theme.colors.primary.main,
   },
-  optionButtonText: {
-    fontSize: 14,
+  timeOptionText: {
+    fontSize: 16,
     color: theme.colors.text.primary,
     fontWeight: '500',
   },
-  optionButtonTextSelected: {
+  timeOptionTextSelected: {
     color: theme.colors.primary.contrast,
+    fontWeight: 'bold',
   },
   footer: {
     padding: 16,
