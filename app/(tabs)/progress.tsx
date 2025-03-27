@@ -22,6 +22,7 @@ import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import OptionDictionaries from '@/app/constants/optionDictionaries';
 
 // Define the Instance type based on your backend data structure
 interface Instance {
@@ -31,12 +32,18 @@ interface Instance {
   user_id: string;
   createdAt: string;
   urgeStrength?: number;
+  intentionType?: string;
   automatic?: boolean;
   location?: string;
   activity?: string;
+  duration?: string | number;
+  selectedEmotions?: string[];
+  selectedEnvironments?: string[];
+  selectedSensations?: string[];
+  selectedThoughts?: string[];
   feelings?: string[];
-  thoughts?: string;
   environment?: string[];
+  thoughts?: string;
   notes?: string;
 }
 
@@ -105,6 +112,16 @@ export default function HistoryScreen() {
     }
   };
 
+  // Helper function to convert option IDs to readable labels
+  const getOptionLabels = (optionIds?: string[], optionList?: any[]) => {
+    if (!optionIds || !optionList) return '';
+    
+    return optionIds.map(id => {
+      const option = optionList.find(opt => opt.id === id);
+      return option ? option.label : id;
+    }).join(', ');
+  };
+
   // Function to convert instances to CSV format
   const convertToCSV = (data: Instance[]) => {
     // Define CSV headers
@@ -112,9 +129,11 @@ export default function HistoryScreen() {
       'Date',
       'Urge Strength',
       'Type',
+      'Duration',
       'Location',
       'Activity',
-      'Feelings',
+      'Emotions',
+      'Physical Sensations',
       'Thoughts',
       'Environment',
       'Notes'
@@ -125,15 +144,47 @@ export default function HistoryScreen() {
 
     // Add data rows
     data.forEach(instance => {
+      // Get type (intentionType is the new field, automatic is the legacy field)
+      const type = instance.intentionType 
+        ? (instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional')
+        : (instance.automatic !== undefined ? (instance.automatic ? 'Automatic' : 'Deliberate') : '');
+        
+      // Format duration
+      const duration = instance.duration 
+        ? (typeof instance.duration === 'number' ? `${instance.duration} min` : instance.duration) 
+        : '';
+        
+      // Get emotions labels
+      const emotions = instance.selectedEmotions 
+        ? getOptionLabels(instance.selectedEmotions, OptionDictionaries.feelingOptions)
+        : (instance.feelings ? instance.feelings.join(', ') : '');
+        
+      // Get environment labels
+      const environment = instance.selectedEnvironments 
+        ? getOptionLabels(instance.selectedEnvironments, OptionDictionaries.environmentOptions)
+        : (instance.environment ? instance.environment.join(', ') : '');
+        
+      // Get sensation labels (new field, no legacy equivalent)
+      const sensations = instance.selectedSensations 
+        ? getOptionLabels(instance.selectedSensations, OptionDictionaries.sensationOptions)
+        : '';
+        
+      // Get thought labels
+      const thoughts = instance.selectedThoughts 
+        ? getOptionLabels(instance.selectedThoughts, OptionDictionaries.thoughtOptions)
+        : (instance.thoughts || '');
+
       const row = [
         new Date(instance.createdAt).toLocaleString(), // Date
         instance.urgeStrength !== undefined ? instance.urgeStrength : '', // Urge Strength
-        instance.automatic !== undefined ? (instance.automatic ? 'Automatic' : 'Deliberate') : '', // Type
+        type, // Type
+        duration, // Duration
         instance.location ? `"${instance.location.replace(/"/g, '""')}"` : '', // Location (escape quotes)
         instance.activity ? `"${instance.activity.replace(/"/g, '""')}"` : '', // Activity (escape quotes)
-        instance.feelings ? `"${instance.feelings.join(', ').replace(/"/g, '""')}"` : '', // Feelings (escape quotes)
-        instance.thoughts ? `"${instance.thoughts.replace(/"/g, '""')}"` : '', // Thoughts (escape quotes)
-        instance.environment ? `"${instance.environment.join(', ').replace(/"/g, '""')}"` : '', // Environment (escape quotes)
+        emotions ? `"${emotions.replace(/"/g, '""')}"` : '', // Emotions (escape quotes)
+        sensations ? `"${sensations.replace(/"/g, '""')}"` : '', // Physical Sensations (escape quotes)
+        thoughts ? `"${thoughts.replace(/"/g, '""')}"` : '', // Thoughts (escape quotes)
+        environment ? `"${environment.replace(/"/g, '""')}"` : '', // Environment (escape quotes)
         instance.notes ? `"${instance.notes.replace(/"/g, '""')}"` : '' // Notes (escape quotes)
       ];
       
@@ -271,10 +322,15 @@ export default function HistoryScreen() {
           </View>
         )}
         
-        {item.automatic !== undefined && (
+        {(item.intentionType !== undefined || item.automatic !== undefined) && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Type:</Text>
-            <Text style={styles.infoValue}>{item.automatic ? 'Automatic' : 'Deliberate'}</Text>
+            <Text style={styles.infoValue}>
+              {item.intentionType 
+                ? (item.intentionType === 'automatic' ? 'Automatic' : 'Intentional')
+                : (item.automatic ? 'Automatic' : 'Deliberate')
+              }
+            </Text>
           </View>
         )}
         
