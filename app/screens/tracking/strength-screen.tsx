@@ -41,7 +41,7 @@ export default function StrengthScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/screens/modals/detail-screen');
+    router.push('/environment-screen');
   };
   
   // Get description text based on strength value
