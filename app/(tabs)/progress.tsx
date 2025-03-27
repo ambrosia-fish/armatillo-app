@@ -156,7 +156,7 @@ export default function HistoryScreen() {
         
       // Get emotions labels
       const emotions = instance.selectedEmotions 
-        ? getOptionLabels(instance.selectedEmotions, OptionDictionaries.feelingOptions)
+        ? getOptionLabels(instance.selectedEmotions, OptionDictionaries.emotionOptions)
         : (instance.feelings ? instance.feelings.join(', ') : '');
         
       // Get environment labels
@@ -174,18 +174,26 @@ export default function HistoryScreen() {
         ? getOptionLabels(instance.selectedThoughts, OptionDictionaries.thoughtOptions)
         : (instance.thoughts || '');
 
+      // Function to escape quotes and handle fields
+      const escapeField = (field: any) => {
+        if (field === undefined || field === null || field === '') return '';
+        const stringField = String(field);
+        return `"${stringField.replace(/"/g, '""')}"`;
+      };
+
+      // Create row with proper data types and escaped quotes
       const row = [
         new Date(instance.createdAt).toLocaleString(), // Date
         instance.urgeStrength !== undefined ? instance.urgeStrength : '', // Urge Strength
-        type, // Type
-        duration, // Duration
-        instance.location ? `"${instance.location.replace(/"/g, '""')}"` : '', // Location (escape quotes)
-        instance.activity ? `"${instance.activity.replace(/"/g, '""')}"` : '', // Activity (escape quotes)
-        emotions ? `"${emotions.replace(/"/g, '""')}"` : '', // Emotions (escape quotes)
-        sensations ? `"${sensations.replace(/"/g, '""')}"` : '', // Physical Sensations (escape quotes)
-        thoughts ? `"${thoughts.replace(/"/g, '""')}"` : '', // Thoughts (escape quotes)
-        environment ? `"${environment.replace(/"/g, '""')}"` : '', // Environment (escape quotes)
-        instance.notes ? `"${instance.notes.replace(/"/g, '""')}"` : '' // Notes (escape quotes)
+        escapeField(type), // Type
+        escapeField(duration), // Duration
+        escapeField(instance.location), // Location
+        escapeField(instance.activity), // Activity
+        escapeField(emotions), // Emotions
+        escapeField(sensations), // Physical Sensations
+        escapeField(thoughts), // Thoughts
+        escapeField(environment), // Environment
+        escapeField(instance.notes) // Notes
       ];
       
       csvContent += row.join(',') + '\n';
@@ -203,6 +211,7 @@ export default function HistoryScreen() {
       }
 
       setExportLoading(true);
+      console.log('Starting CSV export with', instances.length, 'instances');
 
       // Convert instances to CSV format
       const csvContent = convertToCSV(instances);
