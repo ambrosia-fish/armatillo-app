@@ -28,13 +28,6 @@ export default function HomeScreen() {
         />
       </View>
       
-      <View style={styles.welcomeCard}>
-        <Text style={styles.welcomeTitle}>Welcome!</Text>
-        <Text style={styles.welcomeText}>
-          Track your BFRB habits and record your progress with habit reversal training.
-        </Text>
-      </View>
-      
       {/* Centered Add Button */}
       <View style={styles.addButtonContainer}>
         <TouchableOpacity style={styles.addButton} onPress={addNewEntry}>
