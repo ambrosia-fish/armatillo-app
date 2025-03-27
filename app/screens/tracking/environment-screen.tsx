@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, ViewStyle, TextStyle, ScrollView } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  TextInput, 
+  ViewStyle, 
+  TextStyle, 
+  ScrollView,
+  TouchableOpacity,
+  Text as RNText
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
-import { Text, Button, Card, EmojiSelectionGrid, CancelFooter } from '@/app/components';
+import { Text, EmojiSelectionGrid } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
 import theme from '@/app/constants/theme';
 
@@ -68,16 +78,20 @@ export default function EnvironmentScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       
-      {/* Header */}
+      {/* Basic React Native Header */}
       <View style={styles.header}>
-        <Button 
+        <TouchableOpacity 
           onPress={() => router.back()} 
-          variant="icon" 
-          icon="x" 
-          style={styles.closeButton}
-        />
-        <Text style={styles.headerTitle}>Environment</Text>
-        <View style={styles.placeholder} />
+          style={styles.backButton}
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.primary.main} />
+        </TouchableOpacity>
+        
+        <RNText style={styles.headerTitle}>Environment</RNText>
+        
+        {/* Empty view for layout balance */}
+        <View style={styles.headerRight} />
       </View>
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
@@ -102,19 +116,28 @@ export default function EnvironmentScreen() {
             onChangeText={setEnvironmentDetails}
             multiline
             numberOfLines={3}
+            textAlignVertical="top"
           />
         </View>
       </ScrollView>
       
       <View style={styles.footer}>
-        <Button
-          title="Continue"
-          onPress={handleContinue}
-          size="large"
+        <TouchableOpacity
           style={styles.continueButton}
-        />
+          onPress={handleContinue}
+          activeOpacity={0.8}
+        >
+          <RNText style={styles.continueButtonText}>Continue</RNText>
+        </TouchableOpacity>
         
-        <CancelFooter onCancel={() => router.back()} />
+        <TouchableOpacity 
+          style={styles.cancelButton} 
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="close-circle-outline" size={18} color={theme.colors.secondary.main} />
+          <RNText style={styles.cancelButtonText}>Cancel</RNText>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -136,15 +159,15 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   headerTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold as '700',
+    fontWeight: 'bold',
     color: theme.colors.text.primary,
     textAlign: 'center',
   } as TextStyle,
-  closeButton: {
-    padding: 0,
+  backButton: {
+    padding: 8,
   } as ViewStyle,
-  placeholder: {
-    width: 24, // Same width as the close button for balanced header
+  headerRight: {
+    width: 40,
   } as ViewStyle,
   scrollView: {
     flex: 1,
@@ -193,6 +216,27 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
   continueButton: {
+    backgroundColor: theme.colors.primary.main,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: theme.spacing.md,
   } as ViewStyle,
+  continueButtonText: {
+    color: theme.colors.primary.contrast,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: 'bold',
+  } as TextStyle,
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+  } as ViewStyle,
+  cancelButtonText: {
+    marginLeft: 8,
+    color: theme.colors.secondary.main,
+    fontSize: theme.typography.fontSize.md,
+  } as TextStyle,
 });
