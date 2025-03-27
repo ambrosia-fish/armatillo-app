@@ -1,9 +1,9 @@
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import theme from '../constants/theme';
-import { useColorScheme } from '../hooks/useColorScheme';
-import AuthGuard from '../components/AuthGuard';
+import theme from '@/app/constants/theme';
+import { useColorScheme } from '@/app/hooks/useColorScheme';
+import { AuthGuard } from '@/app/components';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
