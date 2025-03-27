@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: or than 0.1,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   } as ViewStyle,
