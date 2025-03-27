@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../utils/storage';
+import storage, { STORAGE_KEYS } from '../utils/storage';
 import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
 import api from '../services/api';
 
@@ -57,11 +56,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const loadAuthState = async () => {
     try {
       console.log('Loading auth state...');
-      const storedToken = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+      const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
       console.log('Stored token found:', storedToken ? 'yes' : 'no');
       
-      const storedUserJson = await AsyncStorage.getItem(STORAGE_KEYS.USER);
-      const storedUser = storedUserJson ? JSON.parse(storedUserJson) : null;
+      const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
       console.log('Stored user found:', storedUser ? 'yes' : 'no');
 
       if (storedToken && storedUser) {
@@ -69,7 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(storedUser);
         
         if (storedUser.displayName) {
-          await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
+          await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
         }
       } else {
         console.log('No stored auth credentials found');
@@ -126,7 +124,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       );
       
       // Store user data
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      await storage.setObject(STORAGE_KEYS.USER, user);
       
       // Update state
       setToken(token);
@@ -204,9 +202,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Navigate based on platform
       if (Platform.OS === 'web') {
-        window.location.href = '/login';
+        window.location.href = '/screens/auth/login';
       } else {
-        router.replace('/login');
+        router.replace('/screens/auth/login');
       }
     } catch (error) {
       console.error('Logout error:', error);
