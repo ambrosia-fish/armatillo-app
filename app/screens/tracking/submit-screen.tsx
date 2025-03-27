@@ -7,13 +7,16 @@ import {
   ActivityIndicator, 
   Alert,
   ViewStyle, 
-  TextStyle
+  TextStyle,
+  TouchableOpacity,
+  Text as RNText
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
-import { Text, Button, CancelFooter } from '@/app/components';
+import { Text } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
 import { useAuth } from '@/app/context/AuthContext';
 import api from '@/app/services/api';
@@ -123,16 +126,20 @@ export default function SubmitScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
       
-      {/* Header */}
+      {/* Basic React Native Header */}
       <View style={styles.header}>
-        <Button 
+        <TouchableOpacity 
           onPress={() => router.back()} 
-          variant="icon" 
-          icon="x" 
-          style={styles.closeButton}
-        />
-        <Text style={styles.headerTitle}>Final Details</Text>
-        <View style={styles.placeholder} />
+          style={styles.backButton}
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.primary.main} />
+        </TouchableOpacity>
+        
+        <RNText style={styles.headerTitle}>Final Details</RNText>
+        
+        {/* Empty view for layout balance */}
+        <View style={styles.headerRight} />
       </View>
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
@@ -159,18 +166,26 @@ export default function SubmitScreen() {
         {submitting ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary.main} />
-            <Text style={styles.loadingText}>Submitting...</Text>
+            <RNText style={styles.loadingText}>Submitting...</RNText>
           </View>
         ) : (
           <>
-            <Button
-              title="Submit"
-              onPress={handleSubmit}
-              size="large"
+            <TouchableOpacity
               style={styles.submitButton}
-            />
+              onPress={handleSubmit}
+              activeOpacity={0.8}
+            >
+              <RNText style={styles.submitButtonText}>Submit</RNText>
+            </TouchableOpacity>
             
-            <CancelFooter onCancel={() => router.back()} />
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => router.back()}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close-circle-outline" size={18} color={theme.colors.secondary.main} />
+              <RNText style={styles.cancelButtonText}>Cancel</RNText>
+            </TouchableOpacity>
           </>
         )}
       </View>
@@ -194,15 +209,15 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   headerTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold as '700',
+    fontWeight: 'bold',
     color: theme.colors.text.primary,
     textAlign: 'center',
   } as TextStyle,
-  closeButton: {
-    padding: 0,
+  backButton: {
+    padding: 8,
   } as ViewStyle,
-  placeholder: {
-    width: 24, // Same width as the close button for balanced header
+  headerRight: {
+    width: 40,
   } as ViewStyle,
   scrollView: {
     flex: 1,
@@ -250,8 +265,29 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
   submitButton: {
+    backgroundColor: theme.colors.primary.main,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: theme.spacing.md,
   } as ViewStyle,
+  submitButtonText: {
+    color: theme.colors.primary.contrast,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: 'bold',
+  } as TextStyle,
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+  } as ViewStyle,
+  cancelButtonText: {
+    marginLeft: 8,
+    color: theme.colors.secondary.main,
+    fontSize: theme.typography.fontSize.md,
+  } as TextStyle,
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
