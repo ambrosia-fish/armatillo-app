@@ -90,7 +90,7 @@ export default function FeelingsScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/screens/tracking/thoughts-screen');
+    router.push('/thoughts-screen');
   };
   
   return (
