@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { Text, Button, Card, Header, CancelFooter } from '../../components';
-import { useFormContext } from '../../context/FormContext';
-import theme from '../../constants/theme';
+import { Text, Button, Card, Header, CancelFooter } from '@/app/components';
+import { useFormContext } from '@/app/context/FormContext';
+import theme from '@/app/constants/theme';
 
 export default function StrengthScreen() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function StrengthScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/environment-screen');
+    router.push('/screens/tracking/environment-screen');
   };
   
   // Get description text based on strength value
