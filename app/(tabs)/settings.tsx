@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import { StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
-import theme from '../constants/theme';
+import theme from '@/app/constants/theme';
+import { View, Text } from '@/app/components';
 
 export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
