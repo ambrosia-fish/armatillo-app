@@ -4,42 +4,42 @@ import { OptionItem } from '../constants/optionDictionaries';
 import theme from '../constants/theme';
 
 interface EmojiSelectionGridProps {
-  options: OptionItem[];
-  selectedItems: string[];
-  onSelect: (id: string) => void;
-  multiSelect?: boolean;
+  items: OptionItem[];
+  selectedIds: string[];
+  onToggleItem: (id: string) => void;
+  numColumns?: number;
 }
 
 export default function EmojiSelectionGrid({
-  options,
-  selectedItems,
-  onSelect,
-  multiSelect = true,
+  items,
+  selectedIds,
+  onToggleItem,
+  numColumns = 3,
 }: EmojiSelectionGridProps) {
 
   const handleSelection = (id: string) => {
-    onSelect(id);
+    onToggleItem(id);
   };
 
   return (
     <View style={styles.grid}>
-      {options.map((option) => (
+      {items.map((item) => (
         <TouchableOpacity
-          key={option.id}
+          key={item.id}
           style={[
             styles.gridItem,
-            selectedItems.includes(option.id) && styles.selectedItem,
+            selectedIds.includes(item.id) && styles.selectedItem,
           ]}
-          onPress={() => handleSelection(option.id)}
+          onPress={() => handleSelection(item.id)}
         >
-          <Text style={styles.emoji}>{option.emoji}</Text>
+          <Text style={styles.emoji}>{item.emoji}</Text>
           <Text
             style={[
               styles.label,
-              selectedItems.includes(option.id) && styles.selectedLabel,
+              selectedIds.includes(item.id) && styles.selectedLabel,
             ]}
           >
-            {option.label}
+            {item.label}
           </Text>
         </TouchableOpacity>
       ))}
