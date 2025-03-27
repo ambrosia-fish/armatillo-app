@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import theme from '../constants/theme';
+import theme from '@/app/constants/theme';
 
 interface CancelFooterProps {
   onCancel?: () => void; // Optional callback for additional actions on cancel
