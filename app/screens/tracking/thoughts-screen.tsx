@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { Text, Button, Card, Header, CancelFooter, EmojiSelectionGrid } from '../../components';
-import { useFormContext } from '../../context/FormContext';
-import theme from '../../constants/theme';
+import { Text, Button, Card, Header, CancelFooter, EmojiSelectionGrid } from '@/app/components';
+import { useFormContext } from '@/app/context/FormContext';
+import theme from '@/app/constants/theme';
 
 // Thought pattern options
 const thoughtOptions = [
@@ -55,7 +55,7 @@ export default function ThoughtsScreen() {
     });
     
     // Navigate to next screen with updated path
-    router.push('/notes-screen');
+    router.push('/screens/tracking/notes-screen');
   };
   
   return (
