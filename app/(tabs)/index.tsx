@@ -16,16 +16,18 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Armatillo</Text>
-      <Text style={styles.subtitle}>BFRB Habit Reversal Tracker</Text>
-      
-      {/* Logo */}
-      <View style={styles.logoContainer}>
-        <Image 
-          source={require('../../assets/images/armatillo-placeholder-logo.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
+      <View style={styles.contentContainer}>
+        <Text style={styles.title}>Armatillo</Text>
+        <Text style={styles.subtitle}>BFRB Habit Reversal Tracker</Text>
+        
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../assets/images/armatillo-placeholder-logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
       </View>
       
       {/* Centered Add Button */}
@@ -43,6 +45,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
+  } as ViewStyle,
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 100, // Add space to account for the add button
   } as ViewStyle,
   title: {
     fontSize: theme.typography.fontSize.xxl,
