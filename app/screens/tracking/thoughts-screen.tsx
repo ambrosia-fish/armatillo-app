@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, TextStyle, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Stack } from 'expo-router';
 
 import { Text, Button, Card, Header, CancelFooter, EmojiSelectionGrid } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
@@ -36,6 +37,11 @@ export default function ThoughtsScreen() {
     formData.selectedThoughts || []
   );
   
+  // Additional details for thoughts
+  const [thoughtDetails, setThoughtDetails] = useState<string>(
+    formData.thoughtDetails || ''
+  );
+  
   // Toggle thought selection
   const toggleThought = (thoughtId: string) => {
     setSelectedThoughts(prev => {
@@ -51,7 +57,8 @@ export default function ThoughtsScreen() {
   const handleContinue = () => {
     // Update form data
     updateFormData({
-      selectedThoughts
+      selectedThoughts,
+      thoughtDetails
     });
     
     // Navigate to next screen with updated path
@@ -59,16 +66,18 @@ export default function ThoughtsScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <StatusBar style="auto" />
       
-      <Header 
-        title="Thought Patterns" 
-        leftIcon="arrow-back"
-        onLeftPress={() => router.back()}
+      {/* Hide the default navigation header and use Stack.Screen to configure it */}
+      <Stack.Screen 
+        options={{
+          title: "Thought Patterns",
+          headerBackTitle: "Back"
+        }}
       />
       
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <Card containerStyle={styles.card}>
           <Text style={styles.cardTitle}>What thought patterns did you notice?</Text>
           <Text style={styles.cardDescription}>
@@ -82,11 +91,22 @@ export default function ThoughtsScreen() {
             numColumns={3}
           />
           
+          <TextInput
+            style={styles.input}
+            placeholder="Any additional details about your thought patterns..."
+            placeholderTextColor={theme.colors.text.tertiary}
+            value={thoughtDetails}
+            onChangeText={setThoughtDetails}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+          
           <Text style={styles.helpText}>
             Identifying thought patterns can help you recognize triggers and develop alternative responses.
           </Text>
         </Card>
-      </View>
+      </ScrollView>
       
       <View style={styles.footer}>
         <Button
@@ -109,7 +129,10 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   content: {
     flex: 1,
+  } as ViewStyle,
+  scrollContent: {
     padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   } as ViewStyle,
   card: {
     marginBottom: theme.spacing.lg,
@@ -126,11 +149,23 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.lg,
   } as TextStyle,
+  input: {
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    backgroundColor: theme.colors.background.secondary,
+    textAlignVertical: 'top',
+    minHeight: 100,
+  } as TextStyle,
   helpText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.tertiary,
     fontStyle: 'italic',
-    marginTop: theme.spacing.lg,
     textAlign: 'center',
   } as TextStyle,
   footer: {
