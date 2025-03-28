@@ -11,16 +11,35 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="Track habits during habit reversal training for BFRBs" />
+        
+        {/* PWA meta tags for iOS */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Armatillo" />
+        
+        {/* Apple touch icons */}
+        <link rel="apple-touch-icon" href="/assets/images/icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png" />
+        
+        {/* Favicon */}
+        <link rel="icon" href="/assets/images/favicon.png" />
+        
+        {/* Web manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ffffff" />
 
-        {/* 
-          Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 
-          However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
-        */}
+        {/* Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 
+            However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line. */}
         <ScrollViewStyleReset />
 
         {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
-        {/* Add any additional <head> elements that you want globally available on web... */}
+        
+        {/* Add PWA detection scripts */}
+        <script dangerouslySetInnerHTML={{ __html: pwaDetectionScript }} />
       </head>
       <body>{children}</body>
     </html>
@@ -35,4 +54,26 @@ body {
   body {
     background-color: #000;
   }
-}`;
+}
+
+/* Add PWA standalone styles */
+.pwa-standalone {
+  /* Add any specific standalone mode styles here */
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+}
+`;
+
+const pwaDetectionScript = `
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', function() {
+    // iOS standalone mode detection
+    if (window.navigator.standalone === true) {
+      console.log("App is running in standalone mode (iOS)");
+      document.documentElement.classList.add('pwa-standalone');
+    }
+  });
+}
+`;
