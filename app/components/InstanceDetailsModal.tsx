@@ -157,7 +157,11 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               <Text style={styles.message}>No details found</Text>
             </View>
           ) : (
-            <ScrollView style={styles.content}>
+            <ScrollView 
+              style={styles.content}
+              contentContainerStyle={styles.contentContainer}
+              showsVerticalScrollIndicator={true}
+            >
               {/* When */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>When</Text>
@@ -245,6 +249,9 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
                   <Text style={styles.notes}>{instance.notes}</Text>
                 </View>
               )}
+              
+              {/* Simple padding view at the bottom */}
+              <View style={{ height: 40 }} />
             </ScrollView>
           )}
         </View>
@@ -286,7 +293,11 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
   } as TextStyle,
   content: {
+    flex: 1,
+  } as ViewStyle,
+  contentContainer: {
     padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   } as ViewStyle,
   section: {
     marginBottom: theme.spacing.lg,
@@ -326,6 +337,7 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
     lineHeight: theme.typography.lineHeight.relaxed,
+    marginBottom: theme.spacing.md,
   } as TextStyle,
   detailsText: {
     fontSize: theme.typography.fontSize.md,
