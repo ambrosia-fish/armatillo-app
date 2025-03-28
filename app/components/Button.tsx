@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   TouchableOpacity, 
   Text, 
@@ -7,9 +7,11 @@ import {
   StyleProp, 
   ViewStyle, 
   TextStyle,
-  TouchableOpacityProps
+  TouchableOpacityProps,
+  Platform
 } from 'react-native';
 import theme from '@/app/constants/theme';
+import { isInStandaloneMode } from '@/app/utils/pwaUtils';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'text';
 export type ButtonSize = 'small' | 'medium' | 'large';
@@ -23,6 +25,8 @@ interface ButtonProps extends TouchableOpacityProps {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   onPress: () => void;
+  className?: string;
+  fixed?: boolean; // For fixed position buttons at the bottom of the screen
 }
 
 /**
@@ -37,8 +41,30 @@ const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   onPress,
+  className,
+  fixed = false,
   ...rest
 }) => {
+  const [isPwa, setIsPwa] = useState(false);
+  
+  // Detect if running in PWA mode
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const isStandalone = isInStandaloneMode();
+      setIsPwa(isStandalone);
+      
+      // Add PWA-specific class if this is a fixed position button
+      if (isStandalone && fixed && typeof document !== 'undefined' && className) {
+        setTimeout(() => {
+          const buttonElement = document.querySelector(`.${className}`);
+          if (buttonElement) {
+            buttonElement.classList.add('pwa-fixed-button');
+          }
+        }, 300);
+      }
+    }
+  }, [fixed, className]);
+
   // Determine container style based on variant, size, and disabled state
   const getContainerStyle = () => {
     // Get base style from theme
@@ -64,7 +90,12 @@ const Button: React.FC<ButtonProps> = ({
     // Apply size styles
     const sizeStyle = buttonStyles[`${size}Container`];
     
-    return [baseStyle, sizeStyle, style];
+    // Add special styles for fixed position buttons in PWA mode
+    const fixedStyle = fixed && isPwa && Platform.OS === 'web' 
+      ? { marginBottom: 'env(safe-area-inset-bottom, 0px)' } 
+      : null;
+    
+    return [baseStyle, sizeStyle, fixedStyle, style];
   };
   
   // Determine text style based on variant and disabled state
@@ -101,6 +132,7 @@ const Button: React.FC<ButtonProps> = ({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
+      className={className}
       {...rest}
     >
       {loading ? (
@@ -120,6 +152,7 @@ const buttonStyles = StyleSheet.create({
   smallContainer: {
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
+    minHeight: 44, // Ensure touchable area meets iOS guidelines
   },
   smallText: {
     fontSize: theme.typography.fontSize.sm,
@@ -127,6 +160,7 @@ const buttonStyles = StyleSheet.create({
   mediumContainer: {
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
+    minHeight: 44, // Ensure touchable area meets iOS guidelines
   },
   mediumText: {
     fontSize: theme.typography.fontSize.md,
@@ -134,6 +168,7 @@ const buttonStyles = StyleSheet.create({
   largeContainer: {
     paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing.xl,
+    minHeight: 48, // Larger minimum height for large buttons
   },
   largeText: {
     fontSize: theme.typography.fontSize.lg,
