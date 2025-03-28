@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    
+    <!-- PWA meta tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Armatillo" />
+    
+    <!-- Apple touch icons -->
+    <link rel="apple-touch-icon" href="/assets/images/icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png" />
+    
+    <!-- Web manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Theme color -->
+    <meta name="theme-color" content="#ffffff" />
+    
+    <!-- Title will be replaced by Expo during build -->
+    <title>%WEB_TITLE%</title>
+    
+    <!-- Service worker registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+    
+    <!-- Meta tags specified from the config -->
+    %META_TAGS%
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="%WEB_PUBLIC_URL%favicon.png" />
+
+    <!-- Web Manifest -->
+    <link rel="manifest" href="%WEB_PUBLIC_URL%manifest.json" />
+    
+    <!-- Splash screen styles -->
+    <style>
+      body, html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+      }
+      .splash-container {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        background-color: #ffffff;
+      }
+      .splash-image {
+        width: 150px;
+        height: 150px;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Root element for your Expo app -->
+    <div id="root">
+      <!-- Initial splash screen until app loads -->
+      <div class="splash-container">
+        <img class="splash-image" src="%WEB_PUBLIC_URL%/assets/images/splash-icon.png" alt="Armatillo" />
+      </div>
+    </div>
+    
+    <!-- Expo generated script bundles -->
+    %BODY_SCRIPTS%
+  </body>
+</html>
