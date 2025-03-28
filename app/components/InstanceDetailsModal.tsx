@@ -157,11 +157,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               <Text style={styles.message}>No details found</Text>
             </View>
           ) : (
-            <ScrollView 
-              style={styles.content}
-              contentContainerStyle={styles.contentContainer}
-              showsVerticalScrollIndicator={true}
-            >
+            <ScrollView style={styles.content}>
               {/* When */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>When</Text>
@@ -246,14 +242,9 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               {instance.notes && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Notes</Text>
-                  <View style={styles.notesContainer}>
-                    <Text style={styles.notes}>{instance.notes}</Text>
-                  </View>
+                  <Text style={styles.notes}>{instance.notes}</Text>
                 </View>
               )}
-              
-              {/* Add extra padding at the bottom to ensure everything is visible */}
-              <View style={styles.bottomPadding} />
             </ScrollView>
           )}
         </View>
@@ -295,12 +286,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
   } as TextStyle,
   content: {
-    padding: 0,
-    flex: 1,
-  } as ViewStyle,
-  contentContainer: {
     padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxl, // Extra padding at the bottom
   } as ViewStyle,
   section: {
     marginBottom: theme.spacing.lg,
@@ -336,11 +322,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.md,
   } as TextStyle,
-  notesContainer: {
-    backgroundColor: 'transparent',
-    marginTop: theme.spacing.sm,
-    paddingBottom: theme.spacing.md,
-  } as ViewStyle,
   notes: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
@@ -386,9 +367,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.tertiary,
   } as TextStyle,
-  bottomPadding: {
-    height: 60, // Extra padding space at the bottom of the scroll view
-  } as ViewStyle,
 });
 
 export default InstanceDetailsModal;
