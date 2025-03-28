@@ -14,6 +14,7 @@ import { AuthProvider } from './context/AuthContext';
 import crashRecovery from './utils/crashRecovery';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
+import { PwaMetaTags, detectPwaMode } from './_document';
 
 export {
   // Use our custom error boundary
@@ -37,19 +38,32 @@ export default function RootLayout() {
   const [isDevRestart, setIsDevRestart] = useState(false);
   const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
   const [recoveryData, setRecoveryData] = useState<any>(null);
+  const [isPwaMode, setIsPwaMode] = useState(false);
 
-  // Register service worker
+  // Initialize PWA detection and service worker
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(error => {
-            console.error('ServiceWorker registration failed: ', error);
-          });
-      });
+    if (Platform.OS === 'web') {
+      // Detect standalone mode (iOS home screen app)
+      if (typeof window !== 'undefined') {
+        if ('standalone' in window.navigator && window.navigator.standalone === true) {
+          console.log("App is running in standalone mode (iOS)");
+          document.documentElement.classList.add('pwa-standalone');
+          setIsPwaMode(true);
+        }
+      }
+
+      // Register service worker
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+              console.error('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
     }
   }, []);
 
@@ -206,6 +220,9 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <>
+        {/* Add PWA Meta Tags for web platform */}
+        {Platform.OS === 'web' && <PwaMetaTags />}
+        
         <RootLayoutNav />
         <RecoveryModal />
       </>
