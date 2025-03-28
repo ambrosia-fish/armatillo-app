@@ -47,6 +47,36 @@ export default function RootLayout() {
       // Initialize PWA support
       const isStandalone = initPwa();
       setIsPwaMode(isStandalone || false);
+      
+      // Add specific PWA handling for main content
+      if (isStandalone && typeof document !== 'undefined') {
+        // Apply specific PWA styling for bottom tabs and content
+        const style = document.createElement('style');
+        style.textContent = `
+          /* Fix iOS safe areas specifically for this app */
+          .pwa-standalone #root {
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+          }
+          
+          /* Fix for floating action button */
+          .pwa-standalone .expo-fab {
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important;
+          }
+          
+          /* Add extra spacing for tabs */
+          .pwa-standalone [role="tablist"] {
+            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+          }
+          
+          /* Handle iPhone home indicator */
+          @supports (padding: max(0px)) {
+            .pwa-standalone .bottom-area {
+              padding-bottom: max(10px, env(safe-area-inset-bottom, 0)) !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
     }
   }, []);
 
@@ -231,6 +261,13 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const [isPwa, setIsPwa] = useState(false);
+  
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      setIsPwa(isInStandaloneMode());
+    }
+  }, []);
 
   // Save app state when navigating - Fixed router state listener
   useEffect(() => {
@@ -272,6 +309,10 @@ function RootLayoutNav() {
       backgroundColor: theme.colors.background.primary,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border.light,
+      // Add PWA-specific header styles if needed
+      ...(isPwa && Platform.OS === 'web' ? {
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      } : {}),
     },
     headerTitleStyle: {
       fontSize: 18,
@@ -289,7 +330,7 @@ function RootLayoutNav() {
     headerShown: true, // Now showing headers
     ...headerStyles,
     cardStyle: { 
-      backgroundColor: theme.colors.background.primary
+      backgroundColor: theme.colors.background.primary,
     },
     cardOverlayEnabled: true,
     cardStyleInterpolator: ({ current: { progress } }) => ({
@@ -297,7 +338,11 @@ function RootLayoutNav() {
         opacity: progress,
       },
     }),
-    gestureEnabled: false // Disable swipe down gesture since we want screens to stack visually
+    gestureEnabled: false, // Disable swipe down gesture since we want screens to stack visually
+    contentStyle: isPwa ? {
+      // Add padding for PWA mode
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    } : {},
   };
 
   return (
