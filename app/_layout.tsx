@@ -47,9 +47,28 @@ function PwaHead() {
       <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png" />
       <link rel="manifest" href="/manifest.json" />
       <meta name="theme-color" content="#ffffff" />
-      <script src="/register-sw.js" />
+      {/* Remove the script tag from here - we'll register the service worker another way */}
     </Head>
   );
+}
+
+// Service worker registration script - separate from the Head component
+function RegisterServiceWorker() {
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.error('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
+  }, []);
+  
+  return null;
 }
 
 export default function RootLayout() {
@@ -216,6 +235,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <>
         <PwaHead />
+        <RegisterServiceWorker />
         <RootLayoutNav />
         <RecoveryModal />
       </>
