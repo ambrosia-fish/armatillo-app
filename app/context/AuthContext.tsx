@@ -23,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  refreshAuth: () => Promise<boolean>;
 }
 
 interface RegisterData {
@@ -31,6 +32,19 @@ interface RegisterData {
   password: string;
   displayName: string;
 }
+
+// Helper to detect if app is running in standalone mode (PWA)
+const isRunningAsStandalone = () => {
+  if (Platform.OS !== 'web') return false;
+  
+  // Check if running in PWA standalone mode
+  if (typeof window !== 'undefined') {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           ('standalone' in window.navigator && (window.navigator as any).standalone === true);
+  }
+  
+  return false;
+};
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,6 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   // Computed property to check if user is authenticated
   const isAuthenticated = !!token && !!user;
@@ -51,7 +66,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Load auth state on start
   useEffect(() => {
     loadAuthState();
-  }, []);
+    
+    // Set up refresh interval for token if in standalone mode
+    if (isRunningAsStandalone()) {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        // Only refresh if last refresh was more than 5 minutes ago
+        if (now - lastRefresh > 5 * 60 * 1000) {
+          refreshAuth().catch(() => {
+            console.log('Background token refresh failed');
+          });
+        }
+      }, 60 * 1000); // Check every minute
+      
+      return () => clearInterval(interval);
+    }
+  }, [lastRefresh]);
 
   // Load auth state from storage
   const loadAuthState = async () => {
@@ -70,8 +100,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (storedUser.displayName) {
           await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
         }
+        
+        // If in standalone mode, try to refresh the token to ensure it's valid
+        if (isRunningAsStandalone()) {
+          refreshAuth().catch(() => {
+            console.log('Initial token refresh failed');
+          });
+        }
       } else {
         console.log('No stored auth credentials found');
+        
+        // If running as standalone PWA, route to login page automatically
+        if (isRunningAsStandalone() && Platform.OS === 'web') {
+          setTimeout(() => {
+            router.replace('/screens/auth/login');
+          }, 500);
+        }
       }
     } catch (error) {
       errorService.handleError(error, {
@@ -82,6 +126,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await clearAuthState();
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Refresh authentication
+  const refreshAuth = async (): Promise<boolean> => {
+    try {
+      // Only refresh if we have a token
+      if (!token) return false;
+      
+      // Call API to refresh token
+      const response = await api.auth.refreshToken();
+      
+      if (response.success && response.token) {
+        // Store new tokens
+        await storeAuthTokens(
+          response.token,
+          response.expiresIn || undefined,
+          response.refreshToken || undefined
+        );
+        
+        // Update state
+        setToken(response.token);
+        if (response.user) {
+          setUser(response.user);
+          await storage.setObject(STORAGE_KEYS.USER, response.user);
+        }
+        
+        setLastRefresh(Date.now());
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.log('Token refresh failed:', error);
+      
+      // If the refresh fails and we're in standalone mode, don't log out automatically
+      // This prevents PWA users from being logged out due to network issues
+      if (!isRunningAsStandalone()) {
+        await clearAuthState();
+      }
+      
+      return false;
     }
   };
 
@@ -138,6 +224,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Update state
       setToken(token);
       setUser(user);
+      setLastRefresh(Date.now());
       
       // Navigate to home
       router.replace('/(tabs)');
@@ -226,9 +313,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear local state
       await clearAuthState();
       
-      // Navigate based on platform
+      // Handle PWA back to login differently
       if (Platform.OS === 'web') {
-        window.location.href = '/screens/auth/login';
+        // If in standalone mode, navigate within the app
+        if (isRunningAsStandalone()) {
+          router.replace('/screens/auth/login');
+        } else {
+          window.location.href = '/screens/auth/login';
+        }
       } else {
         router.replace('/screens/auth/login');
       }
@@ -250,7 +342,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     login,
     register,
-    logout
+    logout,
+    refreshAuth
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
