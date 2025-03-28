@@ -6,7 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform } from 'react-native';
+import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform, ScrollView } from 'react-native';
 
 import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
@@ -201,10 +201,11 @@ export default function RootLayout() {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Data Recovery</Text>
-          <Text style={styles.modalText}>
-            It looks like the app didn't close properly last time.
-            Would you like to restore your unsaved data?
-          </Text>
+          <ScrollView style={styles.modalScrollView}>
+            <Text style={styles.modalText}>
+              There's a draft that needs to be restored, would you like to restore your saved data?
+            </Text>
+          </ScrollView>
           
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -450,25 +451,30 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.card,
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.lg,
-    width: '100%',
+    width: '80%',
     maxWidth: 400,
     ...theme.shadows.lg,
+  } as ViewStyle,
+  modalScrollView: {
+    maxHeight: 200, // Add a max height but allow scrolling if needed
   } as ViewStyle,
   modalTitle: {
     fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold as '700',
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
     color: theme.colors.primary.main,
+    textAlign: 'left',
   } as TextStyle,
   modalText: {
     fontSize: theme.typography.fontSize.md,
     marginBottom: theme.spacing.lg,
-    lineHeight: theme.typography.lineHeight.normal,
+    lineHeight: theme.typography.lineHeight.relaxed,
     color: theme.colors.text.primary,
   } as TextStyle,
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: theme.spacing.md,
   } as ViewStyle,
   button: {
     flex: 1,
