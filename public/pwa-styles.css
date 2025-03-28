@@ -10,13 +10,11 @@
   --sal: env(safe-area-inset-left, 0px);
 }
 
-/* Standalone PWA mode styles */
+/* Standalone PWA mode styles - modified to not use position: fixed which can cause issues */
 .pwa-standalone {
-  /* Fix viewport issues on iOS */
-  position: fixed;
+  /* Fix viewport issues on iOS but don't use position: fixed since that breaks tabs */
   width: 100%;
   height: 100%;
-  overflow: hidden;
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
@@ -28,15 +26,14 @@
 body.pwa-standalone {
   padding-top: var(--sat);
   padding-right: var(--sar);
-  padding-bottom: var(--sab);
   padding-left: var(--sal);
+  /* Don't apply bottom padding to body as it can push up content */
 }
 
 /* Fix for iOS bouncing/overscroll in PWA mode */
 html.pwa-standalone,
 body.pwa-standalone {
   overscroll-behavior: none;
-  overflow: hidden;
 }
 
 /* Fix for iOS status bar */
@@ -45,27 +42,32 @@ body.pwa-standalone {
   .pwa-standalone header {
     padding-top: var(--sat);
   }
-  
-  .pwa-standalone .footer,
-  .pwa-standalone footer {
-    padding-bottom: var(--sab);
-  }
 }
 
-/* Fix for iOS bottom bar */
-.pwa-standalone #root {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+/* Explicitly fix tab bar positioning */
+.pwa-standalone .tab-bar,
+.pwa-standalone nav,
+.pwa-standalone footer,
+.pwa-standalone .bottom-tabs {
+  padding-bottom: var(--sab);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+/* Make main content area account for bottom tabs */
+.pwa-standalone #root,
+.pwa-standalone main,
+.pwa-standalone .main-content {
+  padding-bottom: calc(var(--sab) + 60px);
 }
 
 /* Prevent text size adjustment on orientation change */
 .pwa-standalone * {
   -webkit-text-size-adjust: none;
   text-size-adjust: none;
-}
-
-/* Hide any browser UI elements that might appear */
-.pwa-standalone .browser-ui {
-  display: none !important;
 }
 
 /* Optimize buttons for touch */
@@ -124,4 +126,22 @@ body.pwa-standalone {
 .pwa-standalone .no-select {
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Ensure bottom action buttons/FABs are visible */
+.pwa-standalone .fab,
+.pwa-standalone .floating-action-button {
+  bottom: calc(var(--sab) + 16px);
+}
+
+/* Ensure the bottom tab bar is visible in Expo/React Navigation */
+.pwa-standalone .r-bottom-0 {
+  bottom: var(--sab) !important;
+}
+
+/* Add a bit more specificity for tab navigators */
+.pwa-standalone [role="tablist"],
+.pwa-standalone [role="navigation"] {
+  padding-bottom: var(--sab);
+  z-index: 1000;
 }
