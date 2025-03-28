@@ -50,59 +50,29 @@ export default function RootLayout() {
       
       // Add specific PWA handling for main content
       if (isStandalone && typeof document !== 'undefined') {
-        // Fix overall document styling
-        document.body.style.height = '100%';
-        document.body.style.margin = '0';
-        document.body.style.padding = '0';
-        document.documentElement.style.height = '100%';
-        
         // Apply specific PWA styling for bottom tabs and content
         const style = document.createElement('style');
         style.textContent = `
-          /* Fundamental fixes for PWA mode */
-          html, body {
-            height: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-          }
-          
-          /* Fix root container height */
+          /* Fix iOS safe areas specifically for this app */
           .pwa-standalone #root {
-            padding-bottom: 0 !important;
-            margin-bottom: 0 !important;
-            min-height: 100% !important;
-            height: 100% !important;
-          }
-          
-          /* Fix tab bar display */
-          .pwa-standalone [role="tablist"] {
-            bottom: 0 !important;
-            position: fixed !important;
-            margin-bottom: 0 !important;
-            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-            max-height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
-          }
-          
-          /* Fix for large white space - target React Navigation classes */
-          .r-backgroundColor-8jlm1c {
-            margin-bottom: 0 !important;
-            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-            bottom: 0 !important;
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
           }
           
           /* Fix for floating action button */
-          .pwa-standalone .expo-fab,
-          .pwa-standalone .add-button-container {
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
-            position: fixed !important;
-            z-index: 100 !important;
+          .pwa-standalone .expo-fab {
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important;
+          }
+          
+          /* Add extra spacing for tabs */
+          .pwa-standalone [role="tablist"] {
+            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+          }
+          
+          /* Handle iPhone home indicator */
+          @supports (padding: max(0px)) {
+            .pwa-standalone .bottom-area {
+              padding-bottom: max(10px, env(safe-area-inset-bottom, 0)) !important;
+            }
           }
         `;
         document.head.appendChild(style);
