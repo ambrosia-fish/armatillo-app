@@ -18,25 +18,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "splash": {
-    "image": "/assets/images/splash-icon.png",
-    "background_color": "#ffffff"
-  },
-  "shortcuts": [
-    {
-      "name": "Track a Behavior",
-      "description": "Track a new BFRB behavior",
-      "url": "/screens/tracking/time-screen",
-      "icons": [
-        {
-          "src": "/assets/images/icon.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false,
-  "scope": "/"
+  ]
 }
