@@ -42,18 +42,23 @@ function PwaHead() {
       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       <meta name="apple-mobile-web-app-title" content="Armatillo" />
       <link rel="apple-touch-icon" href="/assets/images/icon.png" />
-      <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon.png" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon.png" />
-      <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png" />
       <link rel="manifest" href="/manifest.json" />
       <meta name="theme-color" content="#ffffff" />
-      {/* Remove the script tag from here - we'll register the service worker another way */}
     </Head>
   );
 }
 
-// Service worker registration script - separate from the Head component
-function RegisterServiceWorker() {
+export default function RootLayout() {
+  const [loaded, error] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    ...FontAwesome.font,
+  });
+  const [isCrashDetected, setIsCrashDetected] = useState(false);
+  const [isDevRestart, setIsDevRestart] = useState(false);
+  const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<any>(null);
+
+  // Register service worker
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -67,19 +72,6 @@ function RegisterServiceWorker() {
       });
     }
   }, []);
-  
-  return null;
-}
-
-export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
-  });
-  const [isCrashDetected, setIsCrashDetected] = useState(false);
-  const [isDevRestart, setIsDevRestart] = useState(false);
-  const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<any>(null);
 
   // Initialize crash detection
   useEffect(() => {
@@ -235,7 +227,6 @@ export default function RootLayout() {
     <ErrorBoundary>
       <>
         <PwaHead />
-        <RegisterServiceWorker />
         <RootLayoutNav />
         <RecoveryModal />
       </>
