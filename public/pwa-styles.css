@@ -10,9 +10,9 @@
   --sal: env(safe-area-inset-left, 0px);
 }
 
-/* Standalone PWA mode styles - modified to not use position: fixed which can cause issues */
+/* Standalone PWA mode styles */
 .pwa-standalone {
-  /* Fix viewport issues on iOS but don't use position: fixed since that breaks tabs */
+  /* Fix viewport issues on iOS */
   width: 100%;
   height: 100%;
   touch-action: manipulation;
@@ -28,159 +28,99 @@ body.pwa-standalone {
   padding-right: var(--sar);
   padding-left: var(--sal);
   margin: 0;
-  padding-bottom: 0;
-  min-height: 100vh;
-  max-height: -webkit-fill-available;
-  height: 100%;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 /* Fix for iOS bouncing/overscroll in PWA mode */
 html.pwa-standalone,
 body.pwa-standalone {
   overscroll-behavior: none;
-  overflow: hidden;
 }
 
-/* Fix html element */
+/* Root element styles */
 html.pwa-standalone {
   height: 100%;
   margin: 0;
   padding: 0;
 }
 
-/* Fix for iOS status bar */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .pwa-standalone .header,
-  .pwa-standalone header {
-    padding-top: var(--sat);
-  }
-}
-
-/* Target the actual tab bar element in React Navigation */
-.pwa-standalone [role="tablist"],
-.pwa-standalone .r-backgroundColor-8jlm1c {
+/* Fix tab navigation */
+.pwa-standalone [role="navigation"],
+.pwa-standalone [role="tablist"] {
+  height: 49px !important; /* Exact height of tab bar */
+  min-height: 49px !important;
+  max-height: 49px !important;
+  padding-bottom: 0 !important;
   margin-bottom: 0 !important;
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-  border-bottom: none !important;
   bottom: 0 !important;
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  display: flex !important;
+  z-index: 1000;
+  background-color: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Target any containers around the tab bar */
-.pwa-standalone .r-bottom-1p0dtai,
-.pwa-standalone .r-position-u8s1d {
+/* Fix the tab bar container */
+.pwa-standalone .css-view-175oi2r.r-bottom-1p0dtai {
+  height: auto !important;
+  padding-bottom: 0 !important;
   bottom: 0 !important;
-  margin-bottom: 0 !important;
+  position: fixed !important;
 }
 
-/* Fix for the homebar area in iOS */
-.pwa-standalone #root {
-  min-height: calc(100vh - env(safe-area-inset-bottom, 0px)) !important;
+/* Fix tab bar item height */
+.pwa-standalone .css-view-175oi2r.r-backgroundColor-8jlm1c {
+  height: 49px !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
 
-/* Fix tab bar positioning */
-.pwa-standalone .tab-bar,
-.pwa-standalone nav,
-.pwa-standalone footer,
-.pwa-standalone .bottom-tabs,
-.pwa-standalone [role="tablist"] {
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-  margin-bottom: 0 !important;
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 1000 !important;
-  background-color: #fff !important;
-  height: auto !important;
-  max-height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
-  min-height: 49px !important;
-  border-top-width: 1px !important;
+/* Handle safe area insets for tab bar explicitly */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pwa-standalone [role="tablist"] {
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  
+  /* Fix bottom tabs background */
+  .pwa-standalone .css-view-175oi2r.r-backgroundColor-8jlm1c {
+    height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
-/* Override React Navigation Tab specific classes */
-.pwa-standalone .css-view-175oi2r.r-backgroundColor-8jlm1c {
-  height: auto !important;
-  min-height: 49px !important;
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-  margin-bottom: 0 !important;
+/* Fix root container */
+.pwa-standalone #root {
+  height: 100% !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
 }
 
-/* Make main content area account for bottom tabs */
+/* Fix content area */
 .pwa-standalone main,
 .pwa-standalone .main-content {
-  padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
-}
-
-/* Prevent text size adjustment on orientation change */
-.pwa-standalone * {
-  -webkit-text-size-adjust: none;
-  text-size-adjust: none;
-}
-
-/* Optimize buttons for touch */
-.pwa-standalone button,
-.pwa-standalone .button,
-.pwa-standalone a[role="button"] {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-/* Disable pull-to-refresh */
-.pwa-standalone {
-  overscroll-behavior-y: contain;
+  flex: 1;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Fix for iOS notch areas */
-.pwa-standalone .app-header {
-  padding-left: max(env(safe-area-inset-left), 16px);
-  padding-right: max(env(safe-area-inset-right), 16px);
+/* Fix status bar area */
+.pwa-standalone .header,
+.pwa-standalone header {
+  padding-top: var(--sat);
 }
 
-/* Fix for full-screen content */
-.pwa-standalone .full-screen {
-  height: 100vh;
-  height: -webkit-fill-available;
-  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-}
-
-/* Prevent zoom on focus for inputs */
-.pwa-standalone input,
-.pwa-standalone select,
-.pwa-standalone textarea {
-  font-size: 16px; /* Prevents iOS zoom on focus */
-}
-
-/* Fix for iOS virtual keyboard pushing content */
-.pwa-standalone .keyboard-open {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-
-/* Optimize touch targets */
-.pwa-standalone a,
-.pwa-standalone button,
-.pwa-standalone input[type="checkbox"],
-.pwa-standalone input[type="radio"],
-.pwa-standalone input[type="submit"],
-.pwa-standalone select {
-  touch-action: manipulation;
-}
-
-/* Prevent selection */
-.pwa-standalone .no-select {
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-/* Fix add button positioning - IMPORTANT */
+/* Fix add button positioning */
 .pwa-standalone .add-button-container {
   position: fixed !important;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 60px) !important;
   left: 0;
   right: 0;
   z-index: 999;
@@ -199,12 +139,58 @@ html.pwa-standalone {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Ensure floating action button is visible */
-.pwa-standalone .fab,
-.pwa-standalone .floating-action-button,
-.pwa-standalone .expo-fab {
-  bottom: calc(var(--sab) + 70px) !important;
-  position: fixed !important;
-  z-index: 100 !important;
+/* Optimize buttons for touch */
+.pwa-standalone button,
+.pwa-standalone .button,
+.pwa-standalone a[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Disable pull-to-refresh */
+.pwa-standalone {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for bottom tab hover/focus state */
+.pwa-standalone [role="tab"] {
   display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 49px !important;
+  padding-bottom: 0 !important;
+}
+
+/* Fix for full-screen content */
+.pwa-standalone .full-screen {
+  height: 100vh;
+  height: -webkit-fill-available;
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+/* Fix footer position */
+.pwa-standalone .footer,
+.pwa-standalone footer,
+.pwa-standalone .bottom-area {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 100 !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+/* White space fix - extremely important */
+.pwa-standalone body::after {
+  content: "";
+  display: block;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background-color: #ffffff;
+  z-index: 999;
 }
