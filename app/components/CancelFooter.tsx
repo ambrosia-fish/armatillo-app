@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
+import { isInStandaloneMode } from '@/app/utils/pwaUtils';
 
 interface CancelFooterProps {
   onCancel?: () => void; // Optional callback for additional actions on cancel
@@ -10,6 +11,26 @@ interface CancelFooterProps {
 
 export default function CancelFooter({ onCancel }: CancelFooterProps) {
   const router = useRouter();
+  const [isPwa, setIsPwa] = useState(false);
+  
+  // Detect if in PWA mode
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const isStandalone = isInStandaloneMode();
+      setIsPwa(isStandalone);
+      
+      // Add class for PWA-specific styling
+      if (isStandalone && typeof document !== 'undefined') {
+        setTimeout(() => {
+          const footerElement = document.querySelector('.cancel-footer');
+          if (footerElement) {
+            footerElement.classList.add('pwa-footer');
+            console.log('Added PWA class to footer');
+          }
+        }, 300);
+      }
+    }
+  }, []);
 
   const handleCancel = () => {
     // If custom onCancel provided, execute it
@@ -21,8 +42,24 @@ export default function CancelFooter({ onCancel }: CancelFooterProps) {
     router.replace('/(tabs)');
   };
 
+  // Adjust styles for PWA mode
+  const getFooterStyle = () => {
+    if (isPwa && Platform.OS === 'web') {
+      return [
+        styles.footer,
+        {
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }
+      ];
+    }
+    return styles.footer;
+  };
+
   return (
-    <View style={styles.footer}>
+    <View 
+      style={getFooterStyle()}
+      className="cancel-footer bottom-area"
+    >
       <TouchableOpacity 
         style={styles.cancelButton}
         onPress={handleCancel}
@@ -41,6 +78,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
+    // Ensure button is accessible in PWA mode
+    minHeight: 64,
   } as ViewStyle,
   cancelButton: {
     flexDirection: 'row',
@@ -50,6 +89,8 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.utility.error,
+    // Ensure this meets minimum touch target size
+    minHeight: 44,
   } as ViewStyle,
   cancelButtonText: {
     color: theme.colors.utility.error,
