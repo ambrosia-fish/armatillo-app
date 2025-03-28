@@ -14,6 +14,8 @@ import { AuthProvider } from './context/AuthContext';
 import crashRecovery from './utils/crashRecovery';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
+import { PwaMetaTags } from './_document';
+import { initPwa, isInStandaloneMode } from './utils/pwaUtils';
 
 export {
   // Use our custom error boundary
@@ -37,19 +39,14 @@ export default function RootLayout() {
   const [isDevRestart, setIsDevRestart] = useState(false);
   const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
   const [recoveryData, setRecoveryData] = useState<any>(null);
+  const [isPwaMode, setIsPwaMode] = useState(false);
 
-  // Register service worker
+  // Initialize PWA functionality
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(error => {
-            console.error('ServiceWorker registration failed: ', error);
-          });
-      });
+    if (Platform.OS === 'web') {
+      // Initialize PWA support
+      const isStandalone = initPwa();
+      setIsPwaMode(isStandalone || false);
     }
   }, []);
 
@@ -206,6 +203,24 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <>
+        {/* Add PWA Meta Tags for web platform */}
+        {Platform.OS === 'web' && <PwaMetaTags />}
+        
+        {/* PWA Status Indicator (can be removed in production) */}
+        {isPwaMode && Platform.OS === 'web' && (
+          <View style={{ 
+            position: 'absolute', 
+            top: 0, 
+            right: 0, 
+            backgroundColor: 'rgba(0,0,0,0.7)', 
+            padding: 5,
+            zIndex: 9999,
+            borderBottomLeftRadius: 5,
+          }}>
+            <Text style={{ color: 'white', fontSize: 10 }}>PWA Mode</Text>
+          </View>
+        )}
+        
         <RootLayoutNav />
         <RecoveryModal />
       </>

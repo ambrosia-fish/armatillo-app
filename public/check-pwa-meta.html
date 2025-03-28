@@ -1,171 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PWA Meta Tag Checker</title>
   <style>
-    body { 
-      font-family: system-ui, -apple-system, sans-serif; 
-      max-width: 800px; 
-      margin: 0 auto; 
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
       padding: 20px;
+      line-height: 1.6;
     }
-    h1 { color: #333; }
-    .result { margin: 10px 0; }
-    .found { color: green; }
-    .not-found { color: red; }
-    .script { 
-      background: #f5f5f5; 
-      padding: 15px; 
+    h1 {
+      color: #333;
+    }
+    .result {
+      margin-bottom: 10px;
+      padding: 10px;
       border-radius: 5px;
-      white-space: pre-wrap;
       font-family: monospace;
-      font-size: 14px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+    .failure {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+    .standalone-mode {
+      background-color: #cce5ff;
+      color: #004085;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #007bff;
+    }
+    pre {
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .explanation {
+      background-color: #fff3cd;
+      color: #856404;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+      border-left: 4px solid #ffc107;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #0069d9;
     }
   </style>
 </head>
 <body>
   <h1>PWA Meta Tag Checker</h1>
   
+  <div id="standaloneStatus"></div>
+  
+  <h2>Required Meta Tags:</h2>
   <div id="results"></div>
-
-  <h2>Instructions</h2>
-  <p>This tool checks if your site has the necessary PWA meta tags for iOS standalone mode.</p>
-  <p>To use this on iOS:</p>
-  <ol>
-    <li>Add this page to your home screen</li>
-    <li>Open the app from your home screen</li>
-    <li>Check if it runs in standalone mode (no Safari UI)</li>
-  </ol>
-
-  <h2>Required JS Code</h2>
-  <div class="script">
-// Add this to your app's JavaScript to properly detect standalone mode:
-
+  
+  <div class="explanation">
+    <h3>Instructions</h3>
+    <p>This tool checks if your site has the necessary PWA meta tags for iOS standalone mode.</p>
+    <p>To use this on iOS:</p>
+    <ol>
+      <li>Add this page to your home screen</li>
+      <li>Open the app from your home screen</li>
+      <li>Check if it runs in standalone mode (no Safari UI)</li>
+    </ol>
+  </div>
+  
+  <div class="explanation">
+    <h3>Required JS Code</h3>
+    <p>Add this to your app's JavaScript to properly detect standalone mode:</p>
+    <pre>
+// Add this to your app's JavaScript:
 if (window.navigator.standalone === true) {
   console.log("App is running in standalone mode (iOS)");
   // You can add a class to the body for PWA-specific styling
   document.body.classList.add('pwa-standalone');
 }
+    </pre>
   </div>
-
+  
+  <button onclick="checkAgain()">Check Again</button>
+  
   <script>
-    function checkMetaTag(name, content) {
-      const meta = document.querySelector(`meta[name="${name}"]${content ? `[content="${content}"]` : ''}`);
-      const resultsEl = document.getElementById('results');
+    function checkAgain() {
+      location.reload();
+    }
+    
+    // Check if running in standalone mode
+    window.addEventListener('DOMContentLoaded', function() {
+      const standaloneStatusDiv = document.getElementById('standaloneStatus');
+      const isStandalone = window.navigator.standalone === true;
       
-      const div = document.createElement('div');
-      div.className = 'result';
-      
-      if (meta) {
-        div.innerHTML = `<div class="found">✓ Found: &lt;meta name="${name}" content="${meta.getAttribute('content')}"&gt;</div>`;
+      if (isStandalone) {
+        standaloneStatusDiv.innerHTML = `
+          <div class="standalone-mode">
+            <h3>✓ Running in standalone mode!</h3>
+            <p>Congratulations! Your app is running in iOS standalone mode.</p>
+          </div>
+        `;
       } else {
-        div.innerHTML = `<div class="not-found">✗ Not found: &lt;meta name="${name}" content="${content || 'any'}"&gt;</div>`;
+        standaloneStatusDiv.innerHTML = `
+          <div class="failure">
+            <h3>✗ Not running in standalone mode</h3>
+            <p>To test standalone mode, add this app to your home screen, then launch it from there.</p>
+          </div>
+        `;
       }
       
-      resultsEl.appendChild(div);
-      return !!meta;
-    }
-
-    function checkLinkTag(rel, sizes) {
-      const selector = sizes 
-        ? `link[rel="${rel}"][sizes="${sizes}"]` 
-        : `link[rel="${rel}"]`;
+      // Check for required meta tags
+      const resultsDiv = document.getElementById('results');
+      let results = '';
       
-      const link = document.querySelector(selector);
-      const resultsEl = document.getElementById('results');
-      
-      const div = document.createElement('div');
-      div.className = 'result';
-      
-      if (link) {
-        div.innerHTML = `<div class="found">✓ Found: &lt;link rel="${rel}" href="${link.getAttribute('href')}"${sizes ? ` sizes="${sizes}"` : ''}&gt;</div>`;
+      // Check viewport
+      const viewportTag = document.querySelector('meta[name="viewport"]');
+      if (viewportTag) {
+        results += `<div class="result success">✓ Found: &lt;meta name="viewport" content="${viewportTag.getAttribute('content')}"&gt;</div>`;
       } else {
-        div.innerHTML = `<div class="not-found">✗ Not found: &lt;link rel="${rel}"${sizes ? ` sizes="${sizes}"` : ''}&gt;</div>`;
+        results += `<div class="result failure">✗ Not found: &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</div>`;
       }
       
-      resultsEl.appendChild(div);
-      return !!link;
-    }
-
-    function checkManifest() {
-      const link = document.querySelector('link[rel="manifest"]');
-      const resultsEl = document.getElementById('results');
-      
-      const div = document.createElement('div');
-      div.className = 'result';
-      
-      if (link) {
-        div.innerHTML = `<div class="found">✓ Found: &lt;link rel="manifest" href="${link.getAttribute('href')}"&gt;</div>`;
-        
-        // Try to fetch the manifest
-        fetch(link.getAttribute('href'))
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            const manifestDiv = document.createElement('div');
-            manifestDiv.className = 'result';
-            manifestDiv.innerHTML = `<div class="found">✓ Manifest loaded successfully</div>`;
-            
-            if (data.display === 'standalone') {
-              const displayDiv = document.createElement('div');
-              displayDiv.className = 'result';
-              displayDiv.innerHTML = `<div class="found">✓ Manifest has display: standalone</div>`;
-              resultsEl.appendChild(displayDiv);
-            }
-            
-            resultsEl.appendChild(manifestDiv);
-          })
-          .catch(error => {
-            const manifestDiv = document.createElement('div');
-            manifestDiv.className = 'result';
-            manifestDiv.innerHTML = `<div class="not-found">✗ Failed to load manifest: ${error.message}</div>`;
-            resultsEl.appendChild(manifestDiv);
-          });
+      // Check apple-mobile-web-app-capable
+      const appCapableTag = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+      if (appCapableTag) {
+        results += `<div class="result success">✓ Found: &lt;meta name="apple-mobile-web-app-capable" content="${appCapableTag.getAttribute('content')}"&gt;</div>`;
       } else {
-        div.innerHTML = `<div class="not-found">✗ Not found: &lt;link rel="manifest"&gt;</div>`;
+        results += `<div class="result failure">✗ Not found: &lt;meta name="apple-mobile-web-app-capable" content="yes"&gt;</div>`;
       }
       
-      resultsEl.appendChild(div);
-      return !!link;
-    }
-
-    function checkStandalone() {
-      const resultsEl = document.getElementById('results');
-      const div = document.createElement('div');
-      div.className = 'result';
-      
-      if (window.navigator.standalone === true) {
-        div.innerHTML = `<div class="found">✓ Running in standalone mode (iOS)</div>`;
+      // Check apple-mobile-web-app-status-bar-style
+      const statusBarTag = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (statusBarTag) {
+        results += `<div class="result success">✓ Found: &lt;meta name="apple-mobile-web-app-status-bar-style" content="${statusBarTag.getAttribute('content')}"&gt;</div>`;
       } else {
-        div.innerHTML = `<div class="not-found">✗ Not running in standalone mode</div>`;
+        results += `<div class="result failure">✗ Not found: &lt;meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"&gt;</div>`;
       }
       
-      resultsEl.appendChild(div);
-    }
-
-    // Run checks when page loads
-    window.addEventListener('DOMContentLoaded', () => {
-      // Check basic meta tags
-      checkMetaTag('viewport');
-      checkMetaTag('apple-mobile-web-app-capable', 'yes');
-      checkMetaTag('apple-mobile-web-app-status-bar-style');
-      checkMetaTag('apple-mobile-web-app-title');
+      // Check apple-mobile-web-app-title
+      const appTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appTitleTag) {
+        results += `<div class="result success">✓ Found: &lt;meta name="apple-mobile-web-app-title" content="${appTitleTag.getAttribute('content')}"&gt;</div>`;
+      } else {
+        results += `<div class="result failure">✗ Not found: &lt;meta name="apple-mobile-web-app-title" content="Armatillo"&gt;</div>`;
+      }
       
-      // Check icons
-      checkLinkTag('apple-touch-icon');
-      checkLinkTag('icon');
+      // Check apple-touch-icon
+      const touchIconTag = document.querySelector('link[rel="apple-touch-icon"]');
+      if (touchIconTag) {
+        results += `<div class="result success">✓ Found: &lt;link rel="apple-touch-icon" href="${touchIconTag.getAttribute('href')}"&gt;</div>`;
+      } else {
+        results += `<div class="result failure">✗ Not found: &lt;link rel="apple-touch-icon"&gt;</div>`;
+      }
+      
+      // Check favicon
+      const faviconTag = document.querySelector('link[rel="icon"]');
+      if (faviconTag) {
+        results += `<div class="result success">✓ Found: &lt;link rel="icon" href="${faviconTag.getAttribute('href')}"&gt;</div>`;
+      } else {
+        results += `<div class="result failure">✗ Not found: &lt;link rel="icon"&gt;</div>`;
+      }
       
       // Check manifest
-      checkManifest();
+      const manifestTag = document.querySelector('link[rel="manifest"]');
+      if (manifestTag) {
+        results += `<div class="result success">✓ Found: &lt;link rel="manifest" href="${manifestTag.getAttribute('href')}"&gt;</div>`;
+      } else {
+        results += `<div class="result failure">✗ Not found: &lt;link rel="manifest"&gt;</div>`;
+      }
       
-      // Check if we're in standalone mode
-      checkStandalone();
+      resultsDiv.innerHTML = results;
     });
   </script>
 </body>
