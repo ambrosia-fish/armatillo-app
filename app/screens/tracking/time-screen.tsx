@@ -53,7 +53,7 @@ export default function TimeScreen() {
   const [customDuration, setCustomDuration] = useState('');
   const [customTimeSelected, setCustomTimeSelected] = useState(false);
   const [customDurationSelected, setCustomDurationSelected] = useState(false);
-  const [customDurationValue, setCustomDurationValue] = useState(5);
+  const [customDurationValue, setCustomDurationValue] = useState('5'); // Changed to string type
   
   // Calculate time from selection
   const getTimeFromSelection = (selection: string): Date => {
@@ -88,7 +88,9 @@ export default function TimeScreen() {
   
   const getDurationValue = (selection: string): number => {
     if (selection === 'custom') {
-      return customDurationValue || parseInt(customDuration) || 0;
+      return Platform.OS === 'ios' 
+        ? parseInt(customDurationValue) || 0 
+        : parseInt(customDuration) || 0;
     }
     
     const option = durationOptions.find(opt => opt.id === selection);
@@ -134,7 +136,7 @@ export default function TimeScreen() {
   // Get display label for duration option
   const getDurationLabel = (option) => {
     if (option.id === 'custom' && customDurationSelected) {
-      const minutes = Platform.OS === 'ios' ? customDurationValue : parseInt(customDuration);
+      const minutes = Platform.OS === 'ios' ? parseInt(customDurationValue) : parseInt(customDuration);
       return `${minutes}m`;
     }
     return option.label;
@@ -347,7 +349,7 @@ export default function TimeScreen() {
                   style={styles.iosPicker}
                 >
                   {Array.from({ length: 120 }, (_, i) => i + 1).map((value) => (
-                    <Picker.Item key={value} label={`${value} minute${value > 1 ? 's' : ''}`} value={value} />
+                    <Picker.Item key={value} label={`${value} minute${value > 1 ? 's' : ''}`} value={String(value)} />
                   ))}
                 </Picker>
               </View>
