@@ -6,7 +6,8 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform } from 'react-native';
+import { Head } from 'expo-router';
 
 import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
@@ -27,6 +28,29 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+// PWA Head component for web platform only
+function PwaHead() {
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+
+  return (
+    <Head>
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      <meta name="apple-mobile-web-app-title" content="Armatillo" />
+      <link rel="apple-touch-icon" href="/assets/images/icon.png" />
+      <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon.png" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon.png" />
+      <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png" />
+      <link rel="manifest" href="/manifest.json" />
+      <meta name="theme-color" content="#ffffff" />
+      <script src="/register-sw.js" />
+    </Head>
+  );
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -191,6 +215,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <>
+        <PwaHead />
         <RootLayoutNav />
         <RecoveryModal />
       </>
