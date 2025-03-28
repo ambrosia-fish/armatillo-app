@@ -27,13 +27,25 @@ body.pwa-standalone {
   padding-top: var(--sat);
   padding-right: var(--sar);
   padding-left: var(--sal);
-  /* Don't apply bottom padding to body as it can push up content */
+  margin: 0;
+  padding-bottom: 0;
+  min-height: 100vh;
+  max-height: -webkit-fill-available;
+  height: 100%;
 }
 
 /* Fix for iOS bouncing/overscroll in PWA mode */
 html.pwa-standalone,
 body.pwa-standalone {
   overscroll-behavior: none;
+  overflow: hidden;
+}
+
+/* Fix html element */
+html.pwa-standalone {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Fix for iOS status bar */
@@ -44,31 +56,61 @@ body.pwa-standalone {
   }
 }
 
-/* Fix tab bar positioning - UPDATED: reduced padding */
+/* Target the actual tab bar element in React Navigation */
+.pwa-standalone [role="tablist"],
+.pwa-standalone .r-backgroundColor-8jlm1c {
+  margin-bottom: 0 !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  border-bottom: none !important;
+  bottom: 0 !important;
+}
+
+/* Target any containers around the tab bar */
+.pwa-standalone .r-bottom-1p0dtai,
+.pwa-standalone .r-position-u8s1d {
+  bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Fix for the homebar area in iOS */
+.pwa-standalone #root {
+  min-height: calc(100vh - env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Fix tab bar positioning */
 .pwa-standalone .tab-bar,
 .pwa-standalone nav,
 .pwa-standalone footer,
 .pwa-standalone .bottom-tabs,
 .pwa-standalone [role="tablist"] {
-  padding-bottom: var(--sab);
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background-color: #fff; /* Ensure tabs have a background */
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  margin-bottom: 0 !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  background-color: #fff !important;
+  height: auto !important;
+  max-height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
+  min-height: 49px !important;
+  border-top-width: 1px !important;
 }
 
-/* Fix for white space below tabs */
-.pwa-standalone #root {
-  padding-bottom: 0 !important;
+/* Override React Navigation Tab specific classes */
+.pwa-standalone .css-view-175oi2r.r-backgroundColor-8jlm1c {
+  height: auto !important;
+  min-height: 49px !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   margin-bottom: 0 !important;
 }
 
 /* Make main content area account for bottom tabs */
 .pwa-standalone main,
 .pwa-standalone .main-content {
-  padding-bottom: calc(var(--sab) + 50px);
+  padding-bottom: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* Prevent text size adjustment on orientation change */
@@ -138,7 +180,7 @@ body.pwa-standalone {
 /* Fix add button positioning - IMPORTANT */
 .pwa-standalone .add-button-container {
   position: fixed !important;
-  bottom: calc(var(--sab) + 70px) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
   left: 0;
   right: 0;
   z-index: 999;
