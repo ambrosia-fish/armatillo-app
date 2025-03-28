@@ -124,7 +124,7 @@ export default function LoginScreen() {
           {/* Logo and app name */}
           <View style={styles.logoContainer}>
             <Image 
-              source={require('../../../assets/images/icon.png')}
+              source={require('../../../assets/images/armatillo-placeholder-logo.png')}
               style={styles.logo}
             />
             <Text style={styles.appName}>Armatillo</Text>
