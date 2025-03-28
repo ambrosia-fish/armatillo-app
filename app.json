@@ -27,7 +27,36 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Armatillo",
+      "shortName": "Armatillo",
+      "description": "Track habits during habit reversal training for BFRBs",
+      "backgroundColor": "#ffffff",
+      "themeColor": "#ffffff",
+      "startUrl": "/?standalone=true",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en",
+      "barStyle": "black-translucent",
+      "scope": "/",
+      "crossorigin": "use-credentials",
+      "icons": [
+        {
+          "src": "./assets/images/icon.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "./assets/images/icon.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ],
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      }
     },
     "plugins": [
       "expo-router",
