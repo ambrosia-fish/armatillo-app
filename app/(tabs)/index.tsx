@@ -1,13 +1,34 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
+import { isInStandaloneMode } from '@/app/utils/pwaUtils';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [isPwa, setIsPwa] = useState(false);
+  
+  // Detect if running in PWA mode
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const isStandalone = isInStandaloneMode();
+      setIsPwa(isStandalone);
+      
+      // Add explicit class to the floating action button for PWA styling
+      if (isStandalone && typeof document !== 'undefined') {
+        setTimeout(() => {
+          const fabElement = document.querySelector('.add-button');
+          if (fabElement) {
+            fabElement.classList.add('expo-fab');
+            console.log('Added PWA class to FAB');
+          }
+        }, 500);
+      }
+    }
+  }, []);
   
   const addNewEntry = () => {
     // Navigate to the time screen with updated path
@@ -30,9 +51,19 @@ export default function HomeScreen() {
         />
       </View>
       
-      {/* Centered Add Button */}
-      <View style={styles.addButtonContainer}>
-        <TouchableOpacity style={styles.addButton} onPress={addNewEntry}>
+      {/* Centered Add Button with PWA-specific adjustments */}
+      <View 
+        style={[
+          styles.addButtonContainer, 
+          isPwa && Platform.OS === 'web' ? styles.pwaAddButtonContainer : null
+        ]}
+        className="add-button-container"
+      >
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={addNewEntry}
+          className="add-button"
+        >
           <Ionicons name="add" size={32} color={theme.colors.primary.contrast} />
         </TouchableOpacity>
       </View>
@@ -90,6 +121,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  } as ViewStyle,
+  // Special positioning for PWA mode
+  pwaAddButtonContainer: {
+    bottom: Platform.OS === 'web' ? 'calc(env(safe-area-inset-bottom, 0px) + 80px)' : theme.spacing.xxxl,
+    zIndex: 100,
   } as ViewStyle,
   addButton: {
     width: 60,
