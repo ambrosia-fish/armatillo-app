@@ -33,6 +33,9 @@ class CustomDocument extends Document {
           
           {/* Theme color for browser UI */}
           <meta name="theme-color" content="#ffffff" />
+          
+          {/* Service worker registration script */}
+          <script src="/register-sw.js"></script>
         </Head>
         <body>
           <Main />
