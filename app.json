@@ -35,7 +35,7 @@
       "scope": "/",
       "themeColor": "#ffffff",
       "backgroundColor": "#ffffff",
-      "startUrl": "/?standalone=true",
+      "startUrl": "/?standalone=true&utm_source=homescreen",
       "display": "standalone",
       "orientation": "portrait",
       "barStyle": "black-translucent",
@@ -43,7 +43,14 @@
         "image": "./assets/images/splash-icon.png",
         "resizeMode": "contain",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "meta": {
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "black-translucent",
+        "apple-mobile-web-app-title": "Armatillo"
+      },
+      "crossorigin": "use-credentials",
+      "includeAssetsFileTypes": ["ttf", "otf", "png", "svg", "jpg", "jpeg", "gif", "woff", "woff2"]
     },
     "plugins": [
       "expo-router",
@@ -55,9 +62,6 @@
     "extra": {
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "your-project-id"
       }
     }
   }
