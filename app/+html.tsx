@@ -10,7 +10,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
         <meta name="description" content="Track habits during habit reversal training for BFRBs" />
         
         {/* PWA meta tags for iOS */}
@@ -30,6 +30,9 @@ export default function Root({ children }: { children: React.ReactNode }) {
         {/* Web manifest */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
+        
+        {/* PWA styles */}
+        <link rel="stylesheet" href="/pwa-styles.css" />
 
         {/* Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 
             However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line. */}
@@ -73,6 +76,19 @@ if (typeof window !== 'undefined') {
     if (window.navigator.standalone === true) {
       console.log("App is running in standalone mode (iOS)");
       document.documentElement.classList.add('pwa-standalone');
+      document.body.classList.add('pwa-standalone');
+    }
+    
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, function(err) {
+            console.error('ServiceWorker registration failed: ', err);
+          });
+      });
     }
   });
 }
