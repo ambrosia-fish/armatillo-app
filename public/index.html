@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="description" content="Track habits during habit reversal training for BFRBs" />
+  
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Armatillo" />
+  
+  <!-- Icons -->
+  <link rel="apple-touch-icon" href="/assets/images/icon.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/assets/images/icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/icon.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/assets/images/icon.png" />
+  <link rel="icon" href="/assets/images/favicon.png" />
+  
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+  
+  <title>Armatillo</title>
+  
+  <!-- This div will be replaced with the app content -->
+  <div id="root"></div>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, function(err) {
+            console.error('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+    
+    // Standalone mode detection
+    window.addEventListener('DOMContentLoaded', function() {
+      if (window.navigator.standalone === true) {
+        console.log("App is running in standalone mode (iOS)");
+        document.documentElement.classList.add('pwa-standalone');
+      }
+    });
+  </script>
+</head>
+<body>
+  <!-- Your app will be mounted here by Expo -->
+</body>
+</html>
