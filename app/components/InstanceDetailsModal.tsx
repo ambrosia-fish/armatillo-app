@@ -1,43 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
-  View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert
+  Alert,
+  TextStyle,
+  ViewStyle
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../services/api';
-import OptionDictionaries, { OptionItem } from '../constants/optionDictionaries';
-import { useAuth } from '../context/AuthContext';
+import api from '@/app/services/api';
+import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
+import { ensureValidToken } from '@/app/utils/tokenRefresher';
+import { Button, View, Text } from '@/app/components';
+import theme from '@/app/constants/theme';
 
-// Define the Instance type
+// Standardized Instance type
 interface Instance {
   _id: string;
   userId?: string;
-  createdAt: string;
-  time?: string | Date;
+  userEmail?: string;
+  user_id: string;
+  time: string;
+  duration: number | string;
   urgeStrength?: number;
-  intentionType?: string;
-  duration?: string | number;
-  timeAgo?: string;
-  // New fields based on the MongoDB data
+  intentionType: string; // 'automatic' or 'intentional'
   selectedEnvironments?: string[];
   selectedEmotions?: string[];
   selectedSensations?: string[];
   selectedThoughts?: string[];
-  // Legacy fields
-  automatic?: boolean;
-  location?: string;
-  activity?: string;
-  feelings?: string[];
-  physicalSensations?: string[];
-  thoughts?: string[];
-  environment?: string[];
+  selectedSensoryTriggers?: string[];
+  mentalDetails?: string;
+  physicalDetails?: string;
+  thoughtDetails?: string;
+  environmentDetails?: string;
+  sensoryDetails?: string;
   notes?: string;
 }
 
@@ -55,81 +54,53 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refreshTokenIfNeeded } = useAuth();
 
-  // Fetch instance details when modal is opened
+  // Fetch instance details
   useEffect(() => {
-    const fetchInstanceDetails = async () => {
-      if (!instanceId) return;
-      
+    if (!isVisible || !instanceId) return;
+    
+    const fetchInstance = async () => {
       try {
         setLoading(true);
-        setError(null);
-        
-        // Ensure token is fresh
-        await refreshTokenIfNeeded();
-        
-        console.log('Fetching instance details for ID:', instanceId);
+        await ensureValidToken();
         const data = await api.instances.getInstance(instanceId);
-        console.log('Instance data received:', data ? 'yes' : 'no');
-        setInstance(data);
+        
+        // Normalize instance data to standardized format
+        const normalizedData: Instance = {
+          ...data,
+          // Ensure time field exists (use createdAt as fallback)
+          time: data.time || data.createdAt,
+          // Ensure intentionType exists
+          intentionType: data.intentionType || (data.automatic !== undefined 
+            ? (data.automatic ? 'automatic' : 'intentional') 
+            : 'automatic'),
+          // Ensure duration exists
+          duration: data.duration || 5,
+        };
+        
+        setInstance(normalizedData);
       } catch (err) {
-        console.error('Error fetching instance details:', err);
-        
-        let errorMessage = 'Failed to load details. Please try again.';
-        if (err instanceof Error) {
-          errorMessage += '\n\nDetails: ' + err.message;
-        }
-        
-        setError(errorMessage);
-        Alert.alert('Error', errorMessage);
+        console.error('Error fetching instance:', err);
+        setError('Failed to load details');
       } finally {
         setLoading(false);
       }
     };
 
-    if (isVisible && instanceId) {
-      fetchInstanceDetails();
-    }
-  }, [isVisible, instanceId, refreshTokenIfNeeded]);
+    fetchInstance();
+  }, [isVisible, instanceId]);
 
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Get option label and emoji by ID
-  const getOptionDetails = (optionId: string, optionsList: OptionItem[]): { label: string, emoji: string } => {
-    const option = optionsList.find(opt => opt.id === optionId);
-    return option 
-      ? { label: option.label, emoji: option.emoji } 
-      : { label: optionId, emoji: '' }; // Fallback to ID if not found
-  };
-  
-  // Render array items with emojis
-  const renderListWithEmojis = (items?: string[], optionsList?: OptionItem[]) => {
-    if (!items || items.length === 0 || !optionsList) {
-      return <Text style={styles.infoValue}>None</Text>;
-    }
+  // Render items with emojis
+  const renderItems = (items?: string[], optionsList?: OptionItem[]) => {
+    if (!items?.length || !optionsList) return <Text style={styles.infoValue}>None</Text>;
     
     return (
-      <View style={styles.listContainer}>
-        {items.map((itemId, index) => {
-          const { label, emoji } = getOptionDetails(itemId, optionsList);
+      <View style={styles.tagContainer}>
+        {items.map((id, index) => {
+          const option = optionsList.find(opt => opt.id === id) || { label: id, emoji: '📝' };
           return (
-            <View key={index} style={styles.listItem}>
-              <Text style={styles.emoji}>{emoji}</Text>
-              <Text style={styles.listItemText}>{label}</Text>
+            <View key={index} style={styles.tag}>
+              <Text style={styles.tagText}>{option.emoji} {option.label}</Text>
             </View>
           );
         })}
@@ -137,40 +108,15 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     );
   };
 
-  // Get the behavior type (automatic/intentional)
-  const getBehaviorType = () => {
-    if (instance?.intentionType) {
-      return instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional';
-    } else if (instance?.automatic !== undefined) {
-      return instance.automatic ? 'Automatic' : 'Deliberate';
-    }
-    return 'Unknown';
-  };
-
-  // Get feeling items (handles both selectedEmotions and feelings array)
-  const getFeelingsArray = () => {
-    return instance?.selectedEmotions || instance?.feelings || [];
-  };
-
-  // Get physical sensations (handles both selectedSensations and physicalSensations array)
-  const getSensationsArray = () => {
-    return instance?.selectedSensations || instance?.physicalSensations || [];
-  };
-
-  // Get thoughts (handles both selectedThoughts and thoughts array)
-  const getThoughtsArray = () => {
-    return instance?.selectedThoughts || instance?.thoughts || [];
-  };
-
-  // Get environments (handles both selectedEnvironments and environment array)
-  const getEnvironmentsArray = () => {
-    return instance?.selectedEnvironments || instance?.environment || [];
-  };
-
-  // Format duration
-  const formatDuration = (duration?: string | number) => {
-    if (!duration) return 'Unknown';
-    return typeof duration === 'number' ? `${duration} minutes` : duration;
+  // Format date
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -185,129 +131,124 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
             <Text style={styles.title}>Instance Details</Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: 24 }} />
           </View>
 
           {/* Content */}
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#0000ff" />
-              <Text style={styles.loadingText}>Loading details...</Text>
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" color={theme.colors.primary.main} />
+              <Text style={styles.message}>Loading...</Text>
             </View>
           ) : error ? (
-            <View style={styles.errorContainer}>
+            <View style={styles.centered}>
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity 
-                style={styles.retryButton}
-                onPress={() => {
-                  if (instanceId) {
-                    setLoading(true);
-                    setError(null);
-                    
-                    refreshTokenIfNeeded()
-                      .then(() => api.instances.getInstance(instanceId))
-                      .then(data => setInstance(data))
-                      .catch(err => {
-                        console.error(err);
-                        setError('Failed to load details. Please try again.');
-                      })
-                      .finally(() => setLoading(false));
-                  }
-                }}
-              >
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
+              <Button 
+                title="Retry" 
+                variant="primary" 
+                onPress={() => setError(null)}
+              />
             </View>
-          ) : instance ? (
-            <ScrollView style={styles.scrollView}>
+          ) : !instance ? (
+            <View style={styles.centered}>
+              <Text style={styles.message}>No details found</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.content}>
+              {/* When */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>When</Text>
-                <Text style={styles.dateText}>{formatDate(instance.createdAt)}</Text>
-                
-                {(instance.duration || instance.timeAgo) && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Duration:</Text>
-                    <Text style={styles.infoValue}>{formatDuration(instance.duration)}</Text>
+                <Text style={styles.dateText}>{formatDate(instance.time)}</Text>
+                {instance.duration && (
+                  <View style={styles.row}>
+                    <Text style={styles.label}>Duration:</Text>
+                    <Text style={styles.value}>
+                      {typeof instance.duration === 'number' 
+                        ? `${instance.duration} min` 
+                        : instance.duration}
+                    </Text>
                   </View>
                 )}
               </View>
               
+              {/* Details */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>BFRB Details</Text>
-                
-                {instance.urgeStrength !== undefined && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Urge Strength:</Text>
-                    <Text style={styles.infoValue}>{instance.urgeStrength}/10</Text>
+                {instance.urgeStrength && (
+                  <View style={styles.row}>
+                    <Text style={styles.label}>Urge Strength:</Text>
+                    <Text style={styles.value}>{instance.urgeStrength}/10</Text>
                   </View>
                 )}
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Type:</Text>
-                  <Text style={styles.infoValue}>{getBehaviorType()}</Text>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Type:</Text>
+                  <Text style={styles.value}>
+                    {instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
+                  </Text>
                 </View>
               </View>
               
+              {/* Environment */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Environment</Text>
-                
-                {instance.location && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Location:</Text>
-                    <Text style={styles.infoValue}>{instance.location}</Text>
-                  </View>
+                {renderItems(instance.selectedEnvironments, OptionDictionaries.environmentOptions)}
+                {instance.environmentDetails && (
+                  <Text style={styles.detailsText}>{instance.environmentDetails}</Text>
                 )}
-                
-                {instance.activity && (
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Activity:</Text>
-                    <Text style={styles.infoValue}>{instance.activity}</Text>
-                  </View>
-                )}
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Environment:</Text>
-                  {renderListWithEmojis(getEnvironmentsArray(), OptionDictionaries.environmentOptions)}
-                </View>
               </View>
               
+              {/* Feelings */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Mental & Physical State</Text>
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Feelings:</Text>
-                  {renderListWithEmojis(getFeelingsArray(), OptionDictionaries.feelingOptions)}
-                </View>
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Physical Sensations:</Text>
-                  {renderListWithEmojis(getSensationsArray(), OptionDictionaries.sensationOptions)}
-                </View>
-                
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Thoughts:</Text>
-                  {renderListWithEmojis(getThoughtsArray(), OptionDictionaries.thoughtOptions)}
-                </View>
+                <Text style={styles.sectionTitle}>Emotions</Text>
+                {renderItems(instance.selectedEmotions, OptionDictionaries.emotionOptions)}
+                {instance.mentalDetails && (
+                  <Text style={styles.detailsText}>{instance.mentalDetails}</Text>
+                )}
               </View>
               
+              {/* Sensations */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Physical Sensations</Text>
+                {renderItems(instance.selectedSensations, OptionDictionaries.sensationOptions)}
+                {instance.physicalDetails && (
+                  <Text style={styles.detailsText}>{instance.physicalDetails}</Text>
+                )}
+              </View>
+              
+              {/* Thoughts */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Thoughts</Text>
+                {renderItems(instance.selectedThoughts, OptionDictionaries.thoughtOptions)}
+                {instance.thoughtDetails && (
+                  <Text style={styles.detailsText}>{instance.thoughtDetails}</Text>
+                )}
+              </View>
+              
+              {/* Sensory Triggers */}
+              {instance.selectedSensoryTriggers && instance.selectedSensoryTriggers.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Sensory Triggers</Text>
+                  {renderItems(instance.selectedSensoryTriggers, OptionDictionaries.triggerOptions)}
+                  {instance.sensoryDetails && (
+                    <Text style={styles.detailsText}>{instance.sensoryDetails}</Text>
+                  )}
+                </View>
+              )}
+              
+              {/* Notes */}
               {instance.notes && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Notes</Text>
-                  <Text style={styles.notesText}>{instance.notes}</Text>
+                  <Text style={styles.notes}>{instance.notes}</Text>
                 </View>
               )}
             </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No instance details found</Text>
-            </View>
           )}
         </View>
       </View>
-      <StatusBar style="dark" />
     </Modal>
   );
 };
@@ -317,134 +258,115 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
-  },
+    backgroundColor: theme.colors.background.modal,
+  } as ViewStyle,
   modalView: {
-    backgroundColor: 'white',
-    borderRadius: 20,
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.lg,
     width: '90%',
     maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
-  },
+    ...theme.shadows.lg,
+  } as ViewStyle,
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
+    borderBottomColor: theme.colors.border.light,
+    backgroundColor: 'transparent',
+  } as ViewStyle,
   closeButton: {
-    padding: 8,
-  },
+    padding: theme.spacing.sm,
+  } as ViewStyle,
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  scrollView: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.text.primary,
+  } as TextStyle,
+  content: {
+    padding: theme.spacing.lg,
+  } as ViewStyle,
   section: {
-    marginBottom: 20,
-  },
+    marginBottom: theme.spacing.lg,
+    backgroundColor: 'transparent',
+  } as ViewStyle,
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    paddingBottom: 4,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.bold as '700', 
+    color: theme.colors.text.primary,
+    paddingBottom: theme.spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
+    borderBottomColor: theme.colors.border.light,
+    marginBottom: theme.spacing.md,
+  } as TextStyle,
+  row: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+    backgroundColor: 'transparent',
+  } as ViewStyle,
+  label: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    width: 120,
+  } as TextStyle,
+  value: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    flex: 1,
+  } as TextStyle,
   dateText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#555',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  infoLabel: {
-    fontSize: 14,
-    color: '#444',
-    fontWeight: '500',
-    marginRight: 8,
-    minWidth: 120,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  listContainer: {
-    flex: 1,
-  },
-  listItem: {
-    flexDirection: 'row',
-    marginBottom: 6,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
+  } as TextStyle,
+  notes: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    lineHeight: theme.typography.lineHeight.relaxed,
+  } as TextStyle,
+  detailsText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
+    fontStyle: 'italic',
+  } as TextStyle,
+  centered: {
+    padding: theme.spacing.xxl,
     alignItems: 'center',
-  },
-  emoji: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  listItemText: {
-    fontSize: 14,
-    color: '#666',
-    flex: 1,
-  },
-  notesText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  errorContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
+    backgroundColor: 'transparent',
+  } as ViewStyle,
+  message: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.md,
+  } as TextStyle,
   errorText: {
-    color: '#d32f2f',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#d32f2f',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+    color: theme.colors.utility.error,
+    marginBottom: theme.spacing.md,
+  } as TextStyle,
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: 'transparent',
+  } as ViewStyle,
+  tag: {
+    backgroundColor: theme.colors.primary.light,
+    borderRadius: theme.borderRadius.xl,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    margin: 2,
+  } as ViewStyle,
+  tagText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.primary.dark,
+  } as TextStyle,
+  infoValue: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.tertiary,
+  } as TextStyle,
 });
 
 export default InstanceDetailsModal;

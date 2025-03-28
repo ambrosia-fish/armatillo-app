@@ -1,44 +1,46 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { OptionItem } from '../constants/optionDictionaries';
+import { StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { OptionItem } from '@/app/constants/optionDictionaries';
+import theme from '@/app/constants/theme';
+import { View, Text } from './Themed';
 
 interface EmojiSelectionGridProps {
-  options: OptionItem[];
-  selectedItems: string[];
-  onSelect: (id: string) => void;
-  multiSelect?: boolean;
+  items: OptionItem[];
+  selectedIds: string[];
+  onToggleItem: (id: string) => void;
+  numColumns?: number;
 }
 
 export default function EmojiSelectionGrid({
-  options,
-  selectedItems,
-  onSelect,
-  multiSelect = true,
+  items,
+  selectedIds,
+  onToggleItem,
+  numColumns = 3,
 }: EmojiSelectionGridProps) {
 
   const handleSelection = (id: string) => {
-    onSelect(id);
+    onToggleItem(id);
   };
 
   return (
     <View style={styles.grid}>
-      {options.map((option) => (
+      {items.map((item) => (
         <TouchableOpacity
-          key={option.id}
+          key={item.id}
           style={[
             styles.gridItem,
-            selectedItems.includes(option.id) && styles.selectedItem,
+            selectedIds.includes(item.id) && styles.selectedItem,
           ]}
-          onPress={() => handleSelection(option.id)}
+          onPress={() => handleSelection(item.id)}
         >
-          <Text style={styles.emoji}>{option.emoji}</Text>
+          <Text style={styles.emoji}>{item.emoji}</Text>
           <Text
             style={[
               styles.label,
-              selectedItems.includes(option.id) && styles.selectedLabel,
+              selectedIds.includes(item.id) && styles.selectedLabel,
             ]}
           >
-            {option.label}
+            {item.label}
           </Text>
         </TouchableOpacity>
       ))}
@@ -51,32 +53,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-  },
+    backgroundColor: 'transparent',
+  } as ViewStyle,
   gridItem: {
     width: '31%',
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    marginBottom: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background.primary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border.medium,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   selectedItem: {
-    borderColor: '#2a9d8f',
+    borderColor: theme.colors.primary.main,
     borderWidth: 1,
-  },
+  } as ViewStyle,
   emoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
+    fontSize: theme.typography.fontSize.xxl,
+    marginBottom: theme.spacing.xs,
+  } as TextStyle,
   label: {
     textAlign: 'center',
-    fontSize: 14,
-    color: '#333',
-  },
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
+  } as TextStyle,
   selectedLabel: {
-    color: '#2a9d8f',
-  },
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+  } as TextStyle,
 });

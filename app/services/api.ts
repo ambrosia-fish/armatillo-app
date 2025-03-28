@@ -1,87 +1,38 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../utils/storage';
+import { ensureValidToken } from '../utils/tokenRefresher';
+import config from '../constants/config';
+import { errorService } from './ErrorService';
 
-// Configuration for different environments
-export const getApiUrl = () => {
-  // When running in development mode (local)
-  if (__DEV__) {
-    // Use the development deployment on Railway
-    return 'https://armatillo-api-development.up.railway.app';
-    
-    // Uncomment this if you want to use a local server instead
-    // return 'http://localhost:3000';
-  }
-  
-  // When running in production (deployed app)
-  return 'https://armatillo-api-production.up.railway.app';
-};
-
-// Base API URL
-export const API_URL = getApiUrl();
-const API_BASE_PATH = '/api';
+// Base API URL from centralized config
+export const API_URL = config.apiUrl;
+const API_BASE_PATH = config.apiBasePath;
 
 // Helper function to get authentication token
 const getAuthToken = async (): Promise<string | null> => {
   try {
     console.log('Getting auth token from storage');
-    
-    // Try to get token using the storage utility first
-    let token: string | null = null;
-    
-    try {
-      // First approach: Use AsyncStorage directly 
-      token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-      console.log('Token from AsyncStorage:', token ? 'found' : 'not found');
-    } catch (asyncError) {
-      console.error('Error accessing AsyncStorage directly:', asyncError);
-    }
-    
-    if (!token) {
-      // Some tokens are stored in SecureStore, so also try it directly
-      try {
-        // Check if expo-secure-store is available
-        const SecureStore = require('expo-secure-store');
-        token = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
-        console.log('Token from SecureStore:', token ? 'found' : 'not found');
-      } catch (secureStoreError) {
-        console.error('Error accessing SecureStore directly:', secureStoreError);
-      }
-    }
-    
-    // As a final fallback, try all possible token key names
-    if (!token) {
-      const possibleTokenKeys = [
-        STORAGE_KEYS.TOKEN,
-        'auth_token',
-        'token',
-        'accessToken',
-        'access_token'
-      ];
-      
-      for (const key of possibleTokenKeys) {
-        try {
-          const fallbackToken = await AsyncStorage.getItem(key);
-          if (fallbackToken) {
-            console.log(`Found token using fallback key: ${key}`);
-            token = fallbackToken;
-            break;
-          }
-        } catch (fallbackError) {
-          console.warn(`Error checking fallback token key ${key}:`, fallbackError);
-        }
-      }
-    }
-    
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    console.log('Token from AsyncStorage:', token ? 'found' : 'not found');
     return token;
   } catch (error) {
-    console.error('Error retrieving auth token:', error);
+    errorService.handleError(error, {
+      source: 'storage',
+      displayToUser: false,
+      context: { action: 'getAuthToken' }
+    });
     return null;
   }
 };
 
-// Generic API request handler with authentication
+// Generic API request handler with authentication and token refresh
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   try {
+    // Try to ensure we have a valid token before making the request
+    // This will automatically refresh the token if needed
+    const isValidToken = await ensureValidToken();
+    
+    // Get the (potentially refreshed) token
     const token = await getAuthToken();
     
     const headers: HeadersInit = {
@@ -93,41 +44,75 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     } else {
-      console.warn(`Making request to ${endpoint} without authentication token`);
+      // If we still don't have a token after refresh attempt, log warning
+      if (!isValidToken) {
+        console.warn(`Making request to ${endpoint} without valid authentication token`);
+      }
     }
     
     const url = `${API_URL}${API_BASE_PATH}${endpoint}`;
-    console.log(`Making API request to: ${url}`);
+    
+    if (config.enableLogging) {
+      console.log(`Making API request to: ${url}`);
+    }
     
     const response = await fetch(url, {
       ...options,
       headers,
     });
     
-    console.log(`Response status for ${endpoint}:`, response.status);
+    if (config.enableLogging) {
+      console.log(`Response status for ${endpoint}:`, response.status);
+    }
+    
+    // Handle 401 Unauthorized errors (potential token issue)
+    if (response.status === 401) {
+      // We already tried to refresh the token before making the request,
+      // so this 401 means our refresh token is likely invalid too
+      errorService.handleError('Authentication failed (401) even after token refresh attempt', {
+        level: 'warning',
+        source: 'auth',
+        context: { endpoint }
+      });
+      // Could trigger a logout event here
+    }
     
     // Check if the response is JSON
     const contentType = response.headers.get('content-type');
-    console.log(`Content-Type:`, contentType);
     
     if (contentType && contentType.includes('application/json')) {
       const responseText = await response.text(); // Get raw text first
-      console.log(`Response for ${endpoint}:`, responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+      
+      if (config.enableLogging) {
+        console.log(`Response for ${endpoint}:`, responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+      }
       
       // Try to parse as JSON
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
-        console.error(`Error parsing JSON from ${endpoint}:`, parseError);
-        console.error('Response was:', responseText);
+        errorService.handleError(parseError, {
+          source: 'api',
+          context: {
+            endpoint,
+            responseText: responseText.substring(0, 100)
+          }
+        });
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
       
       // Check for successful response
       if (!response.ok) {
         const errorMessage = data.message || data.error || 'API error occurred';
-        console.error(`API error for ${endpoint}:`, errorMessage);
+        errorService.handleError(errorMessage, {
+          source: 'api',
+          context: {
+            endpoint,
+            statusCode: response.status,
+            data
+          }
+        });
         throw new Error(errorMessage);
       }
       
@@ -135,16 +120,30 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     } else {
       // Handle non-JSON responses
       const responseText = await response.text();
-      console.log(`Non-JSON response for ${endpoint}:`, responseText.substring(0, 200));
+      
+      if (config.enableLogging) {
+        console.log(`Non-JSON response for ${endpoint}:`, responseText.substring(0, 200));
+      }
       
       if (!response.ok) {
+        errorService.handleError(`Network response was not ok: ${response.status} ${response.statusText}`, {
+          source: 'network',
+          context: {
+            endpoint,
+            statusCode: response.status,
+            statusText: response.statusText
+          }
+        });
         throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
       }
       
       return responseText;
     }
   } catch (error) {
-    console.error(`API request error for ${endpoint}:`, error);
+    errorService.handleError(error, {
+      source: 'api',
+      context: { endpoint, method: options.method }
+    });
     throw error;
   }
 };
@@ -153,22 +152,18 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 export const debugTokenStorage = async (): Promise<void> => {
   try {
     console.log('=== DEBUG TOKEN STORAGE ===');
+    console.log('Current API URL:', API_URL);
     
     // Try to get token using AsyncStorage directly
     try {
       const asyncToken = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
       console.log('AsyncStorage token:', asyncToken ? 'exists' : 'not found');
     } catch (error) {
-      console.log('Error reading from AsyncStorage:', error);
-    }
-    
-    // Try to get token using SecureStore directly
-    try {
-      const SecureStore = require('expo-secure-store');
-      const secureToken = await SecureStore.getItemAsync(STORAGE_KEYS.TOKEN);
-      console.log('SecureStore token:', secureToken ? 'exists' : 'not found');
-    } catch (error) {
-      console.log('Error reading from SecureStore:', error);
+      errorService.handleError(error, {
+        source: 'storage',
+        displayToUser: false,
+        context: { action: 'debugTokenStorage' }
+      });
     }
     
     // Check all AsyncStorage keys to find token
@@ -183,12 +178,20 @@ export const debugTokenStorage = async (): Promise<void> => {
         }
       }
     } catch (error) {
-      console.log('Error listing AsyncStorage keys:', error);
+      errorService.handleError(error, {
+        source: 'storage',
+        displayToUser: false,
+        context: { action: 'listAsyncStorageKeys' }
+      });
     }
     
     console.log('===========================');
   } catch (error) {
-    console.error('Debug token storage error:', error);
+    errorService.handleError(error, {
+      source: 'unknown',
+      displayToUser: false,
+      context: { action: 'debugTokenStorage' }
+    });
   }
 };
 
@@ -197,12 +200,12 @@ export const instancesApi = {
   // Get all instances for the current user
   getInstances: async () => {
     try {
-      // First run token storage diagnosis
-      await debugTokenStorage();
-      
       return await apiRequest('/instances', { method: 'GET' });
     } catch (error) {
-      console.error('getInstances error:', error);
+      errorService.handleError(error, {
+        source: 'api',
+        context: { action: 'getInstances' }
+      });
       throw error;
     }
   },
@@ -212,7 +215,10 @@ export const instancesApi = {
     try {
       return await apiRequest(`/instances/${id}`, { method: 'GET' });
     } catch (error) {
-      console.error(`getInstance error for ID ${id}:`, error);
+      errorService.handleError(error, {
+        source: 'api',
+        context: { action: 'getInstance', id }
+      });
       throw error;
     }
   },
@@ -220,17 +226,19 @@ export const instancesApi = {
   // Create a new instance
   createInstance: async (data: any) => {
     try {
-      console.log('Creating instance with data:', JSON.stringify(data, null, 2));
-      
-      // First run token storage diagnosis
-      await debugTokenStorage();
+      if (config.enableLogging) {
+        console.log('Creating instance with data:', JSON.stringify(data, null, 2));
+      }
       
       return await apiRequest('/instances', {
         method: 'POST',
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('createInstance error:', error);
+      errorService.handleError(error, {
+        source: 'api',
+        context: { action: 'createInstance', data }
+      });
       throw error;
     }
   },
@@ -243,7 +251,10 @@ export const instancesApi = {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`updateInstance error for ID ${id}:`, error);
+      errorService.handleError(error, {
+        source: 'api',
+        context: { action: 'updateInstance', id, data }
+      });
       throw error;
     }
   },
@@ -253,7 +264,10 @@ export const instancesApi = {
     try {
       return await apiRequest(`/instances/${id}`, { method: 'DELETE' });
     } catch (error) {
-      console.error(`deleteInstance error for ID ${id}:`, error);
+      errorService.handleError(error, {
+        source: 'api',
+        context: { action: 'deleteInstance', id }
+      });
       throw error;
     }
   },
@@ -269,7 +283,10 @@ export const authApi = {
         body: JSON.stringify({ email, password }),
       });
     } catch (error) {
-      console.error('login error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        context: { action: 'login', email }
+      });
       throw error;
     }
   },
@@ -282,7 +299,10 @@ export const authApi = {
         body: JSON.stringify(userData),
       });
     } catch (error) {
-      console.error('register error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        context: { action: 'register', email: userData.email }
+      });
       throw error;
     }
   },
@@ -292,7 +312,10 @@ export const authApi = {
     try {
       return await apiRequest('/auth/me', { method: 'GET' });
     } catch (error) {
-      console.error('getUserInfo error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        context: { action: 'getUserInfo' }
+      });
       throw error;
     }
   },
@@ -305,7 +328,11 @@ export const authApi = {
         body: JSON.stringify({ refreshToken }),
       });
     } catch (error) {
-      console.error('refreshToken error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        level: 'warning',
+        context: { action: 'refreshToken' }
+      });
       throw error;
     }
   },
@@ -315,7 +342,11 @@ export const authApi = {
     try {
       return await apiRequest('/auth/logout', { method: 'POST' });
     } catch (error) {
-      console.error('logout error:', error);
+      errorService.handleError(error, {
+        source: 'auth',
+        level: 'info', // Less severe since we're logging out anyway
+        context: { action: 'logout' }
+      });
       throw error;
     }
   },

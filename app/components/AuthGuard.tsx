@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter, Redirect } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
+import { Redirect } from 'expo-router';
+import { useAuth } from '@/app/context/AuthContext';
+import theme from '@/app/constants/theme';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -13,13 +14,12 @@ interface AuthGuardProps {
  */
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
 
   // If loading, show a loading spinner
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2a9d8f" />
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
         <Text style={styles.text}>Loading...</Text>
       </View>
     );
@@ -27,7 +27,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    return <Redirect href="/login" />;
+    return <Redirect href="/screens/auth/login" />;
   }
 
   // If authenticated, render the children
@@ -39,11 +39,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.primary,
   },
   text: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    marginTop: theme.spacing.lg,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
   },
 });

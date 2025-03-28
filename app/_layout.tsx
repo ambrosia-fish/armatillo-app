@@ -6,13 +6,14 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Alert, Modal, View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
 import { AuthProvider } from './context/AuthContext';
 import crashRecovery from './utils/crashRecovery';
-import { ErrorBoundary } from './ErrorBoundary';
+import ErrorBoundary from './ErrorBoundary';
+import theme from './constants/theme';
 
 export {
   // Use our custom error boundary
@@ -188,10 +189,12 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <RootLayoutNav />
-      <RecoveryModal />
-    </>
+    <ErrorBoundary>
+      <>
+        <RootLayoutNav />
+        <RecoveryModal />
+      </>
+    </ErrorBoundary>
   );
 }
 
@@ -233,14 +236,30 @@ function RootLayoutNav() {
     }
   }, [router]);
 
+  // Common header styles
+  const headerStyles = {
+    headerStyle: {
+      backgroundColor: theme.colors.background.primary,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.light,
+    },
+    headerTitleStyle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.colors.text.primary,
+    },
+    headerTintColor: theme.colors.primary.main,
+    headerBackTitle: 'Back',
+  };
+
   // Screen options for BFRB tracking flow
-  // This hides previous screens when a new screen is displayed
   const screenOptions = {
     presentation: 'card',
     animation: 'slide_from_bottom',
-    headerShown: false,
+    headerShown: true, // Now showing headers
+    ...headerStyles,
     cardStyle: { 
-      backgroundColor: '#fff' 
+      backgroundColor: theme.colors.background.primary
     },
     cardOverlayEnabled: true,
     cardStyleInterpolator: ({ current: { progress } }) => ({
@@ -261,44 +280,80 @@ function RootLayoutNav() {
               options={{ headerShown: false }} 
             />
             <Stack.Screen 
-              name="modal" 
+              name="screens/modals/modal" 
               options={{ presentation: 'modal' }} 
             />
             
             {/* Authentication Screens */}
             <Stack.Screen
-              name="login"
+              name="screens/auth/login"
               options={{ headerShown: false }}
             />
             
             {/* BFRB Tracking Flow Screens */}
             <Stack.Screen 
-              name="time-screen" 
-              options={screenOptions} 
+              name="screens/tracking/time-screen" 
+              options={{
+                ...screenOptions,
+                title: "Time & Duration",
+                headerBackTitle: "Home" // Override back button text for first screen
+              }} 
             />
             <Stack.Screen 
-              name="strength-screen" 
-              options={screenOptions}  // Just use the standard screenOptions
+              name="screens/tracking/urge-screen" 
+              options={{
+                ...screenOptions,
+                title: "Urge & Intention"
+              }} 
             />
             <Stack.Screen 
-              name="detail-screen" 
-              options={screenOptions} 
+              name="screens/tracking/environment-screen" 
+              options={{
+                ...screenOptions,
+                title: "Environment"
+              }} 
             />
             <Stack.Screen 
-              name="environment-screen" 
-              options={screenOptions} 
+              name="screens/tracking/mental-screen" 
+              options={{
+                ...screenOptions,
+                title: "Mental State"
+              }} 
             />
             <Stack.Screen 
-              name="feelings-screen" 
-              options={screenOptions} 
+              name="screens/tracking/thoughts-screen" 
+              options={{
+                ...screenOptions,
+                title: "Thought Patterns"
+              }} 
             />
             <Stack.Screen 
-              name="thoughts-screen" 
-              options={screenOptions} 
+              name="screens/tracking/physical-screen" 
+              options={{
+                ...screenOptions,
+                title: "Physical Sensations"
+              }} 
             />
             <Stack.Screen 
-              name="notes-screen" 
-              options={screenOptions} 
+              name="screens/tracking/sensory-screen" 
+              options={{
+                ...screenOptions,
+                title: "Sensory Triggers"
+              }} 
+            />
+            <Stack.Screen 
+              name="screens/tracking/submit-screen" 
+              options={{
+                ...screenOptions,
+                title: "Final Details"
+              }} 
+            />
+            <Stack.Screen 
+              name="screens/modals/detail-screen" 
+              options={{
+                ...screenOptions,
+                title: "Details"
+              }} 
             />
           </Stack>
         </ThemeProvider>
@@ -311,54 +366,51 @@ function RootLayoutNav() {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.background.modal,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
+    padding: theme.spacing.lg,
+  } as ViewStyle,
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
+    ...theme.shadows.lg,
+  } as ViewStyle,
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2a9d8f',
-  },
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    marginBottom: theme.spacing.sm,
+    color: theme.colors.primary.main,
+  } as TextStyle,
   modalText: {
-    fontSize: 16,
-    marginBottom: 20,
-    lineHeight: 22,
-  },
+    fontSize: theme.typography.fontSize.md,
+    marginBottom: theme.spacing.lg,
+    lineHeight: theme.typography.lineHeight.normal,
+    color: theme.colors.text.primary,
+  } as TextStyle,
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
+  } as ViewStyle,
   button: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 5,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
-    marginHorizontal: 5,
-  },
+    marginHorizontal: theme.spacing.xs,
+  } as ViewStyle,
   restoreButton: {
-    backgroundColor: '#2a9d8f',
-  },
+    backgroundColor: theme.colors.primary.main,
+  } as ViewStyle,
   discardButton: {
-    backgroundColor: '#e76f51',
-  },
+    backgroundColor: theme.colors.secondary.main,
+  } as ViewStyle,
   buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+    color: theme.colors.neutral.white,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    fontSize: theme.typography.fontSize.md,
+  } as TextStyle,
 });

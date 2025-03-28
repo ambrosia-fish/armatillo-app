@@ -1,37 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  View, 
-  Text, 
   StyleSheet, 
   FlatList, 
   TouchableOpacity, 
   ActivityIndicator,
   RefreshControl,
-  Alert
+  Alert,
+  ViewStyle,
+  TextStyle,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
-import InstanceDetailsModal from '../components/InstanceDetailsModal';
+import { useAuth } from '@/app/context/AuthContext';
+import api from '@/app/services/api';
+import { InstanceDetailsModal } from '@/app/components';
 import { useFocusEffect } from '@react-navigation/native';
-
-// Define the Instance type based on your backend data structure
-interface Instance {
-  _id: string;
-  userId: string;
-  userEmail: string;
-  user_id: string;
-  createdAt: string;
-  urgeStrength?: number;
-  automatic?: boolean;
-  location?: string;
-  activity?: string;
-  feelings?: string[];
-  thoughts?: string;
-  environment?: string[];
-  notes?: string;
-}
+import { ensureValidToken } from '@/app/utils/tokenRefresher';
+import { exportInstancesAsCSV, Instance } from '@/app/utils/csvExport';
+import theme from '@/app/constants/theme';
+import { View, Text } from '@/app/components';
 
 export default function HistoryScreen() {
   const [instances, setInstances] = useState<Instance[]>([]);
@@ -39,12 +27,33 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
   
   // Modal state management
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
-  const { isAuthenticated, refreshTokenIfNeeded, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Function to normalize instance data to standardized format
+  const normalizeInstance = (instance: any): Instance => {
+    return {
+      ...instance,
+      // Use time field, fall back to createdAt for legacy data
+      time: instance.time || instance.createdAt,
+      // Use intentionType, convert from automatic for legacy data
+      intentionType: instance.intentionType || (instance.automatic !== undefined 
+        ? (instance.automatic ? 'automatic' : 'intentional') 
+        : 'automatic'),
+      // Use selectedEmotions, fall back to feelings for legacy data
+      selectedEmotions: instance.selectedEmotions || instance.feelings || [],
+      // Use selectedEnvironments, fall back to environment for legacy data
+      selectedEnvironments: instance.selectedEnvironments || instance.environment || [],
+      // Use selectedThoughts, convert from thoughts for legacy data
+      selectedThoughts: instance.selectedThoughts || 
+        (instance.thoughts ? [instance.thoughts] : []),
+    };
+  };
 
   // Function to fetch instances from API
   const fetchInstances = async () => {
@@ -60,7 +69,7 @@ export default function HistoryScreen() {
       }
       
       // Make sure token is valid before making the request
-      const tokenRefreshed = await refreshTokenIfNeeded();
+      const tokenRefreshed = await ensureValidToken();
       console.log('Token refresh status:', tokenRefreshed ? 'refreshed' : 'not needed');
       
       // Fetch instances
@@ -75,9 +84,10 @@ export default function HistoryScreen() {
         return;
       }
       
-      // Sort instances by creation date (newest first)
-      const sortedInstances = response.sort((a: Instance, b: Instance) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      // Normalize and sort instances by time (newest first)
+      const normalizedInstances = response.map(normalizeInstance);
+      const sortedInstances = normalizedInstances.sort((a, b) => 
+        new Date(b.time).getTime() - new Date(a.time).getTime()
       );
       
       setInstances(sortedInstances);
@@ -94,6 +104,16 @@ export default function HistoryScreen() {
       setLoading(false);
       setRefreshing(false);
       setInitialLoad(false);
+    }
+  };
+
+  // Function to handle CSV export
+  const handleExportCSV = async () => {
+    setExportLoading(true);
+    try {
+      await exportInstancesAsCSV(instances);
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -149,8 +169,8 @@ export default function HistoryScreen() {
       onPress={() => viewInstanceDetails(item)}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-        <Ionicons name="chevron-forward" size={20} color="#777" />
+        <Text style={styles.date}>{formatDate(item.time)}</Text>
+        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
       </View>
       
       <View style={styles.cardContent}>
@@ -161,12 +181,12 @@ export default function HistoryScreen() {
           </View>
         )}
         
-        {item.automatic !== undefined && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type:</Text>
-            <Text style={styles.infoValue}>{item.automatic ? 'Automatic' : 'Deliberate'}</Text>
-          </View>
-        )}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Type:</Text>
+          <Text style={styles.infoValue}>
+            {item.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
+          </Text>
+        </View>
         
         {item.location && (
           <View style={styles.infoRow}>
@@ -188,7 +208,7 @@ export default function HistoryScreen() {
   // Empty state component
   const EmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="time-outline" size={50} color="#ccc" />
+      <Ionicons name="time-outline" size={50} color={theme.colors.neutral.medium} />
       <Text style={styles.emptyStateText}>No history found</Text>
       <Text style={styles.emptyStateSubtext}>
         Your tracked behaviors will appear here
@@ -214,7 +234,7 @@ export default function HistoryScreen() {
       
       {loading && initialLoad ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color={theme.colors.primary.main} />
           <Text style={styles.loadingText}>Loading your history...</Text>
         </View>
       ) : (
@@ -222,22 +242,41 @@ export default function HistoryScreen() {
           data={instances}
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={instances.length === 0 ? { flex: 1 } : { paddingBottom: 20 }}
+          contentContainerStyle={instances.length === 0 ? { flex: 1 } : { paddingBottom: theme.spacing.xxl }}
           ListEmptyComponent={!loading ? EmptyState : null}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
+              colors={[theme.colors.primary.main]}
             />
           }
           ListHeaderComponent={loading && !initialLoad ? (
             <View style={styles.inlineLoadingContainer}>
-              <ActivityIndicator size="small" color="#0000ff" />
+              <ActivityIndicator size="small" color={theme.colors.primary.main} />
               <Text style={styles.inlineLoadingText}>Refreshing...</Text>
             </View>
           ) : null}
         />
       )}
+      
+      {/* Export CSV Button */}
+      <View style={styles.exportButtonContainer}>
+        <TouchableOpacity 
+          style={styles.exportButton}
+          onPress={handleExportCSV}
+          disabled={loading || refreshing || exportLoading || instances.length === 0}
+        >
+          {exportLoading ? (
+            <ActivityIndicator size="small" color={theme.colors.primary.contrast} />
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={18} color={theme.colors.primary.contrast} />
+              <Text style={styles.exportButtonText}>Export as CSV</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
       
       {/* Instance Details Modal */}
       <InstanceDetailsModal 
@@ -252,120 +291,138 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-  },
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.background.secondary,
+  } as ViewStyle,
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: theme.typography.fontSize.xxl,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    marginBottom: theme.spacing.lg,
     textAlign: 'center',
-  },
+    color: theme.colors.text.primary,
+  } as TextStyle,
   card: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
+    ...theme.componentStyles.card.container,
+    marginBottom: theme.spacing.md,
+  } as ViewStyle,
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    paddingBottom: 8,
-  },
+    borderBottomColor: theme.colors.border.light,
+    paddingBottom: theme.spacing.sm,
+  } as ViewStyle,
   date: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+  } as TextStyle,
   cardContent: {
-    marginTop: 4,
-  },
+    marginTop: theme.spacing.xs,
+  } as ViewStyle,
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 4,
-  },
+    marginBottom: theme.spacing.xs,
+  } as ViewStyle,
   infoLabel: {
-    fontSize: 14,
-    color: '#444',
-    fontWeight: '500',
-    marginRight: 8,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    marginRight: theme.spacing.sm,
     minWidth: 100,
-  },
+  } as TextStyle,
   infoValue: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
     flex: 1,
-  },
+  } as TextStyle,
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
+    padding: theme.spacing.xl,
+  } as ViewStyle,
   emptyStateText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    color: '#666',
-  },
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    marginTop: theme.spacing.lg,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
   emptyStateSubtext: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
     textAlign: 'center',
-    marginTop: 8,
-  },
+    marginTop: theme.spacing.sm,
+  } as TextStyle,
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  } as ViewStyle,
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
-  },
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
   inlineLoadingContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    marginBottom: 12,
-  },
+    padding: theme.spacing.sm,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.md,
+  } as ViewStyle,
   inlineLoadingText: {
-    marginLeft: 8,
-    color: '#666',
-  },
+    marginLeft: theme.spacing.sm,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
   errorContainer: {
-    backgroundColor: '#ffebee',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: theme.colors.utility.error + '15', // Using error color with opacity
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.lg,
     alignItems: 'center',
-  },
+  } as ViewStyle,
   errorText: {
-    color: '#d32f2f',
-    marginBottom: 8,
+    color: theme.colors.utility.error,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
-  },
+  } as TextStyle,
   retryButton: {
-    backgroundColor: '#d32f2f',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
-  },
+    backgroundColor: theme.colors.utility.error,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.xs,
+  } as ViewStyle,
   retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+    color: theme.colors.neutral.white,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
+  exportButtonContainer: {
+    position: 'absolute',
+    bottom: theme.spacing.lg,
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: Platform.OS === 'ios' ? theme.spacing.lg : theme.spacing.sm,
+  } as ViewStyle,
+  exportButton: {
+    backgroundColor: theme.colors.primary.main,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xxl,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadows.sm,
+  } as ViewStyle,
+  exportButtonText: {
+    color: theme.colors.primary.contrast,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    marginLeft: theme.spacing.sm,
+  } as TextStyle,
 });

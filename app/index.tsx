@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, Text, ViewStyle, TextStyle } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from './context/AuthContext';
+import theme from './constants/theme';
 
 /**
  * Root index route - handles redirection based on auth state
@@ -14,7 +15,7 @@ export default function Index() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2a9d8f" />
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
         <Text style={styles.text}>Loading...</Text>
       </View>
     );
@@ -24,7 +25,7 @@ export default function Index() {
   return isAuthenticated ? (
     <Redirect href="/(tabs)" />
   ) : (
-    <Redirect href="/login" />
+    <Redirect href="/screens/auth/login" />
   );
 }
 
@@ -33,11 +34,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
+    backgroundColor: theme.colors.background.primary,
+  } as ViewStyle,
   text: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
+    marginTop: theme.spacing.lg,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
 });

@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
+import theme from '@/app/constants/theme';
+import { View, Text } from '@/app/components';
 
 export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
@@ -55,20 +57,24 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>General</Text>
           <View style={styles.card}>
             <View style={styles.settingRow}>
-              <Ionicons name="notifications-outline" size={24} color="#333" />
+              <Ionicons name="notifications-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.settingText}>Notifications</Text>
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
+                trackColor={{ false: theme.colors.neutral.medium, true: theme.colors.primary.light }}
+                thumbColor={notificationsEnabled ? theme.colors.primary.main : theme.colors.neutral.white}
               />
             </View>
             
             <View style={styles.settingRow}>
-              <Ionicons name="moon-outline" size={24} color="#333" />
+              <Ionicons name="moon-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.settingText}>Dark Mode</Text>
               <Switch
                 value={darkModeEnabled}
                 onValueChange={setDarkModeEnabled}
+                trackColor={{ false: theme.colors.neutral.medium, true: theme.colors.primary.light }}
+                thumbColor={darkModeEnabled ? theme.colors.primary.main : theme.colors.neutral.white}
               />
             </View>
           </View>
@@ -78,9 +84,9 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.card}>
             <TouchableOpacity style={styles.settingRow}>
-              <Ionicons name="person-outline" size={24} color="#333" />
+              <Ionicons name="person-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.settingText}>Profile</Text>
-              <Ionicons name="chevron-forward" size={24} color="#ccc" />
+              <Ionicons name="chevron-forward" size={24} color={theme.colors.text.tertiary} />
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -88,14 +94,14 @@ export default function SettingsScreen() {
               onPress={handleLogout}
               disabled={isLoading}
             >
-              <Ionicons name="log-out-outline" size={24} color="#e63946" />
-              <Text style={[styles.settingText, { color: '#e63946' }]}>
+              <Ionicons name="log-out-outline" size={24} color={theme.colors.utility.error} />
+              <Text style={[styles.settingText, { color: theme.colors.utility.error }]}>
                 {isLoading ? 'Signing Out...' : 'Sign Out'}
               </Text>
               {isLoading ? (
-                <ActivityIndicator size="small" color="#e63946" />
+                <ActivityIndicator size="small" color={theme.colors.utility.error} />
               ) : (
-                <Ionicons name="chevron-forward" size={24} color="#ccc" />
+                <Ionicons name="chevron-forward" size={24} color={theme.colors.text.tertiary} />
               )}
             </TouchableOpacity>
           </View>
@@ -105,15 +111,15 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.card}>
             <TouchableOpacity style={styles.settingRow}>
-              <Ionicons name="information-circle-outline" size={24} color="#333" />
+              <Ionicons name="information-circle-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.settingText}>About Armatillo</Text>
-              <Ionicons name="chevron-forward" size={24} color="#ccc" />
+              <Ionicons name="chevron-forward" size={24} color={theme.colors.text.tertiary} />
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.settingRow}>
-              <Ionicons name="document-text-outline" size={24} color="#333" />
+              <Ionicons name="document-text-outline" size={24} color={theme.colors.text.primary} />
               <Text style={styles.settingText}>Privacy Policy</Text>
-              <Ionicons name="chevron-forward" size={24} color="#ccc" />
+              <Ionicons name="chevron-forward" size={24} color={theme.colors.text.tertiary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -125,76 +131,77 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-  },
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.background.secondary,
+  } as ViewStyle,
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
+    fontSize: theme.typography.fontSize.xxl,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    marginBottom: theme.spacing.xl,
     textAlign: 'center',
-  },
+    color: theme.colors.text.primary,
+  } as TextStyle,
   profileSection: {
     alignItems: 'center',
-    marginBottom: 24,
-  },
+    marginBottom: theme.spacing.xl,
+  } as ViewStyle,
   profileImage: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    marginBottom: 12,
-  },
+    borderRadius: theme.borderRadius.circle,
+    marginBottom: theme.spacing.md,
+  } as ImageStyle,
   profileImagePlaceholder: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: '#2a9d8f',
+    borderRadius: theme.borderRadius.circle,
+    backgroundColor: theme.colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-  },
+    marginBottom: theme.spacing.md,
+  } as ViewStyle,
   profileInitials: {
-    fontSize: 32,
-    color: 'white',
-    fontWeight: 'bold',
-  },
+    fontSize: theme.typography.fontSize.xxxl,
+    color: theme.colors.primary.contrast,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+  } as TextStyle,
   profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    marginBottom: theme.spacing.xs,
+    color: theme.colors.text.primary,
+  } as TextStyle,
   profileEmail: {
-    fontSize: 16,
-    color: '#666',
-  },
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
   section: {
-    marginBottom: 20,
-  },
+    marginBottom: theme.spacing.xl,
+  } as ViewStyle,
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    marginBottom: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    color: theme.colors.text.primary,
+  } as TextStyle,
   card: {
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
+    ...theme.shadows.sm
+  } as ViewStyle,
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
+    borderBottomColor: theme.colors.border.light,
+  } as ViewStyle,
   settingText: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.md,
     flex: 1,
-    marginLeft: 16,
-  },
+    marginLeft: theme.spacing.lg,
+    color: theme.colors.text.primary,
+  } as TextStyle,
 });
