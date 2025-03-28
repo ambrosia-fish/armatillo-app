@@ -20,12 +20,20 @@ export default function HomeScreen() {
       // Add explicit class to the floating action button for PWA styling
       if (isStandalone && typeof document !== 'undefined') {
         setTimeout(() => {
+          // Find and add classes to the add button for PWA styling
+          const fabContainer = document.querySelector('.add-button-container');
           const fabElement = document.querySelector('.add-button');
+          
+          if (fabContainer) {
+            fabContainer.classList.add('expo-fab-container');
+            console.log('Added PWA class to FAB container');
+          }
+          
           if (fabElement) {
             fabElement.classList.add('expo-fab');
             console.log('Added PWA class to FAB');
           }
-        }, 500);
+        }, 300);
       }
     }
   }, []);
@@ -33,6 +41,26 @@ export default function HomeScreen() {
   const addNewEntry = () => {
     // Navigate to the time screen with updated path
     router.push('/screens/tracking/time-screen');
+  };
+
+  // Get specific styles for PWA mode
+  const getAddButtonContainerStyle = () => {
+    const baseStyle = styles.addButtonContainer;
+    
+    if (isPwa && Platform.OS === 'web') {
+      return [
+        baseStyle,
+        {
+          position: 'fixed',
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 70px)',
+          left: 0,
+          right: 0,
+          zIndex: 999,
+        }
+      ];
+    }
+    
+    return baseStyle;
   };
 
   return (
@@ -53,16 +81,15 @@ export default function HomeScreen() {
       
       {/* Centered Add Button with PWA-specific adjustments */}
       <View 
-        style={[
-          styles.addButtonContainer, 
-          isPwa && Platform.OS === 'web' ? styles.pwaAddButtonContainer : null
-        ]}
+        style={getAddButtonContainerStyle()}
         className="add-button-container"
       >
         <TouchableOpacity 
           style={styles.addButton} 
           onPress={addNewEntry}
           className="add-button"
+          accessibilityLabel="Add new entry"
+          accessibilityRole="button"
         >
           <Ionicons name="add" size={32} color={theme.colors.primary.contrast} />
         </TouchableOpacity>
@@ -103,29 +130,13 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
   } as ImageStyle,
-  welcomeCard: {
-    ...theme.componentStyles.card.container,
-    marginBottom: theme.spacing.xl,
-  } as ViewStyle,
-  welcomeTitle: {
-    ...theme.componentStyles.card.title,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-  } as TextStyle,
-  welcomeText: {
-    ...theme.componentStyles.card.content,
-    lineHeight: theme.typography.lineHeight.normal,
-  } as TextStyle,
   addButtonContainer: {
     position: 'absolute',
     bottom: theme.spacing.xxxl,
     left: 0,
     right: 0,
     alignItems: 'center',
-  } as ViewStyle,
-  // Special positioning for PWA mode
-  pwaAddButtonContainer: {
-    bottom: Platform.OS === 'web' ? 'calc(env(safe-area-inset-bottom, 0px) + 80px)' : theme.spacing.xxxl,
-    zIndex: 100,
+    zIndex: 100, // Ensure it's above other elements
   } as ViewStyle,
   addButton: {
     width: 60,

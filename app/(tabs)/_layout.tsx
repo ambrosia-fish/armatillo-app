@@ -25,6 +25,32 @@ export default function TabLayout() {
           if (tabBarElement) {
             tabBarElement.classList.add('pwa-tab-bar');
             console.log('Added PWA class to tab bar');
+            
+            // Add styles to fix the white space below tabs
+            const style = document.createElement('style');
+            style.innerHTML = `
+              .pwa-tab-bar {
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+                margin-bottom: 0 !important;
+                height: auto !important;
+                min-height: 49px !important;
+              }
+              .pwa-standalone body {
+                min-height: 100vh !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 0 !important;
+              }
+              .pwa-standalone #root {
+                padding-bottom: 0 !important;
+              }
+              
+              /* Fix for large white space */
+              .pwa-standalone nav {
+                margin-bottom: 0 !important;
+                bottom: 0 !important;
+              }
+            `;
+            document.head.appendChild(style);
           }
         }, 500);
       }
@@ -49,6 +75,9 @@ export default function TabLayout() {
         right: 0,
         zIndex: 1000,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        marginBottom: 0,
+        height: 'auto',
+        minHeight: 49,
       };
     }
     
@@ -65,6 +94,8 @@ export default function TabLayout() {
           tabBarStyle: getTabBarStyle(),
           // Add an ID or custom prop for easier styling selection
           tabBarLabelStyle: isPwa ? styles.pwaTabLabel : {},
+          // Important: Control the height to reduce extra space
+          tabBarItemStyle: isPwa ? { paddingBottom: 0 } : {},
         }}>
         <Tabs.Screen
           name="progress"
@@ -111,6 +142,7 @@ const styles = StyleSheet.create({
   pwaTabLabel: {
     // Adjust text size for better visibility on iOS
     fontSize: 12,
-    marginBottom: 4,
+    marginBottom: 0, // Reduce bottom margin to minimize extra space
+    paddingBottom: 0, // Reduce padding to minimize extra space
   },
 });
