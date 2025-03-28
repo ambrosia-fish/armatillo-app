@@ -24,26 +24,26 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import OptionDictionaries from '@/app/constants/optionDictionaries';
 
-// Define the Instance type based on your backend data structure
+// Define the standardized Instance type
 interface Instance {
   _id: string;
-  userId: string;
-  userEmail: string;
+  userId?: string;
+  userEmail?: string;
   user_id: string;
-  createdAt: string;
+  time: string;
+  duration: number | string;
   urgeStrength?: number;
-  intentionType?: string;
-  automatic?: boolean;
-  location?: string;
-  activity?: string;
-  duration?: string | number;
-  selectedEmotions?: string[];
+  intentionType: string; // 'automatic' or 'intentional'
   selectedEnvironments?: string[];
+  selectedEmotions?: string[];
   selectedSensations?: string[];
   selectedThoughts?: string[];
-  feelings?: string[];
-  environment?: string[];
-  thoughts?: string;
+  selectedSensoryTriggers?: string[];
+  mentalDetails?: string;
+  physicalDetails?: string;
+  thoughtDetails?: string;
+  environmentDetails?: string;
+  sensoryDetails?: string;
   notes?: string;
 }
 
@@ -60,6 +60,26 @@ export default function HistoryScreen() {
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
   const { isAuthenticated, user } = useAuth();
+
+  // Function to normalize instance data to standardized format
+  const normalizeInstance = (instance: any): Instance => {
+    return {
+      ...instance,
+      // Use time field, fall back to createdAt for legacy data
+      time: instance.time || instance.createdAt,
+      // Use intentionType, convert from automatic for legacy data
+      intentionType: instance.intentionType || (instance.automatic !== undefined 
+        ? (instance.automatic ? 'automatic' : 'intentional') 
+        : 'automatic'),
+      // Use selectedEmotions, fall back to feelings for legacy data
+      selectedEmotions: instance.selectedEmotions || instance.feelings || [],
+      // Use selectedEnvironments, fall back to environment for legacy data
+      selectedEnvironments: instance.selectedEnvironments || instance.environment || [],
+      // Use selectedThoughts, convert from thoughts for legacy data
+      selectedThoughts: instance.selectedThoughts || 
+        (instance.thoughts ? [instance.thoughts] : []),
+    };
+  };
 
   // Function to fetch instances from API
   const fetchInstances = async () => {
@@ -90,9 +110,10 @@ export default function HistoryScreen() {
         return;
       }
       
-      // Sort instances by creation date (newest first)
-      const sortedInstances = response.sort((a: Instance, b: Instance) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      // Normalize and sort instances by time (newest first)
+      const normalizedInstances = response.map(normalizeInstance);
+      const sortedInstances = normalizedInstances.sort((a, b) => 
+        new Date(b.time).getTime() - new Date(a.time).getTime()
       );
       
       setInstances(sortedInstances);
@@ -166,10 +187,8 @@ export default function HistoryScreen() {
 
     // Add data rows
     data.forEach(instance => {
-      // Get type (intentionType is the new field, automatic is the legacy field)
-      const type = instance.intentionType 
-        ? (instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional')
-        : (instance.automatic !== undefined ? (instance.automatic ? 'Automatic' : 'Deliberate') : '');
+      // Get type display text
+      const type = instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional';
         
       // Format duration
       const duration = instance.duration 
@@ -179,14 +198,14 @@ export default function HistoryScreen() {
       // Get emotions labels
       const emotions = instance.selectedEmotions 
         ? getOptionLabels(instance.selectedEmotions, OptionDictionaries.emotionOptions)
-        : (instance.feelings ? instance.feelings.join(', ') : '');
+        : '';
         
       // Get environment labels
       const environment = instance.selectedEnvironments 
         ? getOptionLabels(instance.selectedEnvironments, OptionDictionaries.environmentOptions)
-        : (instance.environment ? instance.environment.join(', ') : '');
+        : '';
         
-      // Get sensation labels (new field, no legacy equivalent)
+      // Get sensation labels
       const sensations = instance.selectedSensations 
         ? getOptionLabels(instance.selectedSensations, OptionDictionaries.sensationOptions)
         : '';
@@ -194,7 +213,7 @@ export default function HistoryScreen() {
       // Get thought labels
       const thoughts = instance.selectedThoughts 
         ? getOptionLabels(instance.selectedThoughts, OptionDictionaries.thoughtOptions)
-        : (instance.thoughts || '');
+        : '';
 
       // Function to escape quotes and handle fields
       const escapeField = (field: any) => {
@@ -205,8 +224,8 @@ export default function HistoryScreen() {
 
       // Create row with proper data types and escaped quotes
       const row = [
-        formatCSVDate(instance.createdAt), // Date only
-        formatCSVTime(instance.createdAt), // Time only
+        formatCSVDate(instance.time), // Date only
+        formatCSVTime(instance.time), // Time only
         instance.urgeStrength !== undefined ? instance.urgeStrength : '', // Urge Strength
         escapeField(type), // Type
         escapeField(duration), // Duration
@@ -342,7 +361,7 @@ export default function HistoryScreen() {
       onPress={() => viewInstanceDetails(item)}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+        <Text style={styles.date}>{formatDate(item.time)}</Text>
         <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
       </View>
       
@@ -354,17 +373,12 @@ export default function HistoryScreen() {
           </View>
         )}
         
-        {(item.intentionType !== undefined || item.automatic !== undefined) && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type:</Text>
-            <Text style={styles.infoValue}>
-              {item.intentionType 
-                ? (item.intentionType === 'automatic' ? 'Automatic' : 'Intentional')
-                : (item.automatic ? 'Automatic' : 'Deliberate')
-              }
-            </Text>
-          </View>
-        )}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Type:</Text>
+          <Text style={styles.infoValue}>
+            {item.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
+          </Text>
+        </View>
         
         {item.location && (
           <View style={styles.infoRow}>
