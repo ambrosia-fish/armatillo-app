@@ -21,52 +21,77 @@ export default function TabLayout() {
       if (standalone && typeof document !== 'undefined') {
         // Find the tab bar element after a short delay to ensure it's mounted
         setTimeout(() => {
+          // Target the tab bar
           const tabBarElement = document.querySelector('[role="tablist"]');
           if (tabBarElement) {
             tabBarElement.classList.add('pwa-tab-bar');
             console.log('Added PWA class to tab bar');
             
-            // Add styles to fix the white space below tabs
-            const style = document.createElement('style');
-            style.innerHTML = `
-              /* Override any existing bottom margins or paddings */
+            // Add specific fix for white space
+            const whiteSpaceFix = document.createElement('style');
+            whiteSpaceFix.innerHTML = `
+              /* Fix exact height of tab bar */
               [role="tablist"] {
-                bottom: 0 !important;
-                margin-bottom: 0 !important;
-                border-bottom: none !important;
-                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-                height: auto !important;
+                height: 49px !important;
                 min-height: 49px !important;
                 max-height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+                margin-bottom: 0 !important;
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
               }
               
               /* Target React Navigation specific elements */
-              .css-view-175oi2r.r-backgroundColor-8jlm1c,
-              .r-bottom-1p0dtai {
-                bottom: 0 !important;
-                margin-bottom: 0 !important;
-                height: auto !important;
-              }
-              
-              /* Fix parent container heights */
-              body, #root, main {
-                min-height: 100vh !important;
-                height: 100% !important;
-                max-height: -webkit-fill-available !important;
-                margin-bottom: 0 !important;
-                padding-bottom: 0 !important;
-              }
-              
-              /* Eliminate any possible whitespace */
-              .pwa-standalone nav,
-              .pwa-standalone footer {
-                margin-bottom: 0 !important;
-                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+              .css-view-175oi2r.r-backgroundColor-8jlm1c {
+                height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
                 bottom: 0 !important;
                 position: fixed !important;
+                left: 0 !important;
+                right: 0 !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+                margin-bottom: 0 !important;
+                z-index: 1000 !important;
+              }
+              
+              /* Fill the bottom area with white color to eliminate the white bar */
+              body::after {
+                content: "";
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: env(safe-area-inset-bottom, 0px);
+                background-color: #ffffff;
+                z-index: 999;
+              }
+              
+              /* Fix container heights */
+              body, html {
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+              }
+              
+              #root {
+                height: 100% !important;
+                padding-bottom: 0 !important;
+                margin-bottom: 0 !important;
+              }
+              
+              /* Make tab items show fully */
+              [role="tab"] {
+                height: 49px !important;
+                min-height: 49px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
               }
             `;
-            document.head.appendChild(style);
+            document.head.appendChild(whiteSpaceFix);
           }
         }, 500);
       }
@@ -84,7 +109,11 @@ export default function TabLayout() {
     if (isPwa && Platform.OS === 'web') {
       return {
         ...baseStyle,
-        // Ensure the tab bar is visible by setting z-index and accounting for safe area
+        // Set exact height for the tab bar
+        height: 49,
+        minHeight: 49,
+        maxHeight: 'calc(49px + env(safe-area-inset-bottom, 0px))',
+        // Ensure the tab bar is visible with fixed position
         position: 'fixed',
         bottom: 0,
         left: 0,
@@ -92,9 +121,6 @@ export default function TabLayout() {
         zIndex: 1000,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         marginBottom: 0,
-        height: 'auto',
-        minHeight: 49,
-        maxHeight: 'calc(49px + env(safe-area-inset-bottom, 0px))',
       };
     }
     
@@ -115,6 +141,11 @@ export default function TabLayout() {
           tabBarItemStyle: isPwa ? { 
             paddingBottom: 0,
             marginBottom: 0,
+            height: 49,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
           } : {},
         }}>
         <Tabs.Screen
