@@ -17,17 +17,26 @@ import { ensureValidToken } from '@/app/utils/tokenRefresher';
 import { Button, View, Text } from '@/app/components';
 import theme from '@/app/constants/theme';
 
-// Simplified Instance type
+// Standardized Instance type
 interface Instance {
   _id: string;
-  createdAt: string;
+  userId?: string;
+  userEmail?: string;
+  user_id: string;
+  time: string;
+  duration: number | string;
   urgeStrength?: number;
-  intentionType?: string;
-  duration?: string | number;
+  intentionType: string; // 'automatic' or 'intentional'
   selectedEnvironments?: string[];
   selectedEmotions?: string[];
   selectedSensations?: string[];
   selectedThoughts?: string[];
+  selectedSensoryTriggers?: string[];
+  mentalDetails?: string;
+  physicalDetails?: string;
+  thoughtDetails?: string;
+  environmentDetails?: string;
+  sensoryDetails?: string;
   notes?: string;
 }
 
@@ -55,7 +64,21 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
         setLoading(true);
         await ensureValidToken();
         const data = await api.instances.getInstance(instanceId);
-        setInstance(data);
+        
+        // Normalize instance data to standardized format
+        const normalizedData: Instance = {
+          ...data,
+          // Ensure time field exists (use createdAt as fallback)
+          time: data.time || data.createdAt,
+          // Ensure intentionType exists
+          intentionType: data.intentionType || (data.automatic !== undefined 
+            ? (data.automatic ? 'automatic' : 'intentional') 
+            : 'automatic'),
+          // Ensure duration exists
+          duration: data.duration || 5,
+        };
+        
+        setInstance(normalizedData);
       } catch (err) {
         console.error('Error fetching instance:', err);
         setError('Failed to load details');
@@ -138,7 +161,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               {/* When */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>When</Text>
-                <Text style={styles.dateText}>{formatDate(instance.createdAt)}</Text>
+                <Text style={styles.dateText}>{formatDate(instance.time)}</Text>
                 {instance.duration && (
                   <View style={styles.row}>
                     <Text style={styles.label}>Duration:</Text>
@@ -172,25 +195,48 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Environment</Text>
                 {renderItems(instance.selectedEnvironments, OptionDictionaries.environmentOptions)}
+                {instance.environmentDetails && (
+                  <Text style={styles.detailsText}>{instance.environmentDetails}</Text>
+                )}
               </View>
               
               {/* Feelings */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Feelings</Text>
-                {renderItems(instance.selectedEmotions, OptionDictionaries.feelingOptions)}
+                <Text style={styles.sectionTitle}>Emotions</Text>
+                {renderItems(instance.selectedEmotions, OptionDictionaries.emotionOptions)}
+                {instance.mentalDetails && (
+                  <Text style={styles.detailsText}>{instance.mentalDetails}</Text>
+                )}
               </View>
               
               {/* Sensations */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Physical Sensations</Text>
                 {renderItems(instance.selectedSensations, OptionDictionaries.sensationOptions)}
+                {instance.physicalDetails && (
+                  <Text style={styles.detailsText}>{instance.physicalDetails}</Text>
+                )}
               </View>
               
               {/* Thoughts */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Thoughts</Text>
                 {renderItems(instance.selectedThoughts, OptionDictionaries.thoughtOptions)}
+                {instance.thoughtDetails && (
+                  <Text style={styles.detailsText}>{instance.thoughtDetails}</Text>
+                )}
               </View>
+              
+              {/* Sensory Triggers */}
+              {instance.selectedSensoryTriggers && instance.selectedSensoryTriggers.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Sensory Triggers</Text>
+                  {renderItems(instance.selectedSensoryTriggers, OptionDictionaries.triggerOptions)}
+                  {instance.sensoryDetails && (
+                    <Text style={styles.detailsText}>{instance.sensoryDetails}</Text>
+                  )}
+                </View>
+              )}
               
               {/* Notes */}
               {instance.notes && (
@@ -280,6 +326,12 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
     lineHeight: theme.typography.lineHeight.relaxed,
+  } as TextStyle,
+  detailsText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
+    fontStyle: 'italic',
   } as TextStyle,
   centered: {
     padding: theme.spacing.xxl,
