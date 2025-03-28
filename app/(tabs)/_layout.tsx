@@ -29,25 +29,41 @@ export default function TabLayout() {
             // Add styles to fix the white space below tabs
             const style = document.createElement('style');
             style.innerHTML = `
-              .pwa-tab-bar {
-                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+              /* Override any existing bottom margins or paddings */
+              [role="tablist"] {
+                bottom: 0 !important;
                 margin-bottom: 0 !important;
+                border-bottom: none !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
                 height: auto !important;
                 min-height: 49px !important;
+                max-height: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
               }
-              .pwa-standalone body {
-                min-height: 100vh !important;
+              
+              /* Target React Navigation specific elements */
+              .css-view-175oi2r.r-backgroundColor-8jlm1c,
+              .r-bottom-1p0dtai {
+                bottom: 0 !important;
                 margin-bottom: 0 !important;
-                padding-bottom: 0 !important;
+                height: auto !important;
               }
-              .pwa-standalone #root {
+              
+              /* Fix parent container heights */
+              body, #root, main {
+                min-height: 100vh !important;
+                height: 100% !important;
+                max-height: -webkit-fill-available !important;
+                margin-bottom: 0 !important;
                 padding-bottom: 0 !important;
               }
               
-              /* Fix for large white space */
-              .pwa-standalone nav {
+              /* Eliminate any possible whitespace */
+              .pwa-standalone nav,
+              .pwa-standalone footer {
                 margin-bottom: 0 !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
                 bottom: 0 !important;
+                position: fixed !important;
               }
             `;
             document.head.appendChild(style);
@@ -78,6 +94,7 @@ export default function TabLayout() {
         marginBottom: 0,
         height: 'auto',
         minHeight: 49,
+        maxHeight: 'calc(49px + env(safe-area-inset-bottom, 0px))',
       };
     }
     
@@ -95,7 +112,10 @@ export default function TabLayout() {
           // Add an ID or custom prop for easier styling selection
           tabBarLabelStyle: isPwa ? styles.pwaTabLabel : {},
           // Important: Control the height to reduce extra space
-          tabBarItemStyle: isPwa ? { paddingBottom: 0 } : {},
+          tabBarItemStyle: isPwa ? { 
+            paddingBottom: 0,
+            marginBottom: 0,
+          } : {},
         }}>
         <Tabs.Screen
           name="progress"
