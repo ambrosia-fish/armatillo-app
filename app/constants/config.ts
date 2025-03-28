@@ -63,6 +63,31 @@ export const getEnvironment = (): 'development' | 'staging' | 'production' => {
 export const getApiUrl = (): string => {
   const environment = getEnvironment();
   
+  // If we're running on web, check the current hostname to determine API URL
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // Development domain
+    if (hostname === 'dev.armatillo.com') {
+      return 'https://armatillo-api-development.up.railway.app';
+    }
+    
+    // Production domain
+    if (hostname === 'app.armatillo.com') {
+      return 'https://armatillo-api-production.up.railway.app';
+    }
+    
+    // Staging domain - add if needed
+    if (hostname === 'staging.armatillo.com') {
+      return 'https://armatillo-api-staging.up.railway.app';
+    }
+    
+    // Vercel preview deployments or local development
+    if (hostname.includes('vercel.app') || hostname === 'localhost') {
+      return 'https://armatillo-api-development.up.railway.app';
+    }
+  }
+  
   // For development, determine URL based on platform
   if (environment === 'development') {
     // For physical devices using Expo Go, the developer would need to set their local IP here
@@ -81,7 +106,7 @@ export const getApiUrl = (): string => {
     else if (Platform.OS === 'android') {
       return 'http://10.0.2.2:3000';
     }
-    // Web development
+    // Web development - only if we didn't catch hostname above
     else if (Platform.OS === 'web') {
       return 'http://localhost:3000';
     }
