@@ -1,66 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle, Platform } from 'react-native';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
-import { isInStandaloneMode } from '@/app/utils/pwaUtils';
+import { errorService } from '@/app/services/ErrorService';
 
+/**
+ * Home screen component that displays the app logo and add new entry button
+ */
 export default function HomeScreen() {
   const router = useRouter();
-  const [isPwa, setIsPwa] = useState(false);
   
-  // Detect if running in PWA mode
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const isStandalone = isInStandaloneMode();
-      setIsPwa(isStandalone);
-      
-      // Add explicit class to the floating action button for PWA styling
-      if (isStandalone && typeof document !== 'undefined') {
-        setTimeout(() => {
-          // Find and add classes to the add button for PWA styling
-          const fabContainer = document.querySelector('.add-button-container');
-          const fabElement = document.querySelector('.add-button');
-          
-          if (fabContainer) {
-            fabContainer.classList.add('expo-fab-container');
-            console.log('Added PWA class to FAB container');
-          }
-          
-          if (fabElement) {
-            fabElement.classList.add('expo-fab');
-            console.log('Added PWA class to FAB');
-          }
-        }, 300);
-      }
-    }
-  }, []);
-  
+  /**
+   * Navigate to the time screen to begin the tracking flow
+   */
   const addNewEntry = () => {
-    // Navigate to the time screen with updated path
-    router.push('/screens/tracking/time-screen');
-  };
-
-  // Get specific styles for PWA mode
-  const getAddButtonContainerStyle = () => {
-    const baseStyle = styles.addButtonContainer;
-    
-    if (isPwa && Platform.OS === 'web') {
-      return [
-        baseStyle,
-        {
-          position: 'fixed',
-          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 70px)',
-          left: 0,
-          right: 0,
-          zIndex: 999,
-        }
-      ];
+    try {
+      router.push('/screens/tracking/time-screen');
+    } catch (error) {
+      errorService.handleError(error instanceof Error ? error : String(error), { 
+        source: 'ui', 
+        level: 'error',
+        context: { action: 'navigate_to_time_screen' }
+      });
     }
-    
-    return baseStyle;
   };
 
   return (
@@ -79,15 +44,11 @@ export default function HomeScreen() {
         />
       </View>
       
-      {/* Centered Add Button with PWA-specific adjustments */}
-      <View 
-        style={getAddButtonContainerStyle()}
-        className="add-button-container"
-      >
+      {/* Centered Add Button */}
+      <View style={styles.addButtonContainer}>
         <TouchableOpacity 
           style={styles.addButton} 
           onPress={addNewEntry}
-          className="add-button"
           accessibilityLabel="Add new entry"
           accessibilityRole="button"
         >
