@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { errorService } from './services/ErrorService';
+import theme from './constants/theme';
+import { Button } from './components';
 
 interface Props {
   children: ReactNode;
@@ -23,12 +25,10 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Log the error to our error service
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     errorService.handleError(error, {
       source: 'ui',
       level: 'critical',
@@ -48,12 +48,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      // Render custom fallback UI if provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default fallback UI
       return (
         <View style={styles.container}>
           <Text style={styles.title}>Something went wrong</Text>
@@ -63,7 +61,11 @@ class ErrorBoundary extends Component<Props, State> {
           <View style={styles.errorDetails}>
             <Text style={styles.errorMessage}>{this.state.error?.message}</Text>
           </View>
-          <Button title="Try Again" onPress={this.resetErrorBoundary} />
+          <Button 
+            title="Try Again" 
+            onPress={this.resetErrorBoundary}
+            variant="primary" 
+          />
         </View>
       );
     }
@@ -78,29 +80,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f8f9fa'
+    backgroundColor: theme.colors.background.primary
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#dc3545'
+    color: theme.colors.utility.error
   },
   subtitle: {
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
-    color: '#343a40'
+    color: theme.colors.text.primary
   },
   errorDetails: {
-    backgroundColor: '#f1f1f1',
+    backgroundColor: theme.colors.background.secondary,
     padding: 15,
     borderRadius: 8,
     marginBottom: 20,
     width: '100%'
   },
   errorMessage: {
-    color: '#6c757d',
+    color: theme.colors.text.secondary,
     fontSize: 14
   }
 });

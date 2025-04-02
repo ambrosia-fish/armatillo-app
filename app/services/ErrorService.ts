@@ -7,23 +7,30 @@ export interface ErrorOptions {
   level?: ErrorLevel;
   source?: ErrorSource;
   displayToUser?: boolean;
-  reportToServer?: boolean;
   context?: Record<string, any>;
+}
+
+interface ErrorObject {
+  message: string;
+  stack?: string;
+  level: ErrorLevel;
+  source: ErrorSource;
+  timestamp: string;
+  context: Record<string, any>;
 }
 
 class ErrorService {
   private logErrors: boolean = true;
   
-  handleError(error: Error | string, options: ErrorOptions = {}) {
+  handleError(error: Error | string, options: ErrorOptions = {}): ErrorObject {
     const {
       level = 'error',
       source = 'unknown',
       displayToUser = true,
-      reportToServer = false,
       context = {}
     } = options;
     
-    const errorObj = {
+    const errorObj: ErrorObject = {
       message: typeof error === 'string' ? error : error.message,
       stack: typeof error !== 'string' ? error.stack : undefined,
       level,
@@ -33,24 +40,17 @@ class ErrorService {
     };
     
     if (this.logErrors) {
-      console.error(`[${source.toUpperCase()}][${level.toUpperCase()}]: ${errorObj.message}`, {
-        ...errorObj,
-        context
-      });
+      console.error(`[${source.toUpperCase()}][${level.toUpperCase()}]: ${errorObj.message}`, errorObj);
     }
     
     if (displayToUser) {
       this.showErrorToUser(errorObj);
     }
     
-    if (reportToServer) {
-      // TODO: Future server reporting implementation
-    }
-    
     return errorObj;
   }
   
-  private showErrorToUser(errorObj: any) {
+  private showErrorToUser(errorObj: ErrorObject): void {
     const { message, level } = errorObj;
     
     switch (level) {
@@ -62,7 +62,6 @@ class ErrorService {
         Alert.alert('Warning', message);
         break;
       case 'info':
-        // Could use Toast in the future
         console.log(message);
         break;
     }

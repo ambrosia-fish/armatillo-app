@@ -1,50 +1,48 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Define the structure of your form data
+// Add specific typing for tracking screen selections
 interface BFRBFormData {
-  // Time screen data
+  // Time tracking
   time?: Date;
   duration?: number;
+  selectedTime?: string;
+  selectedDuration?: string;
   
-  // Detail screen data
+  // Urge tracking
   urgeStrength?: number;
   intentionType?: string;
   
-  // Environment screen data
+  // Environment tracking
   selectedEnvironments?: string[];
   environmentDetails?: string;
   
-  // Feelings screen data
+  // Emotional/Physical tracking
   selectedEmotions?: string[];
   selectedSensations?: string[];
   
-  // Thoughts screen data
+  // Cognitive tracking
   selectedThoughts?: string[];
 
-  // Notes screen data
+  // Sensory triggers
   selectedSensoryTriggers?: string[];
   notes?: string;
 
-  // User identification
+  // User data
   userName?: string;
 }
 
-// Define the context type
 interface FormContextType {
   formData: BFRBFormData;
   updateFormData: (newData: Partial<BFRBFormData>) => void;
   resetFormData: () => void;
 }
 
-// Create context with a default value
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
-// Provider props type
 interface FormProviderProps {
   children: ReactNode;
 }
 
-// Create the provider component
 export function FormProvider({ children }: FormProviderProps) {
   const [formData, setFormData] = useState<BFRBFormData>({});
   
@@ -59,7 +57,6 @@ export function FormProvider({ children }: FormProviderProps) {
     setFormData({});
   };
   
-  // Value to be provided to consumers
   const value = {
     formData,
     updateFormData,
@@ -73,7 +70,6 @@ export function FormProvider({ children }: FormProviderProps) {
   );
 }
 
-// Custom hook for using the form context
 export function useFormContext() {
   const context = useContext(FormContext);
   
@@ -84,7 +80,6 @@ export function useFormContext() {
   return context;
 }
 
-// Create a default export
 const Form = {
   FormProvider,
   useFormContext
