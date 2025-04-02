@@ -1,10 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './storage';
 import { isTokenExpired, getRefreshToken, storeAuthTokens } from './tokenUtils';
 import config from '../constants/config';
-
-// Refresher service to handle token refresh
-// This can be imported and used to ensure a valid token before API requests
+import { errorService } from '../services/ErrorService';
 
 let refreshPromise: Promise<boolean> | null = null;
 
@@ -28,7 +25,12 @@ export async function ensureValidToken(): Promise<boolean> {
     // Get refresh token
     const refreshToken = await getRefreshToken();
     if (!refreshToken) {
-      console.log('No refresh token available');
+      errorService.handleError('No refresh token available', {
+        source: 'auth',
+        level: 'warning',
+        displayToUser: false,
+        context: { action: 'ensureValidToken' }
+      });
       return false;
     }
 
@@ -39,7 +41,12 @@ export async function ensureValidToken(): Promise<boolean> {
     return result;
 
   } catch (error) {
-    console.error('Token refresh error:', error);
+    errorService.handleError(error instanceof Error ? error : String(error), {
+      source: 'auth',
+      level: 'warning',
+      displayToUser: false,
+      context: { action: 'ensureValidToken' }
+    });
     refreshPromise = null;
     return false;
   }
@@ -53,10 +60,6 @@ export async function ensureValidToken(): Promise<boolean> {
 async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
   try {
     const url = `${config.apiUrl}${config.apiBasePath}/auth/refresh`;
-    
-    if (config.enableLogging) {
-      console.log(`Refreshing token at: ${url}`);
-    }
     
     const response = await fetch(url, {
       method: 'POST',
@@ -82,14 +85,15 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
       data.expiresIn,
       data.refreshToken // May be the same or a new refresh token
     );
-
-    if (config.enableLogging) {
-      console.log('Token refreshed successfully');
-    }
     
     return true;
   } catch (error) {
-    console.error('Token refresh failed:', error);
+    errorService.handleError(error instanceof Error ? error : String(error), {
+      source: 'auth',
+      level: 'warning',
+      displayToUser: false,
+      context: { action: 'refreshTokenFlow' }
+    });
     return false;
   }
 }
