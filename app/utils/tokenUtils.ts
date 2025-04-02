@@ -70,9 +70,23 @@ export async function clearAuthTokens(): Promise<void> {
   }
 }
 
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  } catch (error) {
+    errorService.handleError(error instanceof Error ? error : String(error), {
+      source: 'storage',
+      displayToUser: false,
+      context: { action: 'getRefreshToken' }
+    });
+    return null;
+  }
+}
+
 export default {
   storeAuthTokens,
   isTokenExpired,
   clearAuthTokens,
+  getRefreshToken,
   DEFAULT_TOKEN_EXPIRATION
 };
