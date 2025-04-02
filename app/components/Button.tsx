@@ -11,7 +11,6 @@ import {
   Platform
 } from 'react-native';
 import theme from '@/app/constants/theme';
-import { isInStandaloneMode } from '@/app/utils/pwaUtils';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'text';
 export type ButtonSize = 'small' | 'medium' | 'large';
@@ -45,25 +44,7 @@ const Button: React.FC<ButtonProps> = ({
   fixed = false,
   ...rest
 }) => {
-  const [isPwa, setIsPwa] = useState(false);
-  
-  // Detect if running in PWA mode
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const isStandalone = isInStandaloneMode();
-      setIsPwa(isStandalone);
-      
-      // Add PWA-specific class if this is a fixed position button
-      if (isStandalone && fixed && typeof document !== 'undefined' && className) {
-        setTimeout(() => {
-          const buttonElement = document.querySelector(`.${className}`);
-          if (buttonElement) {
-            buttonElement.classList.add('pwa-fixed-button');
-          }
-        }, 300);
-      }
-    }
-  }, [fixed, className]);
+
 
   // Determine container style based on variant, size, and disabled state
   const getContainerStyle = () => {
