@@ -107,7 +107,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return false;
     } catch (error) {
-      console.log('Token refresh failed:', error);
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'auth',
+        level: 'warning',
+        displayToUser: false,
+        context: { action: 'refreshAuth' }
+      });
       await clearAuthState();
       return false;
     }
