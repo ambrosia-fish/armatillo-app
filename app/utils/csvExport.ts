@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Share, Platform, Alert } from 'react-native';
 import OptionDictionaries from '@/app/constants/optionDictionaries';
+import { errorService } from '../services/ErrorService';
 
 // Instance type definition
 export interface Instance {
@@ -59,7 +60,7 @@ const formatCSVTime = (dateString: string) => {
 
 // Function to convert instances to CSV format
 export const convertToCSV = (data: Instance[]) => {
-  // Define CSV headers (removed Location and Activity as requested)
+  // Define CSV headers
   const headers = [
     'Date',
     'Time',
@@ -113,7 +114,7 @@ export const convertToCSV = (data: Instance[]) => {
       return `"${stringField.replace(/"/g, '""')}"`;
     };
 
-    // Create row with proper data types and escaped quotes (removed location and activity)
+    // Create row with proper data types and escaped quotes
     const row = [
       formatCSVDate(instance.time), // Date only
       formatCSVTime(instance.time), // Time only
@@ -140,8 +141,6 @@ export const exportInstancesAsCSV = async (instances: Instance[]) => {
       Alert.alert('No Data', 'There is no history data to export.');
       return false;
     }
-
-    console.log('Starting CSV export with', instances.length, 'instances');
 
     // Convert instances to CSV format
     const csvContent = convertToCSV(instances);
@@ -185,10 +184,15 @@ export const exportInstancesAsCSV = async (instances: Instance[]) => {
       }
     }
     
-    console.log('CSV export completed');
     return true;
-  } catch (err) {
-    console.error('Error exporting CSV:', err);
+  } catch (error) {
+    errorService.handleError(error instanceof Error ? error : String(error), {
+      source: 'ui', // Using 'ui' as a valid ErrorSource since this is user-interface related
+      level: 'error',
+      displayToUser: true,
+      context: { action: 'exportInstancesAsCSV', instanceCount: instances.length }
+    });
+    
     Alert.alert(
       'Export Failed',
       'Could not export data. Please try again later.'
