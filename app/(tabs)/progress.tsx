@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   StyleSheet, 
   FlatList, 
   TouchableOpacity, 
   ActivityIndicator,
   RefreshControl,
-  Alert,
   ViewStyle,
   TextStyle,
   Platform
@@ -17,11 +16,17 @@ import api from '@/app/services/api';
 import { InstanceDetailsModal } from '@/app/components';
 import { useFocusEffect } from '@react-navigation/native';
 import { ensureValidToken } from '@/app/utils/tokenRefresher';
-import { exportInstancesAsCSV, Instance } from '@/app/utils/csvExport';
+import { exportInstancesAsCSV } from '@/app/utils/csvExport';
+import { Instance, normalizeInstance } from '@/app/types/Instance';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
+import { errorService } from '@/app/services/ErrorService';
 
+/**
+ * History/Progress screen showing all tracked BFRB instances
+ */
 export default function HistoryScreen() {
+  // State management
   const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,54 +38,37 @@ export default function HistoryScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  // Function to normalize instance data to standardized format
-  const normalizeInstance = (instance: any): Instance => {
-    return {
-      ...instance,
-      // Use time field, fall back to createdAt for legacy data
-      time: instance.time || instance.createdAt,
-      // Use intentionType, convert from automatic for legacy data
-      intentionType: instance.intentionType || (instance.automatic !== undefined 
-        ? (instance.automatic ? 'automatic' : 'intentional') 
-        : 'automatic'),
-      // Use selectedEmotions, fall back to feelings for legacy data
-      selectedEmotions: instance.selectedEmotions || instance.feelings || [],
-      // Use selectedEnvironments, fall back to environment for legacy data
-      selectedEnvironments: instance.selectedEnvironments || instance.environment || [],
-      // Use selectedThoughts, convert from thoughts for legacy data
-      selectedThoughts: instance.selectedThoughts || 
-        (instance.thoughts ? [instance.thoughts] : []),
-    };
-  };
-
-  // Function to fetch instances from API
+  /**
+   * Fetch instances from the API
+   */
   const fetchInstances = async () => {
     try {
       setError(null);
       setLoading(true);
       
       if (!isAuthenticated) {
-        console.log('Not authenticated yet, skipping fetch');
         setLoading(false);
         setRefreshing(false);
         return;
       }
       
       // Make sure token is valid before making the request
-      const tokenRefreshed = await ensureValidToken();
-      console.log('Token refresh status:', tokenRefreshed ? 'refreshed' : 'not needed');
+      await ensureValidToken();
       
       // Fetch instances
-      console.log('Fetching instances...');
       const response = await api.instances.getInstances();
-      console.log('Fetched instances count:', response?.length || 0);
       
       // Check if response is an array
       if (!Array.isArray(response)) {
-        console.error('Expected array but got:', typeof response);
-        setError('Received invalid response format from server');
+        const errorMessage = 'Received invalid response format from server';
+        errorService.handleError(errorMessage, {
+          level: 'error',
+          source: 'api',
+          context: { method: 'getInstances', response }
+        });
+        setError(errorMessage);
         return;
       }
       
@@ -92,7 +80,12 @@ export default function HistoryScreen() {
       
       setInstances(sortedInstances);
     } catch (err) {
-      console.error('Error fetching instances:', err);
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'api',
+        displayToUser: false,
+        context: { method: 'fetchInstances' }
+      });
       
       let errorMessage = 'Failed to load your history. Please try again.';
       if (err instanceof Error) {
@@ -107,28 +100,31 @@ export default function HistoryScreen() {
     }
   };
 
-  // Function to handle CSV export
+  /**
+   * Handle CSV export of instances
+   */
   const handleExportCSV = async () => {
     setExportLoading(true);
     try {
       await exportInstancesAsCSV(instances);
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { action: 'exportCSV', instanceCount: instances.length }
+      });
     } finally {
       setExportLoading(false);
     }
   };
 
-  // Only load instances when the screen comes into focus
+  // Load instances when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       if (isAuthenticated) {
         fetchInstances();
-      } else {
-        console.log('Not authenticated, waiting before fetching instances');
       }
-      // Clean up function (optional)
-      return () => {
-        // Any cleanup code if needed
-      };
+      return () => {}; // Cleanup function
     }, [isAuthenticated])
   );
 
@@ -138,7 +134,9 @@ export default function HistoryScreen() {
     await fetchInstances();
   };
 
-  // Format date for display
+  /**
+   * Format date for display
+   */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -150,19 +148,33 @@ export default function HistoryScreen() {
     });
   };
 
-  // Navigate to detail view
+  /**
+   * Navigate to detail view
+   */
   const viewInstanceDetails = (instance: Instance) => {
-    setSelectedInstanceId(instance._id);
-    setModalVisible(true);
+    try {
+      setSelectedInstanceId(instance._id);
+      setModalVisible(true);
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { action: 'viewInstanceDetails', instanceId: instance._id }
+      });
+    }
   };
 
-  // Close the modal
+  /**
+   * Close the modal
+   */
   const closeModal = () => {
     setModalVisible(false);
     setSelectedInstanceId(null);
   };
 
-  // Render each instance item
+  /**
+   * Render each instance item
+   */
   const renderItem = ({ item }: { item: Instance }) => (
     <TouchableOpacity 
       style={styles.card}
@@ -205,7 +217,9 @@ export default function HistoryScreen() {
     </TouchableOpacity>
   );
 
-  // Empty state component
+  /**
+   * Empty state component
+   */
   const EmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="time-outline" size={50} color={theme.colors.neutral.medium} />
