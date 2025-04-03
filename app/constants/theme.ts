@@ -9,78 +9,87 @@
  * Color palette
  */
 export const colors = {
-  // Primary brand colors
+  // Primary brand colors - based on #485283 (deep periwinkle blue)
   primary: {
-    main: '#2a9d8f',
-    light: '#52c7ba',
-    dark: '#1e7268',
+    main: '#485283',
+    light: '#6B74A0',
+    dark: '#363D66',
     contrast: '#ffffff',
   },
   
-  // Secondary accent colors
+  // Secondary accent colors - complementary color to primary (warm golden)
   secondary: {
-    main: '#e76f51',
-    light: '#ff9b7b',
-    dark: '#b54e37',
+    main: '#D0A94B',
+    light: '#E9C778',
+    dark: '#A78932',
     contrast: '#ffffff',
   },
   
   // Neutral colors for text, backgrounds, etc.
   neutral: {
     white: '#ffffff',
-    lightest: '#f8f8f8',
-    lighter: '#f5f5f5',
-    light: '#eeeeee',
-    medium: '#dddddd',
-    gray: '#999999',
-    darkGray: '#666666',
-    dark: '#333333',
-    darker: '#222222',
-    black: '#000000',
+    lightest: '#F8F9FC',
+    lighter: '#F0F2F8',
+    light: '#E6E9F2',
+    medium: '#D8DDEA',
+    gray: '#A3ACCB',
+    darkGray: '#7D84A1',
+    dark: '#4A4E63',
+    darker: '#32344A',
+    black: '#212230',
   },
   
   // Utility colors
   utility: {
-    success: '#4caf50',
-    info: '#2196f3',
-    warning: '#ff9800',
-    error: '#f44336',
-    disabled: '#cccccc',
+    success: '#6BA877',
+    info: '#5F81D0',
+    warning: '#E9B668',
+    error: '#D66A6A',
+    disabled: '#C9CEDA',
   },
   
-  // Status colors for BFRB tracking
+  // Status colors for BFRB tracking (gradients based on periwinkle/purple)
   status: {
-    low: '#8bd3c7',
-    medium: '#2a9d8f',
-    high: '#e76f51',
-    critical: '#e63946',
+    low: '#A3ACCB',
+    medium: '#9484AC',
+    high: '#7A63A0',
+    critical: '#66467F',
   },
   
   // Background colors
   background: {
     primary: '#ffffff',
-    secondary: '#f5f5f5',
+    secondary: '#F0F2F8',
     card: '#ffffff',
-    modal: 'rgba(0, 0, 0, 0.5)',
+    modal: 'rgba(72, 82, 131, 0.5)',
   },
   
   // Text colors
   text: {
-    primary: '#333333',
-    secondary: '#666666',
-    tertiary: '#999999',
-    disabled: '#cccccc',
+    primary: '#32344A',
+    secondary: '#4A4E63',
+    tertiary: '#7D84A1',
+    disabled: '#C9CEDA',
     inverse: '#ffffff',
-    link: '#2a9d8f',
+    link: '#485283',
   },
   
   // Border colors
   border: {
-    light: '#eeeeee',
-    medium: '#dddddd',
-    dark: '#bbbbbb',
-    input: '#e0e0e0',
-    focus: '#2a9d8f',
+    light: '#E6E9F2',
+    medium: '#D8DDEA',
+    dark: '#A3ACCB',
+    input: '#D8DDEA',
+    focus: '#485283',
+  },
+  
+  // Accent colors (for highlights, callouts, etc.)
+  accent: {
+    lavender: '#9484AC',
+    periwinkle: '#969FCC',
+    skyBlue: '#80B0D8',
+    sage: '#8AAD9F',
+    mauve: '#A07B8D',
   },
 };
 
