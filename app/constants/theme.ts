@@ -4,7 +4,7 @@
  * Centralized design system for consistent styling across the app.
  * All colors, spacing, typography, and component-specific styles should be defined here.
  */
-
+import { FlexAlignType, TextStyle, ViewStyle } from 'react-native';
 /**
  * Color palette
  */
@@ -209,23 +209,23 @@ export const componentStyles = {
       borderRadius: borderRadius.md,
       padding: spacing.lg,
       ...shadows.sm,
-    },
+    } as ViewStyle,
     title: {
       fontSize: typography.fontSize.lg,
       fontWeight: typography.fontWeight.bold,
       color: colors.text.primary,
       marginBottom: spacing.sm,
-    },
+    } as TextStyle,
     subtitle: {
       fontSize: typography.fontSize.md,
       fontWeight: typography.fontWeight.medium,
       color: colors.text.secondary,
       marginBottom: spacing.sm,
-    },
+    } as TextStyle,
     content: {
       fontSize: typography.fontSize.md,
       color: colors.text.primary,
-    },
+    } as TextStyle,
   },
   
   // Button styles
@@ -237,14 +237,14 @@ export const componentStyles = {
         borderRadius: borderRadius.sm,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
+        alignItems: 'center' as FlexAlignType,
+        justifyContent: 'center' as 'center',
+      } as ViewStyle,
       text: {
         color: colors.primary.contrast,
         fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.bold,
-      },
+      } as TextStyle,
     },
     // Secondary button
     secondary: {
@@ -255,14 +255,14 @@ export const componentStyles = {
         borderColor: colors.primary.main,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
+        alignItems: 'center' as FlexAlignType,
+        justifyContent: 'center' as 'center',
+      } as ViewStyle,
       text: {
         color: colors.primary.main,
         fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.bold,
-      },
+      } as TextStyle,
     },
     // Text button
     text: {
@@ -270,14 +270,14 @@ export const componentStyles = {
         backgroundColor: 'transparent',
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
+        alignItems: 'center' as FlexAlignType,
+        justifyContent: 'center' as 'center',
+      } as ViewStyle,
       text: {
         color: colors.primary.main,
         fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.medium,
-      },
+      } as TextStyle,
     },
     // Disabled button
     disabled: {
@@ -286,14 +286,14 @@ export const componentStyles = {
         borderRadius: borderRadius.sm,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
+        alignItems: 'center' as FlexAlignType,
+        justifyContent: 'center' as 'center',
+      } as ViewStyle,
       text: {
         color: colors.text.disabled,
         fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.bold,
-      },
+      } as TextStyle,
     },
   },
   
@@ -301,13 +301,13 @@ export const componentStyles = {
   input: {
     container: {
       marginBottom: spacing.lg,
-    },
+    } as ViewStyle,
     label: {
       fontSize: typography.fontSize.sm,
       fontWeight: typography.fontWeight.medium,
       color: colors.text.secondary,
       marginBottom: spacing.xs,
-    },
+    } as TextStyle,
     field: {
       backgroundColor: colors.neutral.lighter,
       borderRadius: borderRadius.sm,
@@ -316,34 +316,34 @@ export const componentStyles = {
       padding: spacing.lg,
       fontSize: typography.fontSize.md,
       color: colors.text.primary,
-    },
+    } as TextStyle,
     errorText: {
       fontSize: typography.fontSize.sm,
       color: colors.utility.error,
       marginTop: spacing.xs,
-    },
+    } as TextStyle,
   },
   
   // Header styles
   header: {
     container: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexDirection: 'row' as 'row',
+      alignItems: 'center' as FlexAlignType,
+      justifyContent: 'space-between' as 'space-between',
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: colors.border.light,
       backgroundColor: colors.background.primary,
-    },
+    } as ViewStyle,
     title: {
       fontSize: typography.fontSize.lg,
       fontWeight: typography.fontWeight.bold,
       color: colors.text.primary,
-    },
+    } as TextStyle,
     icon: {
       padding: spacing.sm,
-    },
+    } as ViewStyle,
   },
   
   // Modal styles
@@ -351,10 +351,10 @@ export const componentStyles = {
     overlay: {
       flex: 1,
       backgroundColor: colors.background.modal,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'center' as 'center',
+      alignItems: 'center' as FlexAlignType,
       padding: spacing.lg,
-    },
+    } as ViewStyle,
     container: {
       backgroundColor: colors.background.primary,
       borderRadius: borderRadius.md,
@@ -362,66 +362,66 @@ export const componentStyles = {
       width: '100%',
       maxWidth: 400,
       ...shadows.lg,
-    },
+    } as ViewStyle,
     title: {
       fontSize: typography.fontSize.xl,
       fontWeight: typography.fontWeight.bold,
       marginBottom: spacing.md,
       color: colors.primary.main,
-    },
+    } as TextStyle,
     content: {
       fontSize: typography.fontSize.md,
       marginBottom: spacing.xl,
       lineHeight: typography.lineHeight.normal,
-    },
+    } as TextStyle,
     buttonContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-    },
+      flexDirection: 'row' as 'row',
+      justifyContent: 'space-between' as 'space-between',
+    } as ViewStyle,
   },
   
   // Form section styles
   formSection: {
     container: {
       marginBottom: spacing.xl,
-    },
+    } as ViewStyle,
     title: {
       fontSize: typography.fontSize.lg,
       fontWeight: typography.fontWeight.semiBold,
       marginBottom: spacing.md,
       color: colors.text.primary,
-    },
+    } as TextStyle,
     description: {
       fontSize: typography.fontSize.md,
       color: colors.text.secondary,
       marginBottom: spacing.lg,
       lineHeight: typography.lineHeight.normal,
-    },
+    } as TextStyle,
   },
   
   // List item styles
   listItem: {
     container: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: 'row' as 'row',
+      alignItems: 'center' as FlexAlignType,
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: colors.border.light,
-    },
+    } as ViewStyle,
     title: {
       fontSize: typography.fontSize.md,
       fontWeight: typography.fontWeight.medium,
       color: colors.text.primary,
-    },
+    } as TextStyle,
     subtitle: {
       fontSize: typography.fontSize.sm,
       color: colors.text.secondary,
       marginTop: spacing.xs,
-    },
+    } as TextStyle,
     icon: {
       marginRight: spacing.md,
-    },
+    } as ViewStyle,
   },
 };
 
