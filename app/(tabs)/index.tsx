@@ -88,8 +88,8 @@ const styles = StyleSheet.create({
     paddingBottom: 80, // Add space to account for the add button
   } as ViewStyle,
   logo: {
-    width: 280,
-    height: 280,
+    width: 400,
+    height: 400,
   } as ImageStyle,
   addButtonContainer: {
     position: 'absolute',
