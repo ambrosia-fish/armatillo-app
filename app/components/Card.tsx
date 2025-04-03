@@ -67,16 +67,25 @@ const Card: React.FC<CardProps> = ({
       style={[styles.container, containerStyle]}
       onPress={onPress ? handlePress : undefined}
       activeOpacity={onPress ? 0.8 : undefined}
+      accessibilityRole={onPress ? "button" : "none"}
+      accessibilityLabel={title ? title : "Card"}
+      accessibilityHint={onPress ? "Tap to interact" : undefined}
       {...rest}
     >
       {title && (
-        <Text style={[styles.title, titleStyle]}>
+        <Text 
+          style={[styles.title, titleStyle]}
+          accessibilityRole="header"
+        >
           {title}
         </Text>
       )}
       
       {subtitle && (
-        <Text style={[styles.subtitle, subtitleStyle]}>
+        <Text 
+          style={[styles.subtitle, subtitleStyle]}
+          accessibilityRole="text"
+        >
           {subtitle}
         </Text>
       )}

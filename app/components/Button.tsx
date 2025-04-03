@@ -93,7 +93,7 @@ const Button: React.FC<ButtonProps> = ({
     // Apply size styles
     const sizeStyle = buttonStyles[`${size}Container`];
     
-    // Fixed position styles (no PWA-specific adjustments)
+    // Fixed position styles
     const fixedStyle = fixed ? { marginBottom: 0 } : undefined;
     
     return [baseStyle, sizeStyle, fixedStyle, style];
@@ -136,6 +136,9 @@ const Button: React.FC<ButtonProps> = ({
       disabled={disabled || loading}
       activeOpacity={0.7}
       className={className}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       {...rest}
     >
       {loading ? (
@@ -156,26 +159,26 @@ const buttonStyles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     minHeight: 44, // Ensure touchable area meets iOS guidelines
-  },
+  } as ViewStyle,
   smallText: {
     fontSize: theme.typography.fontSize.sm,
-  },
+  } as TextStyle,
   mediumContainer: {
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     minHeight: 44, // Ensure touchable area meets iOS guidelines
-  },
+  } as ViewStyle,
   mediumText: {
     fontSize: theme.typography.fontSize.md,
-  },
+  } as TextStyle,
   largeContainer: {
     paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing.xl,
     minHeight: 48, // Larger minimum height for large buttons
-  },
+  } as ViewStyle,
   largeText: {
     fontSize: theme.typography.fontSize.lg,
-  },
+  } as TextStyle,
 });
 
 export default Button;

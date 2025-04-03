@@ -18,6 +18,9 @@ import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
 import { Instance } from '@/app/types/Instance';
 
+// Type for Ionicons names
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
 interface InstanceDetailsModalProps {
   isVisible: boolean;
   instanceId: string | null;
@@ -121,11 +124,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
         {items.map((id, index) => {
           const option = optionsList.find(opt => opt.id === id) || { label: id, emoji: '📝' };
           return (
-            <View key={index} style={styles.tag}>
-              <Text style={{
-                fontSize: theme.typography.fontSize.sm,
-                color: theme.colors.primary.dark,
-              }}>
+            <View 
+              key={index} 
+              style={styles.tag}
+              accessibilityLabel={`${option.label} tag`}
+            >
+              <Text style={styles.tagText}>
                 {option.emoji} {option.label}
               </Text>
             </View>
@@ -193,16 +197,26 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               style={styles.closeButton}
               accessibilityLabel="Close modal"
               accessibilityRole="button"
+              accessibilityHint="Returns to the previous screen"
             >
               <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.title}>Instance Details</Text>
+            <Text 
+              style={styles.title}
+              accessibilityRole="header"
+            >
+              Instance Details
+            </Text>
             <View style={{ width: 24 }} />
           </View>
 
           {/* Content */}
           {loading ? (
-            <View style={styles.centered}>
+            <View 
+              style={styles.centered}
+              accessibilityLabel="Loading instance details"
+              accessibilityRole="progressbar"
+            >
               <ActivityIndicator size="large" color={theme.colors.primary.main} />
               <Text style={styles.message}>Loading...</Text>
             </View>
@@ -231,7 +245,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
             >
               {/* When */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>When</Text>
+                <Text 
+                  style={styles.sectionTitle}
+                  accessibilityRole="header"
+                >
+                  When
+                </Text>
                 <Text style={styles.dateText}>{formatDate(instance.time)}</Text>
                 {instance.duration && (
                   <View style={styles.row}>
@@ -247,7 +266,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               
               {/* Details */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>BFRB Details</Text>
+                <Text 
+                  style={styles.sectionTitle}
+                  accessibilityRole="header"
+                >
+                  BFRB Details
+                </Text>
                 {instance.urgeStrength !== undefined && (
                   <View style={styles.row}>
                     <Text style={styles.label}>Urge Strength:</Text>
@@ -264,7 +288,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               
               {/* Environment */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Environment</Text>
+                <Text 
+                  style={styles.sectionTitle}
+                  accessibilityRole="header"
+                >
+                  Environment
+                </Text>
                 {renderItems(instance.selectedEnvironments, OptionDictionaries.environmentOptions)}
                 {instance.environmentDetails && (
                   <Text style={styles.detailsText}>{instance.environmentDetails}</Text>
@@ -273,7 +302,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               
               {/* Feelings */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Emotions</Text>
+                <Text 
+                  style={styles.sectionTitle}
+                  accessibilityRole="header"
+                >
+                  Emotions
+                </Text>
                 {renderItems(instance.selectedEmotions, OptionDictionaries.emotionOptions)}
                 {instance.mentalDetails && (
                   <Text style={styles.detailsText}>{instance.mentalDetails}</Text>
@@ -282,7 +316,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               
               {/* Sensations */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Physical Sensations</Text>
+                <Text 
+                  style={styles.sectionTitle}
+                  accessibilityRole="header"
+                >
+                  Physical Sensations
+                </Text>
                 {renderItems(instance.selectedSensations, OptionDictionaries.sensationOptions)}
                 {instance.physicalDetails && (
                   <Text style={styles.detailsText}>{instance.physicalDetails}</Text>
@@ -291,7 +330,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               
               {/* Thoughts */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Thoughts</Text>
+                <Text 
+                  style={styles.sectionTitle}
+                  accessibilityRole="header"
+                >
+                  Thoughts
+                </Text>
                 {renderItems(instance.selectedThoughts, OptionDictionaries.thoughtOptions)}
                 {instance.thoughtDetails && (
                   <Text style={styles.detailsText}>{instance.thoughtDetails}</Text>
@@ -301,7 +345,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               {/* Sensory Triggers */}
               {instance.selectedSensoryTriggers && instance.selectedSensoryTriggers.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Sensory Triggers</Text>
+                  <Text 
+                    style={styles.sectionTitle}
+                    accessibilityRole="header"
+                  >
+                    Sensory Triggers
+                  </Text>
                   {renderItems(instance.selectedSensoryTriggers, OptionDictionaries.triggerOptions)}
                   {instance.sensoryDetails && (
                     <Text style={styles.detailsText}>{instance.sensoryDetails}</Text>
@@ -312,7 +361,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               {/* Notes */}
               {instance.notes && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Notes</Text>
+                  <Text 
+                    style={styles.sectionTitle}
+                    accessibilityRole="header"
+                  >
+                    Notes
+                  </Text>
                   <Text style={styles.notes}>{instance.notes}</Text>
                 </View>
               )}

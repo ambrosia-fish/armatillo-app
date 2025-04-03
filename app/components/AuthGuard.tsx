@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import theme from '@/app/constants/theme';
@@ -19,7 +19,10 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Log authentication status on mount and when it changes
+  /**
+   * Log authentication status on mount and when it changes
+   * Provides helpful debugging information
+   */
   useEffect(() => {
     try {
       if (!isLoading) {
@@ -43,7 +46,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // If loading, show a loading spinner
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View 
+        style={styles.container}
+        accessibilityLabel="Loading authentication status"
+        accessibilityRole="progressbar"
+      >
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
         <Text style={styles.text}>Loading...</Text>
       </View>
@@ -63,7 +70,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       });
       // Fallback to a more basic redirect if the first attempt fails
       return (
-        <View style={styles.container}>
+        <View 
+          style={styles.container}
+          accessibilityLabel="Authentication required"
+          accessibilityRole="alert"
+        >
           <Text style={styles.errorText}>Authentication required</Text>
           <Text style={styles.text}>Redirecting to login...</Text>
         </View>
@@ -81,16 +92,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.colors.background.primary,
-  },
+  } as ViewStyle,
   text: {
     marginTop: theme.spacing.lg,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-  },
+  } as TextStyle,
   errorText: {
     fontSize: theme.typography.fontSize.lg,
     fontWeight: 'bold',
     color: theme.colors.utility.error,
     marginBottom: theme.spacing.md,
-  },
+  } as TextStyle,
 });

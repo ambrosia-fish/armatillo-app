@@ -71,6 +71,8 @@ export default function EmojiSelectionGrid({
             onPress={() => handleSelection(item.id)}
             accessibilityRole="button"
             accessibilityLabel={`${item.label} ${selected ? 'selected' : 'unselected'}`}
+            accessibilityState={{ selected }}
+            accessibilityHint={`Tap to ${selected ? 'unselect' : 'select'} ${item.label}`}
           >
             <Text style={styles.emoji}>{item.emoji}</Text>
             <Text

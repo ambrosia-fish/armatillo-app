@@ -6,7 +6,6 @@
 import React from 'react';
 import { Text as DefaultText, View as DefaultView, TextStyle, ViewStyle } from 'react-native';
 import theme from '@/app/constants/theme';
-import { useColorScheme } from '@/app/hooks/useColorScheme';
 import { errorService } from '@/app/services/ErrorService';
 
 // Types for themed components

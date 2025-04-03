@@ -17,7 +17,7 @@ interface InputProps extends TextInputProps {
   error?: string;
   containerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
-  inputStyle?: StyleProp<TextStyle>; // Changed to TextStyle
+  inputStyle?: StyleProp<TextStyle>;
   errorStyle?: StyleProp<TextStyle>;
 }
 
@@ -103,7 +103,10 @@ const Input = forwardRef<TextInput, InputProps>(({
       accessibilityLabel={label ? `${label} input field` : 'Input field'}
     >
       {label && (
-        <Text style={[styles.label, labelStyle]}>
+        <Text 
+          style={[styles.label, labelStyle]}
+          accessibilityRole="text"
+        >
           {label}
         </Text>
       )}
@@ -149,10 +152,10 @@ const styles = StyleSheet.create({
   } as TextStyle,
   input: {
     ...theme.componentStyles.input.field,
-  } as TextStyle, // Changed to TextStyle
+  } as TextStyle,
   inputError: {
     borderColor: theme.colors.utility.error,
-  } as TextStyle, // Changed to TextStyle
+  } as TextStyle,
   errorText: {
     ...theme.componentStyles.input.errorText,
   } as TextStyle,

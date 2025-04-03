@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
+
+// Type for Ionicons names
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface CancelFooterProps {
   onCancel?: () => void; // Optional callback for additional actions on cancel
@@ -18,6 +21,9 @@ interface CancelFooterProps {
 export default function CancelFooter({ onCancel }: CancelFooterProps) {
   const router = useRouter();
 
+  /**
+   * Handles cancel action with error handling
+   */
   const handleCancel = () => {
     try {
       // If custom onCancel provided, execute it
@@ -44,8 +50,15 @@ export default function CancelFooter({ onCancel }: CancelFooterProps) {
       <TouchableOpacity 
         style={styles.cancelButton}
         onPress={handleCancel}
+        accessibilityRole="button"
+        accessibilityLabel="Cancel tracking"
+        accessibilityHint="Cancels the current tracking session and returns to the home screen"
       >
-        <Ionicons name="close-circle-outline" size={20} color={theme.colors.utility.error} />
+        <Ionicons 
+          name="close-circle-outline" 
+          size={20} 
+          color={theme.colors.utility.error} 
+        />
         <Text style={styles.cancelButtonText}>Cancel</Text>
       </TouchableOpacity>
     </View>

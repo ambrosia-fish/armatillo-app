@@ -88,7 +88,7 @@ const SimpleHeader: React.FC<SimpleHeaderProps> = ({
   };
   
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, containerStyle]} accessibilityRole="header">
       <View style={styles.leftContainer}>
         {showBackButton && (
           <TouchableOpacity 
@@ -123,6 +123,7 @@ const SimpleHeader: React.FC<SimpleHeaderProps> = ({
             style={styles.iconButton}
             accessibilityRole="button"
             accessibilityLabel={rightIcon.replace(/-/g, ' ')}
+            accessibilityHint={onRightPress ? "Activate right button function" : undefined}
           >
             <Ionicons name={rightIcon} size={24} color={theme.colors.primary.main} />
           </TouchableOpacity>

@@ -115,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({
   };
   
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, containerStyle]} accessibilityRole="header">
       {/* Left side */}
       <View style={styles.leftContainer}>
         {showBackButton && (
@@ -124,6 +124,7 @@ const Header: React.FC<HeaderProps> = ({
             style={styles.iconButton}
             accessibilityRole="button"
             accessibilityLabel="Go back"
+            accessibilityHint="Navigate to previous screen"
           >
             <Ionicons name="arrow-back" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
@@ -135,7 +136,8 @@ const Header: React.FC<HeaderProps> = ({
             style={styles.iconButton}
             disabled={!onLeftPress}
             accessibilityRole="button"
-            accessibilityLabel={leftIcon}
+            accessibilityLabel={leftIcon.replace(/-/g, ' ')}
+            accessibilityHint={onLeftPress ? "Activate left button function" : undefined}
           >
             <Ionicons name={leftIcon} size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
@@ -147,6 +149,7 @@ const Header: React.FC<HeaderProps> = ({
             disabled={!onLeftPress}
             accessibilityRole="button"
             accessibilityLabel={leftText}
+            accessibilityHint={onLeftPress ? "Activate left button function" : undefined}
           >
             <Text style={styles.actionText}>{leftText}</Text>
           </TouchableOpacity>
@@ -170,6 +173,7 @@ const Header: React.FC<HeaderProps> = ({
             disabled={!onRightPress}
             accessibilityRole="button"
             accessibilityLabel={rightText}
+            accessibilityHint={onRightPress ? "Activate right button function" : undefined}
           >
             <Text style={styles.actionText}>{rightText}</Text>
           </TouchableOpacity>
@@ -181,7 +185,8 @@ const Header: React.FC<HeaderProps> = ({
             style={styles.iconButton}
             disabled={!onRightPress}
             accessibilityRole="button"
-            accessibilityLabel={rightIcon}
+            accessibilityLabel={rightIcon.replace(/-/g, ' ')}
+            accessibilityHint={onRightPress ? "Activate right button function" : undefined}
           >
             <Ionicons name={rightIcon} size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
