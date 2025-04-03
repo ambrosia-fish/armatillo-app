@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   TextStyle,
   ViewStyle
 } from 'react-native';
@@ -16,29 +15,8 @@ import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionari
 import { ensureValidToken } from '@/app/utils/tokenRefresher';
 import { Button, View, Text } from '@/app/components';
 import theme from '@/app/constants/theme';
-
-// Standardized Instance type
-interface Instance {
-  _id: string;
-  userId?: string;
-  userEmail?: string;
-  user_id: string;
-  time: string;
-  duration: number | string;
-  urgeStrength?: number;
-  intentionType: string; // 'automatic' or 'intentional'
-  selectedEnvironments?: string[];
-  selectedEmotions?: string[];
-  selectedSensations?: string[];
-  selectedThoughts?: string[];
-  selectedSensoryTriggers?: string[];
-  mentalDetails?: string;
-  physicalDetails?: string;
-  thoughtDetails?: string;
-  environmentDetails?: string;
-  sensoryDetails?: string;
-  notes?: string;
-}
+import { errorService } from '@/app/services/ErrorService';
+import { Instance } from '@/app/types/Instance';
 
 interface InstanceDetailsModalProps {
   isVisible: boolean;
@@ -46,6 +24,12 @@ interface InstanceDetailsModalProps {
   onClose: () => void;
 }
 
+/**
+ * Modal component to display detailed information about a BFRB instance
+ * 
+ * @param props - Component properties
+ * @returns Rendered modal with instance details
+ */
 const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   isVisible,
   instanceId,
@@ -55,42 +39,80 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch instance details
-  useEffect(() => {
-    if (!isVisible || !instanceId) return;
-    
-    const fetchInstance = async () => {
-      try {
-        setLoading(true);
-        await ensureValidToken();
-        const data = await api.instances.getInstance(instanceId);
-        
-        // Normalize instance data to standardized format
-        const normalizedData: Instance = {
-          ...data,
-          // Ensure time field exists (use createdAt as fallback)
-          time: data.time || data.createdAt,
-          // Ensure intentionType exists
-          intentionType: data.intentionType || (data.automatic !== undefined 
-            ? (data.automatic ? 'automatic' : 'intentional') 
-            : 'automatic'),
-          // Ensure duration exists
-          duration: data.duration || 5,
-        };
-        
-        setInstance(normalizedData);
-      } catch (err) {
-        console.error('Error fetching instance:', err);
-        setError('Failed to load details');
-      } finally {
-        setLoading(false);
-      }
-    };
+  /**
+   * Handle modal close with error handling
+   */
+  const handleClose = () => {
+    try {
+      onClose();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { component: 'InstanceDetailsModal', action: 'close' }
+      });
+    }
+  };
 
-    fetchInstance();
+  /**
+   * Fetch instance details from API
+   */
+  const fetchInstance = async () => {
+    if (!instanceId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await ensureValidToken();
+      const data = await api.instances.getInstance(instanceId);
+      
+      // Normalize instance data to standardized format
+      const normalizedData: Instance = {
+        ...data,
+        // Ensure time field exists (use createdAt as fallback)
+        time: data.time || data.createdAt,
+        // Ensure intentionType exists
+        intentionType: data.intentionType || (data.automatic !== undefined 
+          ? (data.automatic ? 'automatic' : 'intentional') 
+          : 'automatic'),
+        // Ensure duration exists
+        duration: data.duration || 5,
+      };
+      
+      setInstance(normalizedData);
+    } catch (err) {
+      const errorMessage = 'Failed to load instance details';
+      setError(errorMessage);
+      
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'api',
+        context: { 
+          component: 'InstanceDetailsModal', 
+          action: 'fetchInstance',
+          instanceId 
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch instance details when modal becomes visible
+  useEffect(() => {
+    if (isVisible && instanceId) {
+      fetchInstance();
+    }
   }, [isVisible, instanceId]);
 
-  // Render items with emojis
+  /**
+   * Render items with emojis from the options list
+   * 
+   * @param items - Array of selected item IDs
+   * @param optionsList - List of available options with emojis
+   * @returns Rendered list of items with emojis
+   */
   const renderItems = (items?: string[], optionsList?: OptionItem[]) => {
     if (!items?.length || !optionsList) return <Text style={styles.infoValue}>None</Text>;
     
@@ -100,7 +122,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
           const option = optionsList.find(opt => opt.id === id) || { label: id, emoji: '📝' };
           return (
             <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{option.emoji} {option.label}</Text>
+              <Text style={{
+                fontSize: theme.typography.fontSize.sm,
+                color: theme.colors.primary.dark,
+              }}>
+                {option.emoji} {option.label}
+              </Text>
             </View>
           );
         })}
@@ -108,15 +135,45 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     );
   };
 
-  // Format date
+  /**
+   * Format date to human-readable string
+   * 
+   * @param date - ISO date string
+   * @returns Formatted date string
+   */
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(date).toLocaleDateString('en-US', { 
+        weekday: 'long',
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { component: 'InstanceDetailsModal', action: 'formatDate', date }
+      });
+      return 'Invalid date';
+    }
+  };
+
+  /**
+   * Handle retry when there's an error
+   */
+  const handleRetry = () => {
+    try {
+      setError(null);
+      fetchInstance();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { component: 'InstanceDetailsModal', action: 'retry' }
+      });
+    }
   };
 
   return (
@@ -124,13 +181,19 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       animationType="slide"
       transparent={true}
       visible={isVisible}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
+      accessibilityLabel="Instance details modal"
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity 
+              onPress={handleClose}
+              style={styles.closeButton}
+              accessibilityLabel="Close modal"
+              accessibilityRole="button"
+            >
               <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
             <Text style={styles.title}>Instance Details</Text>
@@ -145,11 +208,16 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
             </View>
           ) : error ? (
             <View style={styles.centered}>
-              <Text style={styles.errorText}>{error}</Text>
+              <Text 
+                style={styles.errorText}
+                accessibilityRole="alert"
+              >
+                {error}
+              </Text>
               <Button 
                 title="Retry" 
                 variant="primary" 
-                onPress={() => setError(null)}
+                onPress={handleRetry}
               />
             </View>
           ) : !instance ? (
@@ -157,7 +225,10 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               <Text style={styles.message}>No details found</Text>
             </View>
           ) : (
-            <ScrollView style={styles.content}>
+            <ScrollView 
+              style={styles.content}
+              accessibilityLabel="Instance details"
+            >
               {/* When */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>When</Text>
@@ -177,7 +248,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               {/* Details */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>BFRB Details</Text>
-                {instance.urgeStrength && (
+                {instance.urgeStrength !== undefined && (
                   <View style={styles.row}>
                     <Text style={styles.label}>Urge Strength:</Text>
                     <Text style={styles.value}>{instance.urgeStrength}/10</Text>
@@ -247,6 +318,8 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               )}
             </ScrollView>
           )}
+          
+          <StatusBar style="light" />
         </View>
       </View>
     </Modal>

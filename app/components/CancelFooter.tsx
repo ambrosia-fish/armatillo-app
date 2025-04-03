@@ -3,31 +3,42 @@ import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Platfor
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
 
 interface CancelFooterProps {
   onCancel?: () => void; // Optional callback for additional actions on cancel
 }
 
+/**
+ * Footer component with cancel button for tracking flows
+ * 
+ * @param props - Component properties
+ * @returns Rendered footer with cancel button
+ */
 export default function CancelFooter({ onCancel }: CancelFooterProps) {
   const router = useRouter();
-  
-  
 
   const handleCancel = () => {
-    // If custom onCancel provided, execute it
-    if (onCancel) {
-      onCancel();
+    try {
+      // If custom onCancel provided, execute it
+      if (onCancel) {
+        onCancel();
+      }
+      
+      // Navigate to home - the tabs root
+      router.replace('/(tabs)');
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { component: 'CancelFooter', action: 'cancel' }
+      });
     }
-    
-    // Navigate to home - the tabs root
-    router.replace('/(tabs)');
   };
-
-  
 
   return (
     <View 
-      style={getFooterStyle()}
+      style={styles.footer}
       className="cancel-footer bottom-area"
     >
       <TouchableOpacity 
@@ -48,7 +59,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
-    // Ensure button is accessible in PWA mode
+    // Ensure button is accessible
     minHeight: 64,
   } as ViewStyle,
   cancelButton: {

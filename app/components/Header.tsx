@@ -11,11 +11,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
+
+// Type for Ionicons names
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface HeaderProps {
   title: string;
-  leftIcon?: string;
-  rightIcon?: string;
+  leftIcon?: IoniconsName;
+  rightIcon?: IoniconsName;
   leftText?: string;
   rightText?: string;
   onLeftPress?: () => void;
@@ -27,6 +31,9 @@ interface HeaderProps {
 
 /**
  * Reusable themed header component used across screens
+ * 
+ * @param props - Component properties
+ * @returns Rendered header component with configurable buttons and title
  */
 const Header: React.FC<HeaderProps> = ({
   title,
@@ -42,9 +49,69 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const router = useRouter();
   
-  // Default back button handler
+  /**
+   * Default back button handler with error handling
+   */
   const handleBackPress = () => {
-    router.back();
+    try {
+      router.back();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Header', 
+          action: 'backNavigation',
+          title
+        }
+      });
+    }
+  };
+
+  /**
+   * Handle left button press with error handling
+   */
+  const handleLeftPress = () => {
+    if (!onLeftPress) return;
+    
+    try {
+      onLeftPress();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Header', 
+          action: 'leftButtonPress',
+          title,
+          leftIcon,
+          leftText
+        }
+      });
+    }
+  };
+
+  /**
+   * Handle right button press with error handling
+   */
+  const handleRightPress = () => {
+    if (!onRightPress) return;
+    
+    try {
+      onRightPress();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Header', 
+          action: 'rightButtonPress',
+          title,
+          rightIcon,
+          rightText
+        }
+      });
+    }
   };
   
   return (
@@ -53,8 +120,10 @@ const Header: React.FC<HeaderProps> = ({
       <View style={styles.leftContainer}>
         {showBackButton && (
           <TouchableOpacity 
-            onPress={onLeftPress || handleBackPress}
+            onPress={onLeftPress ? handleLeftPress : handleBackPress}
             style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Ionicons name="arrow-back" size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
@@ -62,9 +131,11 @@ const Header: React.FC<HeaderProps> = ({
         
         {leftIcon && !showBackButton && (
           <TouchableOpacity 
-            onPress={onLeftPress}
+            onPress={handleLeftPress}
             style={styles.iconButton}
             disabled={!onLeftPress}
+            accessibilityRole="button"
+            accessibilityLabel={leftIcon}
           >
             <Ionicons name={leftIcon} size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>
@@ -72,8 +143,10 @@ const Header: React.FC<HeaderProps> = ({
         
         {leftText && (
           <TouchableOpacity 
-            onPress={onLeftPress}
+            onPress={handleLeftPress}
             disabled={!onLeftPress}
+            accessibilityRole="button"
+            accessibilityLabel={leftText}
           >
             <Text style={styles.actionText}>{leftText}</Text>
           </TouchableOpacity>
@@ -81,14 +154,22 @@ const Header: React.FC<HeaderProps> = ({
       </View>
       
       {/* Title */}
-      <Text style={[styles.title, titleStyle]} numberOfLines={1}>{title}</Text>
+      <Text 
+        style={[styles.title, titleStyle]} 
+        numberOfLines={1}
+        accessibilityRole="header"
+      >
+        {title}
+      </Text>
       
       {/* Right side */}
       <View style={styles.rightContainer}>
         {rightText && (
           <TouchableOpacity 
-            onPress={onRightPress}
+            onPress={handleRightPress}
             disabled={!onRightPress}
+            accessibilityRole="button"
+            accessibilityLabel={rightText}
           >
             <Text style={styles.actionText}>{rightText}</Text>
           </TouchableOpacity>
@@ -96,9 +177,11 @@ const Header: React.FC<HeaderProps> = ({
         
         {rightIcon && (
           <TouchableOpacity 
-            onPress={onRightPress}
+            onPress={handleRightPress}
             style={styles.iconButton}
             disabled={!onRightPress}
+            accessibilityRole="button"
+            accessibilityLabel={rightIcon}
           >
             <Ionicons name={rightIcon} size={24} color={theme.colors.text.primary} />
           </TouchableOpacity>

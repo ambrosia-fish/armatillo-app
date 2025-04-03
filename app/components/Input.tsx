@@ -10,18 +10,23 @@ import {
   TextStyle
 } from 'react-native';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   containerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
-  inputStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>; // Changed to TextStyle
   errorStyle?: StyleProp<TextStyle>;
 }
 
 /**
  * Themed input component with label and error handling
+ * 
+ * @param props - Component properties including standard TextInput props
+ * @param ref - Forwarded ref for TextInput
+ * @returns Rendered input component with optional label and error message
  */
 const Input = forwardRef<TextInput, InputProps>(({
   label,
@@ -30,10 +35,73 @@ const Input = forwardRef<TextInput, InputProps>(({
   labelStyle,
   inputStyle,
   errorStyle,
+  onChangeText,
+  onFocus,
+  onBlur,
   ...rest
 }, ref) => {
+  /**
+   * Handle text changes with error handling
+   */
+  const handleTextChange = (text: string) => {
+    try {
+      onChangeText?.(text);
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Input', 
+          label,
+          action: 'textChange'
+        }
+      });
+    }
+  };
+
+  /**
+   * Handle input focus with error handling
+   */
+  const handleFocus = (event: any) => {
+    try {
+      onFocus?.(event);
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Input', 
+          label,
+          action: 'focus'
+        }
+      });
+    }
+  };
+
+  /**
+   * Handle input blur with error handling
+   */
+  const handleBlur = (event: any) => {
+    try {
+      onBlur?.(event);
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Input', 
+          label,
+          action: 'blur'
+        }
+      });
+    }
+  };
+
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View 
+      style={[styles.container, containerStyle]}
+      accessibilityLabel={label ? `${label} input field` : 'Input field'}
+    >
       {label && (
         <Text style={[styles.label, labelStyle]}>
           {label}
@@ -48,17 +116,28 @@ const Input = forwardRef<TextInput, InputProps>(({
           inputStyle
         ]}
         placeholderTextColor={theme.colors.text.tertiary}
+        onChangeText={handleTextChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        accessibilityLabel={label || 'Input field'}
+        accessibilityHint={error || undefined}
         {...rest}
       />
       
       {error && (
-        <Text style={[styles.errorText, errorStyle]}>
+        <Text 
+          style={[styles.errorText, errorStyle]}
+          accessibilityRole="alert"
+        >
           {error}
         </Text>
       )}
     </View>
   );
 });
+
+// Add display name for debugging purposes
+Input.displayName = 'Input';
 
 const styles = StyleSheet.create({
   container: {
@@ -70,10 +149,10 @@ const styles = StyleSheet.create({
   } as TextStyle,
   input: {
     ...theme.componentStyles.input.field,
-  } as ViewStyle,
+  } as TextStyle, // Changed to TextStyle
   inputError: {
     borderColor: theme.colors.utility.error,
-  } as ViewStyle,
+  } as TextStyle, // Changed to TextStyle
   errorText: {
     ...theme.componentStyles.input.errorText,
   } as TextStyle,

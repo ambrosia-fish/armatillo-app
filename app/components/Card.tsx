@@ -10,6 +10,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
 
 interface CardProps extends ViewProps {
   title?: string;
@@ -23,7 +24,10 @@ interface CardProps extends ViewProps {
 }
 
 /**
- * Themed Card component
+ * Themed Card component with optional title, subtitle and touch functionality
+ * 
+ * @param props - Component properties
+ * @returns Rendered card component
  */
 const Card: React.FC<CardProps> = ({
   title,
@@ -36,12 +40,32 @@ const Card: React.FC<CardProps> = ({
   children,
   ...rest
 }) => {
+  /**
+   * Handle card press with error handling
+   */
+  const handlePress = () => {
+    if (!onPress) return;
+    
+    try {
+      onPress();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Card', 
+          title 
+        }
+      });
+    }
+  };
+  
   const CardContainer = onPress ? TouchableOpacity : View;
   
   return (
     <CardContainer
       style={[styles.container, containerStyle]}
-      onPress={onPress}
+      onPress={onPress ? handlePress : undefined}
       activeOpacity={onPress ? 0.8 : undefined}
       {...rest}
     >

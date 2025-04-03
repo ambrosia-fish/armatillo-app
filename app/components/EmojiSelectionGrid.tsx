@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native
 import { OptionItem } from '@/app/constants/optionDictionaries';
 import theme from '@/app/constants/theme';
 import { View, Text } from './Themed';
+import { errorService } from '@/app/services/ErrorService';
 
 interface EmojiSelectionGridProps {
   items: OptionItem[];
@@ -11,6 +12,12 @@ interface EmojiSelectionGridProps {
   numColumns?: number;
 }
 
+/**
+ * Grid component for selecting emoji options
+ * 
+ * @param props - Component properties
+ * @returns Rendered grid of selectable emoji options
+ */
 export default function EmojiSelectionGrid({
   items,
   selectedIds,
@@ -18,32 +25,65 @@ export default function EmojiSelectionGrid({
   numColumns = 3,
 }: EmojiSelectionGridProps) {
 
+  /**
+   * Handle item selection with error handling
+   * 
+   * @param id - ID of the selected item
+   */
   const handleSelection = (id: string) => {
-    onToggleItem(id);
+    try {
+      onToggleItem(id);
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'EmojiSelectionGrid', 
+          action: 'toggleItem',
+          itemId: id
+        }
+      });
+    }
+  };
+
+  /**
+   * Determine if an item is selected
+   * 
+   * @param id - ID to check
+   * @returns Whether the item is selected
+   */
+  const isSelected = (id: string): boolean => {
+    return selectedIds.includes(id);
   };
 
   return (
     <View style={styles.grid}>
-      {items.map((item) => (
-        <TouchableOpacity
-          key={item.id}
-          style={[
-            styles.gridItem,
-            selectedIds.includes(item.id) && styles.selectedItem,
-          ]}
-          onPress={() => handleSelection(item.id)}
-        >
-          <Text style={styles.emoji}>{item.emoji}</Text>
-          <Text
+      {items.map((item) => {
+        const selected = isSelected(item.id);
+        
+        return (
+          <TouchableOpacity
+            key={item.id}
             style={[
-              styles.label,
-              selectedIds.includes(item.id) && styles.selectedLabel,
+              styles.gridItem,
+              selected && styles.selectedItem,
             ]}
+            onPress={() => handleSelection(item.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.label} ${selected ? 'selected' : 'unselected'}`}
           >
-            {item.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <Text style={styles.emoji}>{item.emoji}</Text>
+            <Text
+              style={{
+                ...styles.label,
+                ...(selected ? styles.selectedLabel : {})
+              }}
+            >
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
