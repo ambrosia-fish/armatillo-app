@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { 
   TouchableOpacity, 
   Text, 
@@ -7,10 +7,10 @@ import {
   StyleProp, 
   ViewStyle, 
   TextStyle,
-  TouchableOpacityProps,
-  Platform
+  TouchableOpacityProps
 } from 'react-native';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'text';
 export type ButtonSize = 'small' | 'medium' | 'large';
@@ -30,6 +30,9 @@ interface ButtonProps extends TouchableOpacityProps {
 
 /**
  * Button component with various styles based on theme
+ * 
+ * @param {ButtonProps} props - Component properties
+ * @returns {React.ReactElement} - The rendered button
  */
 const Button: React.FC<ButtonProps> = ({ 
   variant = 'primary',
@@ -44,12 +47,31 @@ const Button: React.FC<ButtonProps> = ({
   fixed = false,
   ...rest
 }) => {
+  /**
+   * Handle button press with error handling
+   */
+  const handlePress = () => {
+    try {
+      onPress();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'Button', 
+          variant, 
+          title 
+        }
+      });
+    }
+  };
 
-
-  // Determine container style based on variant, size, and disabled state
-  const getContainerStyle = () => {
+  /**
+   * Determine container style based on variant, size, and disabled state
+   */
+  const getContainerStyle = (): StyleProp<ViewStyle> => {
     // Get base style from theme
-    let baseStyle;
+    let baseStyle: StyleProp<ViewStyle>;
     
     if (disabled) {
       baseStyle = theme.componentStyles.button.disabled.container;
@@ -71,18 +93,18 @@ const Button: React.FC<ButtonProps> = ({
     // Apply size styles
     const sizeStyle = buttonStyles[`${size}Container`];
     
-    // Add special styles for fixed position buttons in PWA mode
-    const fixedStyle = fixed && isPwa && Platform.OS === 'web' 
-      ? { marginBottom: 'env(safe-area-inset-bottom, 0px)' } 
-      : null;
+    // Fixed position styles (no PWA-specific adjustments)
+    const fixedStyle = fixed ? { marginBottom: 0 } : undefined;
     
     return [baseStyle, sizeStyle, fixedStyle, style];
   };
   
-  // Determine text style based on variant and disabled state
-  const getTextStyle = () => {
+  /**
+   * Determine text style based on variant and disabled state
+   */
+  const getTextStyle = (): StyleProp<TextStyle> => {
     // Get base style from theme
-    let baseStyle;
+    let baseStyle: StyleProp<TextStyle>;
     
     if (disabled) {
       baseStyle = theme.componentStyles.button.disabled.text;
@@ -110,7 +132,7 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <TouchableOpacity
       style={getContainerStyle()}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={0.7}
       className={className}
