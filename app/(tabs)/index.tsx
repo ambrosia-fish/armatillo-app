@@ -18,7 +18,7 @@ export default function HomeScreen() {
   const [buttonScale] = React.useState(new Animated.Value(1));
   
   /**
-   * Navigate to the time screen to begin the tracking flow
+   * Navigate to the new options screen to begin the tracking flow
    */
   const addNewEntry = () => {
     try {
@@ -36,13 +36,13 @@ export default function HomeScreen() {
         })
       ]).start();
       
-      // Navigate to time screen
-      router.push('/screens/tracking/time-screen');
+      // Navigate to new options screen instead of directly to time screen
+      router.push('/screens/tracking/new-options-screen');
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), { 
         source: 'ui', 
         level: 'error',
-        context: { action: 'navigate_to_time_screen' }
+        context: { action: 'navigate_to_new_options_screen' }
       });
     }
   };
