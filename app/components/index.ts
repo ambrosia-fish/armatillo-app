@@ -18,6 +18,11 @@ export { Text, View } from './Themed';
 // Authentication components
 export { default as AuthGuard } from './AuthGuard';
 
+// Form entry components
+export { default as EmojiPill } from './EmojiPill';
+export { default as EmojiPillRow } from './EmojiPillRow';
+export { default as AnswerSelectorModal } from './AnswerSelectorModal';
+
 // Existing components
 export { default as CancelFooter } from './CancelFooter';
 export { default as EmojiSelectionGrid } from './EmojiSelectionGrid';
