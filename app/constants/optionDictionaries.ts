@@ -4,8 +4,8 @@ export interface OptionItem {
   emoji: string;
 }
 
-// Dictionary for environment options (used in environment-screen.tsx)
-export const environmentOptions: OptionItem[] = [
+// Dictionary for environment/location options
+export const locationOptions: OptionItem[] = [
   { id: 'home', label: 'Home', emoji: '🏠' },
   { id: 'work', label: 'Work', emoji: '💼' },
   { id: 'school', label: 'School', emoji: '🏫' },
@@ -15,27 +15,34 @@ export const environmentOptions: OptionItem[] = [
   { id: 'bedroom', label: 'Bedroom', emoji: '🛏️' },
   { id: 'kitchen', label: 'Kitchen', emoji: '🍽️' },
   { id: 'livingRoom', label: 'Living Room', emoji: '🛋️' },
-  { id: 'computer', label: 'Computer', emoji: '💻' },
-  { id: 'phone', label: 'Phone', emoji: '📱' },
-  { id: 'desk', label: 'Desk', emoji: '🖥️' },
-  { id: 'mirror', label: 'Mirror', emoji: '🪞' },
-  { id: 'tv', label: 'TV/Media', emoji: '📺' },
-  { id: 'social', label: 'Social Event', emoji: '👥' },
-  { id: 'bus', label: 'Bus', emoji: '🚌' },
-  { id: 'train', label: 'Train', emoji: '🚆' },
-  { id: 'airplane', label: 'Airplane', emoji: '✈️' },
-  { id: 'gym', label: 'Gym', emoji: '🏋️' },
+  { id: 'outdoors', label: 'Outdoors', emoji: '🌳' },
   { id: 'restaurant', label: 'Restaurant', emoji: '🍴' },
   { id: 'cafe', label: 'Cafe', emoji: '☕' },
   { id: 'store', label: 'Store', emoji: '🛒' },
-  { id: 'outdoors', label: 'Outdoors', emoji: '🌳' },
   { id: 'library', label: 'Library', emoji: '📚' },
-  { id: 'theater', label: 'Theater', emoji: '🎭' },
-  { id: 'hospital', label: 'Hospital', emoji: '🏥' },
-  { id: 'salon', label: 'Salon', emoji: '💇' },
+  { id: 'gym', label: 'Gym', emoji: '🏋️' },
 ];
 
-// Dictionary for emotion options (used in mental-screen.tsx)
+// Dictionary for activity options
+export const activityOptions: OptionItem[] = [
+  { id: 'working', label: 'Working', emoji: '💻' },
+  { id: 'studying', label: 'Studying', emoji: '📚' },
+  { id: 'reading', label: 'Reading', emoji: '📖' },
+  { id: 'watching', label: 'Watching TV', emoji: '📺' },
+  { id: 'browsing', label: 'Browsing Phone', emoji: '📱' },
+  { id: 'socializing', label: 'Socializing', emoji: '👥' },
+  { id: 'eating', label: 'Eating', emoji: '🍽️' },
+  { id: 'commuting', label: 'Commuting', emoji: '🚌' },
+  { id: 'exercising', label: 'Exercising', emoji: '🏃' },
+  { id: 'resting', label: 'Resting', emoji: '😴' },
+  { id: 'grooming', label: 'Grooming', emoji: '🪞' },
+  { id: 'meeting', label: 'In a Meeting', emoji: '👔' },
+  { id: 'waiting', label: 'Waiting', emoji: '⏱️' },
+  { id: 'shopping', label: 'Shopping', emoji: '🛍️' },
+  { id: 'cooking', label: 'Cooking', emoji: '🍳' },
+];
+
+// Dictionary for emotion options
 export const emotionOptions: OptionItem[] = [
   { id: 'stressed', label: 'Stressed', emoji: '😥' },
   { id: 'anxious', label: 'Anxious', emoji: '😰' },
@@ -51,30 +58,15 @@ export const emotionOptions: OptionItem[] = [
   { id: 'embarrassed', label: 'Embarrassed', emoji: '😳' },
   { id: 'overwhelmed', label: 'Overwhelmed', emoji: '🥴' },
   { id: 'distracted', label: 'Distracted', emoji: '🤔' },
-  { id: 'focused', label: 'Focused', emoji: '🧐' },
   { id: 'worry', label: 'Worried', emoji: '😟' },
   { id: 'restless', label: 'Restless', emoji: '😬' },
   { id: 'guilty', label: 'Guilty', emoji: '😣' },
   { id: 'ashamed', label: 'Ashamed', emoji: '😞' },
   { id: 'lonely', label: 'Lonely', emoji: '🥺' },
   { id: 'fearful', label: 'Fearful', emoji: '😨' },
-  { id: 'disgusted', label: 'Disgusted', emoji: '🤢' },
-  { id: 'numb', label: 'Numb', emoji: '😶' },
-  { id: 'hopeful', label: 'Hopeful', emoji: '🤗' },
-  { id: 'joyful', label: 'Joyful', emoji: '😄' },
-  { id: 'satisfied', label: 'Satisfied', emoji: '😏' },
-  { id: 'irritated', label: 'Irritated', emoji: '😑' },
-  { id: 'disappointed', label: 'Disappointed', emoji: '😔' },
-  { id: 'confused', label: 'Confused', emoji: '😕' },
-  { id: 'empty', label: 'Empty', emoji: '🫥' },
-  { id: 'jealous', label: 'Jealous', emoji: '😒' },
-  { id: 'nervous', label: 'Nervous', emoji: '😖' },
-  { id: 'relaxed', label: 'Relaxed', emoji: '😌' },
-  { id: 'grieving', label: 'Grieving', emoji: '💔' },
-  { id: 'insecure', label: 'Insecure', emoji: '🙁' },
 ];
 
-// Dictionary for thought pattern options (used in thoughts-screen.tsx)
+// Dictionary for thought pattern options
 export const thoughtOptions: OptionItem[] = [
   { id: 'perfectionism', label: 'Perfectionism', emoji: '✨' },
   { id: 'selfCritical', label: 'Self-Critical', emoji: '👎' },
@@ -90,24 +82,10 @@ export const thoughtOptions: OptionItem[] = [
   { id: 'needForControl', label: 'Need for Control', emoji: '🎮' },
   { id: 'appearance', label: 'Appearance Concerns', emoji: '👀' },
   { id: 'fixing', label: 'Fixing/Evening Out', emoji: '🛠️' },
-  { id: 'smoothing', label: 'Smoothing', emoji: '🖐️' },
-  { id: 'selfDoubt', label: 'Self-Doubt', emoji: '🤔' },
-  { id: 'fortuneTelling', label: 'Fortune Telling', emoji: '🧿' },
-  { id: 'focusingNegative', label: 'Focusing on Negative', emoji: '🔍' },
-  { id: 'minimizingPositive', label: 'Minimizing Positive', emoji: '➖' },
   { id: 'symmetryConcerns', label: 'Symmetry Concerns', emoji: '↔️' },
-  { id: 'noticeImperfection', label: 'Noticing Imperfection', emoji: '⭕' },
-  { id: 'feelOverwhelmed', label: 'Feeling Overwhelmed', emoji: '🌊' },
-  { id: 'wantEscape', label: 'Wanting to Escape', emoji: '🚪' },
-  { id: 'anticipation', label: 'Anticipation', emoji: '⏳' },
-  { id: 'regret', label: 'Regret', emoji: '😔' },
-  { id: 'justRight', label: 'Just Right Feeling', emoji: '👌' },
-  { id: 'guilt', label: 'Guilt', emoji: '😣' },
-  { id: 'zoningOut', label: 'Zoning Out', emoji: '🧠' },
-  { id: 'hyperfocus', label: 'Hyperfocus', emoji: '🎯' },
 ];
 
-// Dictionary for physical sensation options (used in physical-screen.tsx)
+// Dictionary for physical sensation options
 export const sensationOptions: OptionItem[] = [
   { id: 'tense', label: 'Tense Muscles', emoji: '💪' },
   { id: 'sweaty', label: 'Sweaty', emoji: '💦' },
@@ -122,65 +100,34 @@ export const sensationOptions: OptionItem[] = [
   { id: 'itchy', label: 'Itchy', emoji: '👆' },
   { id: 'tingling', label: 'Tingling', emoji: '✨' },
   { id: 'pain', label: 'Pain', emoji: '🤕' },
-  { id: 'hungry', label: 'Hungry', emoji: '🍽️' },
-  { id: 'nauseous', label: 'Nauseous', emoji: '🤢' },
-  { id: 'headache', label: 'Headache', emoji: '🤯' },
-  { id: 'dizzy', label: 'Dizzy', emoji: '💫' },
-  { id: 'thirsty', label: 'Thirsty', emoji: '🥤' },
-  { id: 'chills', label: 'Chills', emoji: '🥶' },
   { id: 'pressure', label: 'Pressure', emoji: '👇' },
-  { id: 'cramps', label: 'Cramps', emoji: '😖' },
-  { id: 'stiffness', label: 'Stiffness', emoji: '🧍' },
-  { id: 'soreness', label: 'Soreness', emoji: '💪' },
-  { id: 'heaviness', label: 'Heaviness', emoji: '⚓' },
-  { id: 'pulsing', label: 'Pulsing', emoji: '💓' },
   { id: 'twitching', label: 'Twitching', emoji: '👁️' },
-  { id: 'hotFlash', label: 'Hot Flash', emoji: '🌡️' },
-  { id: 'drySkin', label: 'Dry Skin', emoji: '🏜️' },
-  { id: 'congestion', label: 'Congestion', emoji: '🤧' },
 ];
 
-// Dictionary for sensory trigger options (used in sensory-screen.tsx)
-export const triggerOptions: OptionItem[] = [
-  { id: 'visual', label: 'Visual', emoji: '👁️' },
-  { id: 'touch', label: 'Touch', emoji: '👆' },
-  { id: 'sound', label: 'Sound', emoji: '👂' },
-  { id: 'taste', label: 'Taste', emoji: '👅' },
-  { id: 'smell', label: 'Smell', emoji: '👃' },
-  { id: 'mirror', label: 'Mirror', emoji: '🪞' },
-  { id: 'screen', label: 'Screen', emoji: '📱' },
-  { id: 'texture', label: 'Texture', emoji: '🧶' },
-  { id: 'light', label: 'Light', emoji: '💡' },
-  { id: 'noise', label: 'Noise', emoji: '🔊' },
-  { id: 'temperature', label: 'Temperature', emoji: '🌡️' },
-  { id: 'clothing', label: 'Clothing', emoji: '👕' },
-  { id: 'roughness', label: 'Roughness', emoji: '🧱' },
-  { id: 'smoothness', label: 'Smoothness', emoji: '🪨' },
-  { id: 'dryness', label: 'Dryness', emoji: '🏜️' },
-  { id: 'moisture', label: 'Moisture', emoji: '💦' },
-  { id: 'vibration', label: 'Vibration', emoji: '📳' },
-  { id: 'brightLight', label: 'Bright Light', emoji: '☀️' },
-  { id: 'dimLight', label: 'Dim Light', emoji: '🌙' },
-  { id: 'itchiness', label: 'Itchiness', emoji: '🪶' },
-  { id: 'tightness', label: 'Tightness', emoji: '🔒' },
-  { id: 'stickiness', label: 'Stickiness', emoji: '🍯' },
-  { id: 'irregularity', label: 'Irregularity', emoji: '〰️' },
-  { id: 'contrast', label: 'Visual Contrast', emoji: '◽◾' },
-  { id: 'pattern', label: 'Pattern/Repetition', emoji: '🔄' },
-  { id: 'flashing', label: 'Flashing/Strobing', emoji: '⚡' },
-  { id: 'movement', label: 'Movement', emoji: '🏃' },
-  { id: 'proximity', label: 'Close Proximity', emoji: '🤏' },
+// Dictionary for awareness types
+export const awarenessOptions: OptionItem[] = [
+  { id: 'intentional', label: 'Intentional', emoji: '🧠' },
+  { id: 'automatic', label: 'Automatic', emoji: '🤖' },
 ];
 
-// Empty dictionary for trigger options (placeholder if needed in future)
+// Dictionary for urge strength
+export const urgeStrengthOptions: OptionItem[] = [
+  { id: '1', label: '1 - Very Weak', emoji: '😌' },
+  { id: '2', label: '2 - Mild', emoji: '🙂' },
+  { id: '3', label: '3 - Moderate', emoji: '😐' },
+  { id: '4', label: '4 - Strong', emoji: '😟' },
+  { id: '5', label: '5 - Very Strong', emoji: '😖' },
+];
 
 // Create a wrapper object for default export
 const OptionDictionaries = {
-  triggerOptions,
-  environmentOptions,
-  emotionOptions, // Updated from feelingOptions to match mental-screen.tsx
+  locationOptions,
+  activityOptions,
+  emotionOptions,
+  thoughtOptions,
   sensationOptions,
-  thoughtOptions
+  awarenessOptions,
+  urgeStrengthOptions
 };
 
 export default OptionDictionaries;
