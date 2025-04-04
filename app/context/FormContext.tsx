@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Add specific typing for tracking screen selections
 interface BFRBFormData {
+  // Meta information
+  name?: string;
+  notes?: string;
+  
   // Time tracking
   time?: Date;
   duration?: number;
@@ -9,25 +13,34 @@ interface BFRBFormData {
   selectedDuration?: string;
   
   // Urge tracking
-  urgeStrength?: number;
-  intentionType?: string;
+  urgeStrength?: number | string;
+  awarenessType?: string;
   
-  // Environment tracking
-  selectedEnvironments?: string[];
-  environmentDetails?: string;
+  // Physical/Location tracking
+  selectedLocations?: string[];
+  locationDetails?: string;
   
-  // Emotional/Physical tracking
+  // Activity tracking
+  selectedActivities?: string[];
+  activityDetails?: string;
+  
+  // Emotional tracking
   selectedEmotions?: string[];
-  selectedSensations?: string[];
+  emotionDetails?: string;
   
   // Cognitive tracking
   selectedThoughts?: string[];
+  thoughtDetails?: string;
 
-  // Sensory triggers
+  // Physical sensations
+  selectedSensations?: string[];
+  sensationDetails?: string;
+  
+  // Legacy fields - maintained for backwards compatibility
+  intentionType?: string;
+  selectedEnvironments?: string[];
+  environmentDetails?: string;
   selectedSensoryTriggers?: string[];
-  notes?: string;
-
-  // User data
   userName?: string;
 }
 
