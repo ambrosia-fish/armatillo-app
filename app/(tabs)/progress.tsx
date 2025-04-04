@@ -7,9 +7,9 @@ import {
   RefreshControl,
   ViewStyle,
   TextStyle,
-  Platform
+  Platform,
+  StatusBar
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
 import api from '@/app/services/api';
@@ -23,9 +23,9 @@ import { View, Text } from '@/app/components';
 import { errorService } from '@/app/services/ErrorService';
 
 /**
- * History/Progress screen showing all tracked BFRB instances
+ * Progress screen showing all tracked BFRB instances with a modern UI
  */
-export default function HistoryScreen() {
+export default function ProgressScreen() {
   // State management
   const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,7 +87,7 @@ export default function HistoryScreen() {
         context: { method: 'fetchInstances' }
       });
       
-      let errorMessage = 'Failed to load your history. Please try again.';
+      let errorMessage = 'Failed to load your progress data. Please try again.';
       if (err instanceof Error) {
         errorMessage += '\n\nDetails: ' + err.message;
       }
@@ -173,270 +173,431 @@ export default function HistoryScreen() {
   };
 
   /**
-   * Render each instance item
+   * Render each instance item with modern styling
    */
   const renderItem = ({ item }: { item: Instance }) => (
     <TouchableOpacity 
-      style={styles.card}
+      style={styles.instanceCard}
       onPress={() => viewInstanceDetails(item)}
+      activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.date}>{formatDate(item.time)}</Text>
-        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
+        <View style={styles.dateContainer}>
+          <Ionicons name="calendar-outline" size={16} color={theme.colors.text.tertiary} />
+          <Text style={styles.dateText}>{formatDate(item.time)}</Text>
+        </View>
+        <View style={styles.typeChip}>
+          <Text style={styles.typeText}>
+            {item.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
+          </Text>
+        </View>
       </View>
       
-      <View style={styles.cardContent}>
+      <View style={styles.cardBody}>
         {item.urgeStrength !== undefined && (
-          <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="pulse-outline" size={18} color={theme.colors.text.tertiary} />
+            </View>
             <Text style={styles.infoLabel}>Urge Strength:</Text>
             <Text style={styles.infoValue}>{item.urgeStrength}/10</Text>
           </View>
         )}
         
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Type:</Text>
-          <Text style={styles.infoValue}>
-            {item.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
-          </Text>
-        </View>
-        
         {item.location && (
-          <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="location-outline" size={18} color={theme.colors.text.tertiary} />
+            </View>
             <Text style={styles.infoLabel}>Location:</Text>
             <Text style={styles.infoValue} numberOfLines={1}>{item.location}</Text>
           </View>
         )}
         
         {item.activity && (
-          <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="body-outline" size={18} color={theme.colors.text.tertiary} />
+            </View>
             <Text style={styles.infoLabel}>Activity:</Text>
             <Text style={styles.infoValue} numberOfLines={1}>{item.activity}</Text>
           </View>
         )}
       </View>
+      
+      <View style={styles.cardFooter}>
+        <Text style={styles.viewDetailsText}>View Details</Text>
+        <Ionicons name="chevron-forward" size={16} color={theme.colors.primary.main} />
+      </View>
     </TouchableOpacity>
   );
 
   /**
-   * Empty state component
+   * Empty state component - modern design
    */
   const EmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="time-outline" size={50} color={theme.colors.neutral.medium} />
-      <Text style={styles.emptyStateText}>No history found</Text>
-      <Text style={styles.emptyStateSubtext}>
-        Your tracked behaviors will appear here
+      <View style={styles.emptyStateIconContainer}>
+        <Ionicons name="analytics-outline" size={40} color={theme.colors.text.tertiary} />
+      </View>
+      <Text style={styles.emptyStateTitle}>No progress data yet</Text>
+      <Text style={styles.emptyStateMessage}>
+        Tracked behaviors will appear here to help you monitor your progress
       </Text>
     </View>
   );
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>History</Text>
-      
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={fetchInstances}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {loading && initialLoad ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary.main} />
-          <Text style={styles.loadingText}>Loading your history...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={instances}
-          renderItem={renderItem}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={instances.length === 0 ? { flex: 1 } : { paddingBottom: theme.spacing.xxl }}
-          ListEmptyComponent={!loading ? EmptyState : null}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[theme.colors.primary.main]}
-            />
-          }
-          ListHeaderComponent={loading && !initialLoad ? (
-            <View style={styles.inlineLoadingContainer}>
-              <ActivityIndicator size="small" color={theme.colors.primary.main} />
-              <Text style={styles.inlineLoadingText}>Refreshing...</Text>
-            </View>
-          ) : null}
-        />
-      )}
-      
-      {/* Export CSV Button */}
-      <View style={styles.exportButtonContainer}>
-        <TouchableOpacity 
-          style={styles.exportButton}
-          onPress={handleExportCSV}
-          disabled={loading || refreshing || exportLoading || instances.length === 0}
-        >
-          {exportLoading ? (
-            <ActivityIndicator size="small" color={theme.colors.primary.contrast} />
-          ) : (
-            <>
-              <Ionicons name="download-outline" size={18} color={theme.colors.primary.contrast} />
-              <Text style={styles.exportButtonText}>Export as CSV</Text>
-            </>
-          )}
-        </TouchableOpacity>
+  /**
+   * Error state component - modern design
+   */
+  const ErrorState = () => (
+    <View style={styles.errorContainer}>
+      <View style={styles.errorIconContainer}>
+        <Ionicons name="alert-circle-outline" size={24} color={theme.colors.utility.error} />
       </View>
-      
-      {/* Instance Details Modal */}
-      <InstanceDetailsModal 
-        isVisible={modalVisible}
-        instanceId={selectedInstanceId}
-        onClose={closeModal}
-      />
-    </SafeAreaView>
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity 
+        style={styles.retryButton}
+        onPress={fetchInstances}
+      >
+        <Text style={styles.retryButtonText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Progress</Text>
+        </View>
+        
+        {error && <ErrorState />}
+        
+        {loading && initialLoad ? (
+          <View style={styles.loadingContainer}>
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="large" color={theme.colors.primary.main} />
+            </View>
+            <Text style={styles.loadingText}>Loading your progress data...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={instances}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={[
+              styles.listContainer,
+              instances.length === 0 && styles.emptyListContainer
+            ]}
+            ListEmptyComponent={!loading ? EmptyState : null}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[theme.colors.primary.main]}
+                tintColor={theme.colors.primary.main}
+              />
+            }
+            ListHeaderComponent={loading && !initialLoad ? (
+              <View style={styles.refreshingIndicator}>
+                <ActivityIndicator size="small" color={theme.colors.primary.main} />
+                <Text style={styles.refreshingText}>Refreshing...</Text>
+              </View>
+            ) : null}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+        
+        {/* Export Button */}
+        {instances.length > 0 && (
+          <View style={styles.floatingButtonContainer}>
+            <TouchableOpacity 
+              style={styles.exportButton}
+              onPress={handleExportCSV}
+              disabled={loading || refreshing || exportLoading || instances.length === 0}
+              activeOpacity={0.8}
+            >
+              {exportLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.primary.contrast} />
+              ) : (
+                <>
+                  <Ionicons name="download-outline" size={18} color={theme.colors.primary.contrast} />
+                  <Text style={styles.exportButtonText}>Export CSV</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Instance Details Modal */}
+        <InstanceDetailsModal 
+          isVisible={modalVisible}
+          instanceId={selectedInstanceId}
+          onClose={closeModal}
+        />
+      </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.background.secondary,
+    backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
+  
+  header: {
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.background.primary,
+  } as ViewStyle,
+  
   title: {
     fontSize: theme.typography.fontSize.xxl,
     fontWeight: theme.typography.fontWeight.bold as '700',
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
     color: theme.colors.text.primary,
+    textAlign: 'center',
   } as TextStyle,
-  card: {
-    ...theme.componentStyles.card.container,
-    marginBottom: theme.spacing.md,
+  
+  listContainer: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxxl * 2,
   } as ViewStyle,
+  
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  } as ViewStyle,
+  
+  instanceCard: {
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.neutral.dark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: 'hidden',
+  } as ViewStyle,
+  
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-    paddingBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   } as ViewStyle,
-  date: {
+  
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  
+  dateText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.xs,
+  } as TextStyle,
+  
+  typeChip: {
+    backgroundColor: 'rgba(72, 82, 131, 0.1)',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs/2,
+    borderRadius: theme.borderRadius.sm,
+  } as ViewStyle,
+  
+  typeText: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.primary.main,
     fontWeight: theme.typography.fontWeight.medium as '500',
   } as TextStyle,
-  cardContent: {
-    marginTop: theme.spacing.xs,
+  
+  cardBody: {
+    padding: theme.spacing.lg,
   } as ViewStyle,
-  infoRow: {
+  
+  infoItem: {
     flexDirection: 'row',
-    marginBottom: theme.spacing.xs,
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
   } as ViewStyle,
+  
+  iconContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(72, 82, 131, 0.07)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.sm,
+  } as ViewStyle,
+  
   infoLabel: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    width: 90,
+  } as TextStyle,
+  
+  infoValue: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.primary,
     fontWeight: theme.typography.fontWeight.medium as '500',
-    marginRight: theme.spacing.sm,
-    minWidth: 100,
-  } as TextStyle,
-  infoValue: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.secondary,
     flex: 1,
   } as TextStyle,
+  
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'rgba(72, 82, 131, 0.02)',
+  } as ViewStyle,
+  
+  viewDetailsText: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.primary.main,
+    marginRight: theme.spacing.xs,
+  } as TextStyle,
+  
+  // Empty state
   emptyState: {
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+  } as ViewStyle,
+  
+  emptyStateIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(72, 82, 131, 0.07)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  } as ViewStyle,
+  
+  emptyStateTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
+  } as TextStyle,
+  
+  emptyStateMessage: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.tertiary,
+    textAlign: 'center',
+    lineHeight: 22,
+  } as TextStyle,
+  
+  // Loading state
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.xl,
   } as ViewStyle,
-  emptyStateText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-    marginTop: theme.spacing.lg,
-    color: theme.colors.text.secondary,
-  } as TextStyle,
-  emptyStateSubtext: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: theme.spacing.sm,
-  } as TextStyle,
-  loadingContainer: {
-    flex: 1,
+  
+  loadingIndicator: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(72, 82, 131, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: theme.spacing.md,
   } as ViewStyle,
+  
   loadingText: {
-    marginTop: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
   } as TextStyle,
-  inlineLoadingContainer: {
+  
+  refreshingIndicator: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: theme.spacing.sm,
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+  } as ViewStyle,
+  
+  refreshingText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.sm,
+  } as TextStyle,
+  
+  // Error state
+  errorContainer: {
+    margin: theme.spacing.lg,
+    padding: theme.spacing.lg,
+    backgroundColor: 'rgba(214, 106, 106, 0.08)',
+    borderRadius: theme.borderRadius.lg,
+    alignItems: 'center',
+  } as ViewStyle,
+  
+  errorIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(214, 106, 106, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: theme.spacing.md,
   } as ViewStyle,
-  inlineLoadingText: {
-    marginLeft: theme.spacing.sm,
-    color: theme.colors.text.secondary,
-  } as TextStyle,
-  errorContainer: {
-    backgroundColor: theme.colors.utility.error + '15', // Using error color with opacity
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.sm,
-    marginBottom: theme.spacing.lg,
-    alignItems: 'center',
-  } as ViewStyle,
+  
   errorText: {
-    color: theme.colors.utility.error,
-    marginBottom: theme.spacing.sm,
     textAlign: 'center',
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.lg,
+    fontSize: theme.typography.fontSize.md,
   } as TextStyle,
+  
   retryButton: {
-    backgroundColor: theme.colors.utility.error,
-    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.primary.main,
+    paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.xs,
+    borderRadius: theme.borderRadius.md,
   } as ViewStyle,
+  
   retryButtonText: {
-    color: theme.colors.neutral.white,
-    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.primary.contrast,
+    fontWeight: theme.typography.fontWeight.medium as '500',
   } as TextStyle,
-  exportButtonContainer: {
+  
+  // Export button
+  floatingButtonContainer: {
     position: 'absolute',
-    bottom: theme.spacing.lg,
-    left: theme.spacing.lg,
+    bottom: Platform.OS === 'ios' ? theme.spacing.xxl : theme.spacing.lg,
     right: theme.spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: Platform.OS === 'ios' ? theme.spacing.lg : theme.spacing.sm,
+    shadowColor: theme.colors.neutral.dark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 5,
   } as ViewStyle,
+  
   exportButton: {
     backgroundColor: theme.colors.primary.main,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xxl,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
   } as ViewStyle,
+  
   exportButtonText: {
     color: theme.colors.primary.contrast,
     fontWeight: theme.typography.fontWeight.medium as '500',
-    marginLeft: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    fontSize: theme.typography.fontSize.sm,
   } as TextStyle,
 });
