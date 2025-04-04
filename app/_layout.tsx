@@ -12,6 +12,7 @@ import { FormProvider } from './context/FormContext';
 import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
+import { FA5Style } from '@expo/vector-icons/build/FontAwesome5';
 
 export { ErrorBoundary };
 
@@ -72,8 +73,7 @@ function RootLayoutNav() {
   const screenOptions = {
     presentation: 'card' as const,
     animation: 'slide_from_bottom' as const,
-    headerShown: true,
-    ...headerStyles,
+    headerShown: false,
     cardStyle: {
       backgroundColor: theme.colors.background.primary,
     },
@@ -106,70 +106,52 @@ function RootLayoutNav() {
               options={{ headerShown: false }}
             />
             
-            {/* BFRB Tracking Flow Screens */}
+            {/* New Tracking Screens */}
+            <Stack.Screen 
+              name="screens/tracking/new-options-screen" 
+              options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="screens/tracking/new-entry-screen" 
+              options={{ headerShown: false }} 
+            />
+            
+            {/* Existing tracking screens we'll still need for the flow */}
             <Stack.Screen 
               name="screens/tracking/time-screen" 
-              options={{
-                ...screenOptions,
-                title: "Time & Duration",
-                headerBackTitle: "Home"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/urge-screen" 
-              options={{
-                ...screenOptions,
-                title: "Urge & Intention"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/environment-screen" 
-              options={{
-                ...screenOptions,
-                title: "Environment"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/mental-screen" 
-              options={{
-                ...screenOptions,
-                title: "Mental State"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/thoughts-screen" 
-              options={{
-                ...screenOptions,
-                title: "Thought Patterns"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/physical-screen" 
-              options={{
-                ...screenOptions,
-                title: "Physical Sensations"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/sensory-screen" 
-              options={{
-                ...screenOptions,
-                title: "Sensory Triggers"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/tracking/submit-screen" 
-              options={{
-                ...screenOptions,
-                title: "Final Details"
-              }} 
+              options={{ headerShown: false }} 
             />
             <Stack.Screen 
               name="screens/modals/detail-screen" 
-              options={{
-                ...screenOptions,
-                title: "Details"
-              }} 
+              options={{ headerShown: false }} 
             />
           </Stack>
         </ThemeProvider>
