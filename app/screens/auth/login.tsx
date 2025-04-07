@@ -9,7 +9,8 @@ import {
   Alert,
   ViewStyle,
   TextStyle,
-  ImageStyle
+  ImageStyle,
+  Linking
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,7 +22,7 @@ import { View, Text, Button, Input, Card } from '@/app/components';
 import theme from '@/app/constants/theme';
 
 export default function LoginScreen() {
-  const { login, register, isAuthenticated, isLoading } = useAuth();
+  const { login, register, isAuthenticated, isLoading, isPendingApproval } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +35,11 @@ export default function LoginScreen() {
   if (isAuthenticated && !isLoading) {
     return <Redirect href="/(tabs)" />;
   }
+
+  // Handle contact request
+  const handleContactRequest = () => {
+    Linking.openURL('mailto:josef@feztech.io?subject=Armatillo%20App%20Access%20Request');
+  };
 
   // Validate form inputs
   const validateForm = () => {
@@ -94,7 +100,8 @@ export default function LoginScreen() {
         password,
         displayName: username
       });
-      Alert.alert('Success', 'Account created successfully! Please log in.');
+      
+      // Don't show success alert as AuthContext will handle it
       setIsSignUp(false);
     } catch (error) {
       console.error('Registration error:', error);
@@ -131,74 +138,93 @@ export default function LoginScreen() {
             <Text style={styles.tagline}>Track your BFRB habits</Text>
           </View>
           
+          {/* Pending Approval Banner */}
+          {isPendingApproval && (
+            <Card containerStyle={styles.approvalCard}>
+              <Text style={styles.approvalTitle}>Account Pending Approval</Text>
+              <Text style={styles.approvalText}>
+                Thank You for your interest in Armatillo! It is currently in pre-alpha and testing is only available to certain users.
+              </Text>
+              <Button 
+                title="Contact for Testing Access" 
+                onPress={handleContactRequest}
+                variant="secondary"
+                size="medium"
+                style={styles.contactButton}
+              />
+            </Card>
+          )}
+          
           {/* Login form */}
-          <Card containerStyle={styles.formCard}>
-            <Text style={styles.formTitle}>
-              {isSignUp ? 'Create an Account' : 'Sign in to continue'}
-            </Text>
-            
-            {isLoading || loading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary.main} style={styles.loading} />
-            ) : (
-              <>
-                {isSignUp && (
+          {!isPendingApproval && (
+            <Card containerStyle={styles.formCard}>
+              <Text style={styles.formTitle}>
+                {isSignUp ? 'Create an Account' : 'Sign in to continue'}
+              </Text>
+              
+              {isLoading || loading ? (
+                <ActivityIndicator size="large" color={theme.colors.primary.main} style={styles.loading} />
+              ) : (
+                <>
+                  {isSignUp && (
+                    <Input 
+                      label="Username"
+                      placeholder="Enter your username"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                      error={errors.username}
+                    />
+                  )}
+
                   <Input 
-                    label="Username"
-                    placeholder="Enter your username"
-                    value={username}
-                    onChangeText={setUsername}
+                    label="Email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
                     autoCapitalize="none"
-                    error={errors.username}
+                    error={errors.email}
                   />
-                )}
 
-                <Input 
-                  label="Email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  error={errors.email}
-                />
-
-                <Input 
-                  label="Password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  error={errors.password}
-                />
-
-                {isSignUp && (
                   <Input 
-                    label="Confirm Password"
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    label="Password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChangeText={setPassword}
                     secureTextEntry
-                    error={errors.confirmPassword}
+                    error={errors.password}
                   />
-                )}
 
-                <Button 
-                  title={isSignUp ? 'Sign Up' : 'Login'}
-                  onPress={isSignUp ? handleSignUp : handleLogin}
-                  size="large"
-                  loading={loading}
-                  style={styles.actionButton}
-                />
+                  {isSignUp && (
+                    <Input 
+                      label="Confirm Password"
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry
+                      error={errors.confirmPassword}
+                    />
+                  )}
 
-                <Button 
-                  title={isSignUp ? 'Already have an account? Login' : 'New user? Create an account'}
-                  onPress={toggleSignUp}
-                  variant="text"
-                  size="medium"
-                />
-              </>
-            )}
-          </Card>
+                  <Button 
+                    title={isSignUp ? 'Sign Up' : 'Login'}
+                    onPress={isSignUp ? handleSignUp : handleLogin}
+                    size="large"
+                    loading={loading}
+                    style={styles.actionButton}
+                  />
+
+                  <Button 
+                    title={isSignUp ? 'Already have an account? Login' : 'New user? Create an account'}
+                    onPress={toggleSignUp}
+                    variant="text"
+                    size="medium"
+                  />
+                </>
+              )}
+            </Card>
+          )}
           
           <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
@@ -283,5 +309,28 @@ const styles = StyleSheet.create({
   } as TextStyle,
   loading: {
     marginVertical: theme.spacing.xl,
+  } as ViewStyle,
+  // Approval card styles
+  approvalCard: {
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.background.secondary,
+  } as ViewStyle,
+  approvalTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.primary.main,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
+  } as TextStyle,
+  approvalText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
+    lineHeight: 22,
+  } as TextStyle,
+  contactButton: {
+    marginTop: theme.spacing.md,
   } as ViewStyle,
 });
