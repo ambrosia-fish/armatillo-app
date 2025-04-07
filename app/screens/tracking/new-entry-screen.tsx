@@ -10,81 +10,90 @@ import {
   TextInput,
   Platform,
   Switch,
-  DateTimePickerAndroid
+  DateTimePickerAndroid,
+  Alert,
+  Modal
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 
 import theme from '@/app/constants/theme';
 import { 
   Header, 
   Button, 
-  EmojiPill, 
-  EmojiPillRow, 
   AnswerSelectorModal 
 } from '@/app/components';
 import { useFormContext } from '@/app/context/FormContext';
 import { errorService } from '@/app/services/ErrorService';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 
-/**
- * All-in-one screen for tracking BFRB instances
- */
 export default function NewEntryScreen() {
   const router = useRouter();
   const { formData, updateFormData } = useFormContext();
   
   // Time state
   const [date, setDate] = useState(formData.time || new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [duration, setDuration] = useState<string>(
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedHours, setSelectedHours] = useState(
+    formData.time ? formData.time.getHours() : new Date().getHours()
+  );
+  const [selectedMinutes, setSelectedMinutes] = useState(
+    formData.time ? formData.time.getMinutes() : new Date().getMinutes()
+  );
+  
+  // Duration state
+  const [duration, setDuration] = useState(
     formData.duration?.toString() || '5'
+  );
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState(
+    parseInt(formData.duration || 5, 10)
   );
 
   // Selected category data
-  const [selectedLocations, setSelectedLocations] = useState<string[]>(
+  const [selectedLocations, setSelectedLocations] = useState(
     formData.selectedLocations || []
   );
-  const [selectedActivities, setSelectedActivities] = useState<string[]>(
+  const [selectedActivities, setSelectedActivities] = useState(
     formData.selectedActivities || []
   );
-  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(
+  const [selectedEmotions, setSelectedEmotions] = useState(
     formData.selectedEmotions || []
   );
-  const [selectedThoughts, setSelectedThoughts] = useState<string[]>(
+  const [selectedThoughts, setSelectedThoughts] = useState(
     formData.selectedThoughts || []
   );
-  const [selectedSensations, setSelectedSensations] = useState<string[]>(
+  const [selectedSensations, setSelectedSensations] = useState(
     formData.selectedSensations || []
   );
-  const [awarenessType, setAwarenessType] = useState<string>(
+  const [awarenessType, setAwarenessType] = useState(
     formData.awarenessType || 'automatic'
   );
-  const [urgeStrength, setUrgeStrength] = useState<string>(
+  const [urgeStrength, setUrgeStrength] = useState(
     formData.urgeStrength?.toString() || '3'
   );
   
   // Notes
-  const [notes, setNotes] = useState<string>(formData.notes || '');
+  const [notes, setNotes] = useState(formData.notes || '');
   
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
-  const [modalOptions, setModalOptions] = useState<OptionItem[]>([]);
-  const [modalSelected, setModalSelected] = useState<string[]>([]);
-  const [currentModalType, setCurrentModalType] = useState<
-    'location' | 'activity' | 'emotion' | 'thought' | 'sensation' | 'awareness' | 'urge'
-  >('location');
+  const [modalOptions, setModalOptions] = useState([]);
+  const [modalSelected, setModalSelected] = useState([]);
+  const [currentModalType, setCurrentModalType] = useState('location');
   
   /**
    * Open a specific category's selection modal
    */
   const openModal = (
-    type: 'location' | 'activity' | 'emotion' | 'thought' | 'sensation' | 'awareness' | 'urge',
-    title: string,
-    options: OptionItem[],
-    selectedIds: string[]
+    type, 
+    title, 
+    options, 
+    selectedIds
   ) => {
     try {
       setModalTitle(title);
@@ -104,7 +113,7 @@ export default function NewEntryScreen() {
   /**
    * Handle selection from the modal
    */
-  const handleModalSelect = (selectedIds: string[]) => {
+  const handleModalSelect = (selectedIds) => {
     try {
       switch (currentModalType) {
         case 'location':
@@ -122,16 +131,6 @@ export default function NewEntryScreen() {
         case 'sensation':
           setSelectedSensations(selectedIds);
           break;
-        case 'awareness':
-          if (selectedIds.length > 0) {
-            setAwarenessType(selectedIds[0]);
-          }
-          break;
-        case 'urge':
-          if (selectedIds.length > 0) {
-            setUrgeStrength(selectedIds[0]);
-          }
-          break;
       }
       setModalVisible(false);
     } catch (error) {
@@ -144,16 +143,38 @@ export default function NewEntryScreen() {
   };
 
   /**
-   * Handle date change from the date picker
+   * Update the date with selected hours and minutes
    */
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const updateSelectedTime = () => {
+    try {
+      // Create a new date with selected hours/minutes
+      const newDate = new Date(date);
+      newDate.setHours(selectedHours);
+      newDate.setMinutes(selectedMinutes);
+      setDate(newDate);
+      setShowTimePicker(false);
+    } catch (error) {
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'ui',
+        level: 'error',
+        context: { action: 'update_selected_time' }
+      });
+    }
+  };
+
+  /**
+   * Handle date change from the date picker (Android only)
+   */
+  const onDateChange = (event, selectedDate) => {
     try {
       if (Platform.OS === 'android') {
-        setShowDatePicker(false);
+        setShowTimePicker(false);
       }
 
       if (selectedDate) {
         setDate(selectedDate);
+        setSelectedHours(selectedDate.getHours());
+        setSelectedMinutes(selectedDate.getMinutes());
       }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
@@ -165,42 +186,72 @@ export default function NewEntryScreen() {
   };
 
   /**
-   * Show the date picker (platform-specific)
+   * Format the time only (no date)
    */
-  const showDatePickerModal = () => {
+  const formatTime = (date) => {
+    const options = { 
+      hour: 'numeric',
+      minute: 'numeric'
+    };
+    return date.toLocaleString(undefined, options);
+  };
+
+  /**
+   * Show the time picker (platform-specific)
+   */
+  const showTimePickerModal = () => {
     try {
       if (Platform.OS === 'android') {
         DateTimePickerAndroid.open({
           value: date,
-          mode: 'datetime',
+          mode: 'time',
           is24Hour: false,
           onChange: onDateChange,
         });
       } else {
-        setShowDatePicker(true);
+        // Initialize selected hours/minutes from current date
+        setSelectedHours(date.getHours());
+        setSelectedMinutes(date.getMinutes());
+        setShowTimePicker(true);
       }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'ui',
         level: 'error',
-        context: { action: 'show_date_picker' }
+        context: { action: 'show_time_picker' }
       });
     }
   };
 
   /**
-   * Handle duration change
+   * Show the duration picker
    */
-  const handleDurationChange = (value: string) => {
+  const showDurationPickerModal = () => {
     try {
-      // Only allow numbers
-      const numericValue = value.replace(/[^0-9]/g, '');
-      setDuration(numericValue);
+      // Initialize selected duration from current value
+      setSelectedDuration(parseInt(duration, 10) || 5);
+      setShowDurationPicker(true);
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'ui',
         level: 'error',
-        context: { action: 'change_duration' }
+        context: { action: 'show_duration_picker' }
+      });
+    }
+  };
+
+  /**
+   * Update the duration with selected value
+   */
+  const updateSelectedDuration = () => {
+    try {
+      setDuration(selectedDuration.toString());
+      setShowDurationPicker(false);
+    } catch (error) {
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'ui',
+        level: 'error',
+        context: { action: 'update_selected_duration' }
       });
     }
   };
@@ -224,8 +275,8 @@ export default function NewEntryScreen() {
    * Toggle selection of an item in a category
    */
   const toggleCategoryItem = (
-    category: 'location' | 'activity' | 'emotion' | 'thought' | 'sensation',
-    id: string
+    category,
+    id
   ) => {
     try {
       switch (category) {
@@ -277,7 +328,7 @@ export default function NewEntryScreen() {
   /**
    * Handle saving the form and navigating home
    */
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     try {
       // Update form data with all values
       updateFormData({
@@ -300,14 +351,71 @@ export default function NewEntryScreen() {
         notes,
       });
       
-      // Navigate to home screen after submitting
-      router.replace('/');
+      // Prepare payload for API
+      const payload = {
+        time: date.toISOString(),
+        duration: Number(duration) || 5,
+        urgeStrength: Number(urgeStrength) || 3,
+        intentionType: awarenessType,
+        selectedEnvironments: selectedLocations || [],
+        selectedActivities: selectedActivities || [],
+        selectedEmotions: selectedEmotions || [],
+        selectedThoughts: selectedThoughts || [],
+        selectedSensations: selectedSensations || [],
+        notes: notes.trim() || undefined,
+      };
+      
+      // Submit to API
+      try {
+        // Store locally for sync later if needed
+        const allData = JSON.stringify(payload);
+        await SecureStore.setItemAsync('bfrb_all_data', allData);
+        
+        // Submit to API if authentication service is available
+        if (typeof api !== 'undefined' && api.instances && api.instances.createInstance) {
+          await api.instances.createInstance(payload);
+          
+          // Show success message
+          Alert.alert(
+            'Success',
+            'Your BFRB instance has been recorded successfully.',
+            [{ 
+              text: 'OK', 
+              onPress: () => {
+                // Navigate to home screen after submitting
+                router.replace('/');
+              }
+            }]
+          );
+        } else {
+          // Just navigate home if API isn't available
+          router.replace('/');
+        }
+      } catch (error) {
+        console.error('Error submitting BFRB instance:', error);
+        
+        // Show error but continue navigation
+        Alert.alert(
+          'Error',
+          'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
+          [{ 
+            text: 'OK', 
+            onPress: () => {
+              // Navigate to home screen after error
+              router.replace('/');
+            }
+          }]
+        );
+      }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'ui',
         level: 'error',
         context: { action: 'submit_form' }
       });
+      
+      // Navigate home even if there's an error
+      router.replace('/');
     }
   };
 
@@ -326,6 +434,60 @@ export default function NewEntryScreen() {
     }
   };
 
+  // Render pills for a specific category
+  // Helper function to render category pills sorted by label length (longest to shortest)
+const renderCategoryPills = (categoryType, selectedItems, options) => {
+  // Get the selected items with their full data
+  const selectedItemsData = selectedItems.map(itemId => {
+    return options.find(opt => opt.id === itemId);
+  }).filter(Boolean); // Remove any undefined items
+  
+  // Sort items by label length (longest to shortest)
+  const sortedItems = [...selectedItemsData].sort((a, b) => 
+    b.label.length - a.label.length
+  );
+  
+  return (
+    <View style={styles.pillsFlexContainer}>
+      {sortedItems.map((item) => (
+        <View key={item.id} style={styles.pillWrapper}>
+          <TouchableOpacity
+            style={[
+              styles.pill,
+              styles.pillSelected
+            ]}
+            onPress={() => toggleCategoryItem(categoryType, item.id)}
+            accessibilityLabel={item.label}
+            accessibilityRole="button"
+            accessibilityState={{ selected: true }}
+          >
+            <Text style={styles.pillEmoji}>{item.emoji}</Text>
+            <Text style={[styles.pillText, styles.pillTextSelected]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+      
+      {/* Add button inline with pills */}
+      <TouchableOpacity
+        onPress={() => openModal(
+          categoryType,
+          `Select ${categoryType.charAt(0).toUpperCase() + categoryType.slice(1)}s`,
+          options,
+          selectedItems
+        )}
+        style={styles.inlinePlusButton}
+        accessibilityLabel={`Add ${categoryType}s`}
+        accessibilityHint={`Opens modal to select ${categoryType}s`}
+        accessibilityRole="button"
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -343,7 +505,9 @@ export default function NewEntryScreen() {
       >
         {/* Awareness Type (Intentional/Automatic) */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Awareness Type</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>Awareness Type</Text>
+          </View>
           <View style={styles.awarenessContainer}>
             <View style={styles.toggleLabelContainer}>
               <Text 
@@ -381,333 +545,321 @@ export default function NewEntryScreen() {
                 Intentional
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'awareness',
-                'Select Awareness Type',
-                OptionDictionaries.awarenessOptions,
-                [awarenessType]
-              )}
-              style={styles.moreOptionsButton}
-              accessibilityLabel="More awareness type options"
-              accessibilityHint="Opens modal with more awareness type options"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="options-outline" 
-                size={20} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
         </View>
 
         {/* Urge Strength */}
         <View style={styles.formSection}>
-          <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Urge Strength</Text>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'urge',
-                'Select Urge Strength',
-                OptionDictionaries.urgeStrengthOptions,
-                [urgeStrength]
-              )}
-              style={styles.moreOptionsButton}
-              accessibilityLabel="Select urge strength"
-              accessibilityHint="Opens modal to select urge strength"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="options-outline" 
-                size={20} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
           <View style={styles.urgeStrengthContainer}>
-            {OptionDictionaries.urgeStrengthOptions.map((option) => (
-              <TouchableOpacity 
-                key={option.id}
-                style={[
-                  styles.urgeStrengthOption,
-                  urgeStrength === option.id && styles.urgeStrengthSelected,
-                  { opacity: parseInt(option.id) / 5 + 0.2 }
-                ]}
-                onPress={() => setUrgeStrength(option.id)}
-                accessibilityLabel={option.label}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: urgeStrength === option.id }}
-              >
-                <Text style={styles.urgeStrengthEmoji}>{option.emoji}</Text>
-                <Text 
+            {OptionDictionaries.urgeStrengthOptions
+              .filter(option => option.id >= '1' && option.id <= '5')
+              .map((option) => (
+                <TouchableOpacity 
+                  key={option.id}
                   style={[
-                    styles.urgeStrengthText,
-                    urgeStrength === option.id && styles.urgeStrengthTextSelected
+                    styles.urgeStrengthOption,
+                    urgeStrength === option.id && styles.urgeStrengthSelected
                   ]}
+                  onPress={() => setUrgeStrength(option.id)}
+                  accessibilityLabel={option.label}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: urgeStrength === option.id }}
                 >
-                  {option.id}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text style={styles.urgeStrengthEmoji}>{option.emoji}</Text>
+                  <Text 
+                    style={[
+                      styles.urgeStrengthText,
+                      urgeStrength === option.id && styles.urgeStrengthTextSelected
+                    ]}
+                  >
+                    {option.id}
+                  </Text>
+                </TouchableOpacity>
+              ))}
           </View>
         </View>
 
-        {/* Time and Duration */}
+        {/* Time and Duration (side by side) */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Time & Duration</Text>
-          
-          {/* Date/Time Picker */}
-          <View style={styles.timeContainer}>
-            <Text style={styles.inputLabel}>When did this happen?</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={showDatePickerModal}
-              accessibilityLabel="Select date and time"
-              accessibilityHint="Opens date and time picker"
-              accessibilityRole="button"
-            >
-              <Text style={styles.dateText}>
-                {date.toLocaleString()}
-              </Text>
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color={theme.colors.primary.main}
-              />
-            </TouchableOpacity>
+          <View style={styles.timeAndDurationContainer}>
+            {/* Time Picker */}
+            <View style={styles.timeContainer}>
+              <Text style={styles.inputLabel}>When?</Text>
+              <TouchableOpacity
+                style={styles.timePickerButton}
+                onPress={showTimePickerModal}
+                accessibilityLabel="Select time"
+                accessibilityHint="Opens time picker"
+                accessibilityRole="button"
+              >
+                <Text style={styles.timeText}>
+                  {formatTime(date)}
+                </Text>
+              </TouchableOpacity>
+              
+              {/* iOS-style Time Picker Modal */}
+              {Platform.OS === 'ios' && (
+                <Modal
+                  visible={showTimePicker}
+                  transparent={true}
+                  animationType="slide"
+                >
+                  <View style={styles.pickerModalContainer}>
+                    <View style={styles.pickerModalContent}>
+                      <View style={styles.pickerHeader}>
+                        <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                          <Text style={styles.pickerCancelButton}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={updateSelectedTime}>
+                          <Text style={styles.pickerDoneButton}>Done</Text>
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <View style={styles.pickerContainer}>
+                        {/* Hours Picker */}
+                        <Picker
+                          style={styles.picker}
+                          selectedValue={selectedHours}
+                          onValueChange={(itemValue) => setSelectedHours(itemValue)}
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <Picker.Item 
+                              key={`hour-${i}`} 
+                              label={i.toString().padStart(2, '0')} 
+                              value={i} 
+                            />
+                          ))}
+                        </Picker>
+                        
+                        <Text style={styles.pickerSeparator}>:</Text>
+                        
+                        {/* Minutes Picker */}
+                        <Picker
+                          style={styles.picker}
+                          selectedValue={selectedMinutes}
+                          onValueChange={(itemValue) => setSelectedMinutes(itemValue)}
+                        >
+                          {Array.from({ length: 60 }, (_, i) => (
+                            <Picker.Item 
+                              key={`minute-${i}`} 
+                              label={i.toString().padStart(2, '0')} 
+                              value={i} 
+                            />
+                          ))}
+                        </Picker>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+              )}
+            </View>
             
-            {Platform.OS === 'ios' && showDatePicker && (
-              <DateTimePicker
-                value={date}
-                mode="datetime"
-                display="spinner"
-                onChange={onDateChange}
-              />
-            )}
-          </View>
-
-          {/* Duration Input */}
-          <View style={styles.durationContainer}>
-            <Text style={styles.inputLabel}>How long did it last? (minutes)</Text>
-            <View style={styles.durationInputContainer}>
-              <TextInput
-                style={styles.durationInput}
-                value={duration}
-                onChangeText={handleDurationChange}
-                keyboardType="number-pad"
-                placeholder="5"
-                placeholderTextColor={theme.colors.text.tertiary}
-                returnKeyType="done"
-                accessibilityLabel="Duration in minutes"
-                accessibilityHint="Enter the duration in minutes"
-              />
-              <Text style={styles.durationUnit}>minutes</Text>
+            {/* Duration Input */}
+            <View style={styles.durationContainer}>
+              <Text style={styles.inputLabel}>How long?</Text>
+              <TouchableOpacity
+                style={styles.durationPickerButton}
+                onPress={showDurationPickerModal}
+                accessibilityLabel="Select duration"
+                accessibilityHint="Opens duration picker"
+                accessibilityRole="button"
+              >
+                <Text style={styles.durationText}>
+                  {duration} min
+                </Text>
+              </TouchableOpacity>
+              
+              {/* iOS-style Duration Picker Modal */}
+              {Platform.OS === 'ios' && (
+                <Modal
+                  visible={showDurationPicker}
+                  transparent={true}
+                  animationType="slide"
+                >
+                  <View style={styles.pickerModalContainer}>
+                    <View style={styles.pickerModalContent}>
+                      <View style={styles.pickerHeader}>
+                        <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
+                          <Text style={styles.pickerCancelButton}>Cancel</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.pickerTitle}>Duration (minutes)</Text>
+                        <TouchableOpacity onPress={updateSelectedDuration}>
+                          <Text style={styles.pickerDoneButton}>Done</Text>
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <View style={styles.pickerContainer}>
+                        {/* Duration Picker */}
+                        <Picker
+                          style={styles.picker}
+                          selectedValue={selectedDuration}
+                          onValueChange={(itemValue) => setSelectedDuration(itemValue)}
+                        >
+                          {Array.from({ length: 120 }, (_, i) => i + 1).map((value) => (
+                            <Picker.Item 
+                              key={`duration-${value}`} 
+                              label={`${value} min`} 
+                              value={value} 
+                            />
+                          ))}
+                        </Picker>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+              )}
             </View>
           </View>
         </View>
 
         {/* Location */}
         <View style={styles.formSection}>
-          <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Location</Text>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'location',
-                'Select Locations',
-                OptionDictionaries.locationOptions,
-                selectedLocations
-              )}
-              style={styles.addButton}
-              accessibilityLabel="Add locations"
-              accessibilityHint="Opens modal to select locations"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="add-circle" 
-                size={24} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
           
-          <EmojiPillRow
-            items={OptionDictionaries.locationOptions.filter(
-              item => selectedLocations.includes(item.id)
+          <View style={styles.selectionContainer}>
+            {selectedLocations.length > 0 ? (
+              renderCategoryPills('location', selectedLocations, OptionDictionaries.locationOptions)
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'location',
+                  'Select Locations',
+                  OptionDictionaries.locationOptions,
+                  selectedLocations
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add locations"
+                accessibilityHint="Opens modal to select locations"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
             )}
-            selectedIds={selectedLocations}
-            onToggleItem={(id) => toggleCategoryItem('location', id)}
-            onPressAdd={() => openModal(
-              'location',
-              'Select Locations',
-              OptionDictionaries.locationOptions,
-              selectedLocations
-            )}
-          />
+          </View>
         </View>
 
         {/* Activity */}
         <View style={styles.formSection}>
-          <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Activity</Text>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'activity',
-                'Select Activities',
-                OptionDictionaries.activityOptions,
-                selectedActivities
-              )}
-              style={styles.addButton}
-              accessibilityLabel="Add activities"
-              accessibilityHint="Opens modal to select activities"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="add-circle" 
-                size={24} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
           
-          <EmojiPillRow
-            items={OptionDictionaries.activityOptions.filter(
-              item => selectedActivities.includes(item.id)
+          <View style={styles.selectionContainer}>
+            {selectedActivities.length > 0 ? (
+              renderCategoryPills('activity', selectedActivities, OptionDictionaries.activityOptions)
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'activity',
+                  'Select Activities',
+                  OptionDictionaries.activityOptions,
+                  selectedActivities
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add activities"
+                accessibilityHint="Opens modal to select activities"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
             )}
-            selectedIds={selectedActivities}
-            onToggleItem={(id) => toggleCategoryItem('activity', id)}
-            onPressAdd={() => openModal(
-              'activity',
-              'Select Activities',
-              OptionDictionaries.activityOptions,
-              selectedActivities
-            )}
-          />
+          </View>
         </View>
 
         {/* Emotions */}
         <View style={styles.formSection}>
-          <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Emotions</Text>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'emotion',
-                'Select Emotions',
-                OptionDictionaries.emotionOptions,
-                selectedEmotions
-              )}
-              style={styles.addButton}
-              accessibilityLabel="Add emotions"
-              accessibilityHint="Opens modal to select emotions"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="add-circle" 
-                size={24} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
           
-          <EmojiPillRow
-            items={OptionDictionaries.emotionOptions.filter(
-              item => selectedEmotions.includes(item.id)
+          <View style={styles.selectionContainer}>
+            {selectedEmotions.length > 0 ? (
+              renderCategoryPills('emotion', selectedEmotions, OptionDictionaries.emotionOptions)
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'emotion',
+                  'Select Emotions',
+                  OptionDictionaries.emotionOptions,
+                  selectedEmotions
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add emotions"
+                accessibilityHint="Opens modal to select emotions"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
             )}
-            selectedIds={selectedEmotions}
-            onToggleItem={(id) => toggleCategoryItem('emotion', id)}
-            onPressAdd={() => openModal(
-              'emotion',
-              'Select Emotions',
-              OptionDictionaries.emotionOptions,
-              selectedEmotions
-            )}
-          />
+          </View>
         </View>
 
         {/* Thought Patterns */}
         <View style={styles.formSection}>
-          <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Thought Patterns</Text>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'thought',
-                'Select Thought Patterns',
-                OptionDictionaries.thoughtOptions,
-                selectedThoughts
-              )}
-              style={styles.addButton}
-              accessibilityLabel="Add thought patterns"
-              accessibilityHint="Opens modal to select thought patterns"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="add-circle" 
-                size={24} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
           
-          <EmojiPillRow
-            items={OptionDictionaries.thoughtOptions.filter(
-              item => selectedThoughts.includes(item.id)
+          <View style={styles.selectionContainer}>
+            {selectedThoughts.length > 0 ? (
+              renderCategoryPills('thought', selectedThoughts, OptionDictionaries.thoughtOptions)
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'thought',
+                  'Select Thought Patterns',
+                  OptionDictionaries.thoughtOptions,
+                  selectedThoughts
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add thought patterns"
+                accessibilityHint="Opens modal to select thought patterns"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
             )}
-            selectedIds={selectedThoughts}
-            onToggleItem={(id) => toggleCategoryItem('thought', id)}
-            onPressAdd={() => openModal(
-              'thought',
-              'Select Thought Patterns',
-              OptionDictionaries.thoughtOptions,
-              selectedThoughts
-            )}
-          />
+          </View>
         </View>
 
         {/* Physical Sensations */}
         <View style={styles.formSection}>
-          <View style={styles.sectionTitleRow}>
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Physical Sensations</Text>
-            <TouchableOpacity
-              onPress={() => openModal(
-                'sensation',
-                'Select Physical Sensations',
-                OptionDictionaries.sensationOptions,
-                selectedSensations
-              )}
-              style={styles.addButton}
-              accessibilityLabel="Add physical sensations"
-              accessibilityHint="Opens modal to select physical sensations"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="add-circle" 
-                size={24} 
-                color={theme.colors.primary.main} 
-              />
-            </TouchableOpacity>
           </View>
           
-          <EmojiPillRow
-            items={OptionDictionaries.sensationOptions.filter(
-              item => selectedSensations.includes(item.id)
+          <View style={styles.selectionContainer}>
+            {selectedSensations.length > 0 ? (
+              renderCategoryPills('sensation', selectedSensations, OptionDictionaries.sensationOptions)
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'sensation',
+                  'Select Physical Sensations',
+                  OptionDictionaries.sensationOptions,
+                  selectedSensations
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add physical sensations"
+                accessibilityHint="Opens modal to select physical sensations"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
             )}
-            selectedIds={selectedSensations}
-            onToggleItem={(id) => toggleCategoryItem('sensation', id)}
-            onPressAdd={() => openModal(
-              'sensation',
-              'Select Physical Sensations',
-              OptionDictionaries.sensationOptions,
-              selectedSensations
-            )}
-          />
+          </View>
         </View>
 
         {/* Notes */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <Text style={styles.sectionDescription}>
-            Add any additional details you want to record.
-          </Text>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+          </View>
           <TextInput
             style={styles.notesInput}
             value={notes}
@@ -731,8 +883,8 @@ export default function NewEntryScreen() {
         selectedIds={modalSelected}
         onSelect={handleModalSelect}
         onClose={() => setModalVisible(false)}
-        allowMultiple={currentModalType !== 'awareness' && currentModalType !== 'urge'}
-        allowCustom={currentModalType !== 'awareness' && currentModalType !== 'urge'}
+        allowMultiple={true}
+        allowCustom={true}
       />
       
       {/* Footer Buttons */}
@@ -766,40 +918,123 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.huge,
+    alignItems: 'center',
   },
   formSection: {
     marginBottom: theme.spacing.xl,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    width: '100%',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xs,
+    position: 'relative',
+    width: '100%',
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
   },
-  sectionDescription: {
-    fontSize: theme.typography.fontSize.md,
+  // Pills and Selection Container
+  pillsFlexContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xs,
+    minHeight: 50, // Min height of a single pill row
+  },
+  selectionContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    minHeight: 45, // Minimum height to fit at least one pill
+  },
+  pillWrapper: {
+    margin: theme.spacing.xs,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: 20,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  pillSelected: {
+    backgroundColor: theme.colors.primary.light + '40',
+    borderColor: theme.colors.primary.main,
+  },
+  pillEmoji: {
+    fontSize: 16,
+    marginRight: theme.spacing.xs,
+  },
+  pillText: {
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.md,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  pillTextSelected: {
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.bold,
+  },
+  // Add buttons
+  inlinePlusButton: {
+    height: 40, // Match the height of pills
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: theme.spacing.xs,
+    borderRadius: 20,
+    backgroundColor: theme.colors.neutral.lighter,
+    // borderWidth: 2,
+    borderColor: theme.colors.border.light,
+  },
+  bigAddButton: {
+    height: 50,
+    width: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    // borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  addButtonText: {
+    fontSize: 24,
+    color: theme.colors.primary.main,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   // Awareness Type Styles
   awarenessContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    width: '100%',
+    marginVertical: theme.spacing.md,
   },
   toggleLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    justifyContent: 'center',
   },
   toggleLabel: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     marginHorizontal: theme.spacing.md,
   },
@@ -807,89 +1042,149 @@ const styles = StyleSheet.create({
     color: theme.colors.primary.main,
     fontWeight: theme.typography.fontWeight.bold,
   },
-  moreOptionsButton: {
-    padding: theme.spacing.sm,
-  },
   // Urge Strength Styles
   urgeStrengthContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.md,
+    width: '90%',
+    marginVertical: theme.spacing.md,
   },
   urgeStrengthOption: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 50,
-    height: 50,
-    borderRadius: theme.borderRadius.circle,
-    backgroundColor: theme.colors.primary.light + '20',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.neutral.lighter,
     borderWidth: 1,
     borderColor: theme.colors.border.light,
+    marginHorizontal: theme.spacing.xs,
+    opacity: 0.7,
   },
   urgeStrengthSelected: {
     backgroundColor: theme.colors.primary.light + '40',
     borderColor: theme.colors.primary.main,
+    opacity: 1,
   },
   urgeStrengthEmoji: {
-    fontSize: 18,
-    marginBottom: 2,
+    fontSize: 24,
+    marginBottom: 4,
   },
   urgeStrengthText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.md,
     fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.text.secondary,
   },
   urgeStrengthTextSelected: {
     color: theme.colors.primary.main,
   },
-  // Time and Duration Styles
-  timeContainer: {
-    marginBottom: theme.spacing.lg,
-  },
-  datePickerButton: {
+  // Time and Duration Styles (side by side)
+  timeAndDurationContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.input,
-    padding: theme.spacing.md,
+    width: '100%',
+    marginVertical: theme.spacing.md,
   },
-  dateText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.primary,
-  },
-  durationContainer: {
-    marginTop: theme.spacing.md,
-  },
-  durationInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  durationInput: {
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.input,
-    padding: theme.spacing.md,
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.primary,
-    width: 100,
+  timeContainer: {
+    flex: 1,
     marginRight: theme.spacing.md,
   },
-  durationUnit: {
+  durationContainer: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
+  },
+  inputLabel: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  timePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    padding: theme.spacing.md,
+    width: '100%',
+  },
+  timeText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    marginRight: theme.spacing.sm,
+  },
+  durationPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    padding: theme.spacing.md,
+    width: '100%',
+  },
+  durationText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  // Time Picker Modal Styles
+  pickerModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  pickerModalContent: {
+    backgroundColor: theme.colors.background.primary,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: theme.spacing.md,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  },
+  pickerTitle: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
+    color: theme.colors.text.primary,
+  },
+  pickerCancelButton: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
   },
-  // Common input styles
-  inputLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.xs,
+  pickerDoneButton: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.primary.main,
   },
+  pickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+  },
+  picker: {
+    flex: 1,
+    height: 200,
+  },
+  pickerSeparator: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginHorizontal: theme.spacing.sm,
+  },
+  // Notes styles
   notesInput: {
     backgroundColor: theme.colors.neutral.lighter,
     borderRadius: theme.borderRadius.sm,
@@ -900,11 +1195,10 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     minHeight: 100,
     textAlignVertical: 'top',
+    width: '100%',
+    marginTop: theme.spacing.sm,
   },
-  // Button styles
-  addButton: {
-    padding: theme.spacing.sm,
-  },
+  // Footer styles
   footer: {
     padding: theme.spacing.lg,
     borderTopWidth: 1,
