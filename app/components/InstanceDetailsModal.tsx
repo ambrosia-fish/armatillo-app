@@ -33,7 +33,6 @@ interface InstanceDetailsModalProps {
 
 /**
  * Modal component to display detailed information about a BFRB instance
- * with a modern, sleek design
  * 
  * @param props - Component properties
  * @returns Rendered modal with instance details
@@ -125,27 +124,35 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   }, [isVisible, instanceId]);
 
   /**
-   * Format date to human-readable string
-   * 
-   * @param date - ISO date string
-   * @returns Formatted date string
+   * Format date to human-readable string (e.g., Monday, April 7)
    */
-  const formatDate = (date: string) => {
+  const formatDate = (dateString: string) => {
     try {
-      return new Date(date).toLocaleDateString('en-US', { 
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
         weekday: 'long',
         month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: 'numeric'
       });
     } catch (err) {
       errorService.handleError(err instanceof Error ? err : String(err), {
         level: 'error',
         source: 'ui',
-        context: { component: 'InstanceDetailsModal', action: 'formatDate', date }
+        context: { component: 'InstanceDetailsModal', action: 'formatDate', date: dateString }
       });
       return 'Invalid date';
+    }
+  };
+
+  /**
+   * Format time to display only hours and minutes (e.g., 7:30 PM)
+   */
+  const formatTimeOnly = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (err) {
+      return "Unknown time";
     }
   };
 
@@ -166,66 +173,156 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   };
 
   /**
-   * Render a tag with emoji and label
+   * Get appropriate icon for different categories
    */
-  const renderTag = (emoji: string, label: string, key: number) => (
-    <View key={key} style={styles.tag}>
-      <Text style={styles.tagText}>
-        {emoji} {label}
+  const getCategoryIcon = (category: string): IoniconsName => {
+    switch (category.toLowerCase()) {
+      case 'location':
+      case 'environment':
+        return 'location';
+      case 'activity':
+        return 'bicycle';
+      case 'emotions':
+        return 'heart';
+      case 'thought patterns':
+        return 'cloud';
+      case 'physical sensations':
+        return 'body';
+      case 'sensory triggers':
+        return 'flash';
+      case 'awareness type':
+        return instance?.intentionType === 'automatic' ? 'flash' : 'hand-left';
+      case 'urge strength':
+        return 'thermometer';
+      default:
+        return 'information-circle';
+    }
+  };
+
+  /**
+   * Render a pill for a category item
+   */
+  const renderPill = (text: string, emoji: string, index: number) => (
+    <View key={index} style={styles.pill}>
+      <Text style={styles.pillText}>
+        {emoji} {text}
       </Text>
     </View>
   );
 
   /**
-   * Render items with emojis from the options list
-   * 
-   * @param items - Array of selected item IDs
-   * @param optionsList - List of available options with emojis
-   * @returns Rendered list of items with emojis
+   * Render the awareness type section
    */
-  const renderItems = (items?: string[], optionsList?: OptionItem[]) => {
-    if (!items?.length || !optionsList) {
-      return <Text style={styles.emptyValue}>None</Text>;
-    }
+  const renderAwarenessSection = () => {
+    if (!instance) return null;
+    
+    const iconName = instance.intentionType === 'automatic' ? 'flash' : 'hand-left';
+    const value = instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional';
     
     return (
-      <View style={styles.tagContainer}>
-        {items.map((id, index) => {
-          const option = optionsList.find(opt => opt.id === id) || { label: id, emoji: '📝' };
-          return renderTag(option.emoji, option.label, index);
-        })}
+      <View style={styles.gridItem}>
+        <View style={styles.categoryHeader}>
+          <Ionicons name={iconName} size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
+          <Text style={styles.categoryTitle}>Awareness Type</Text>
+        </View>
+        <View style={styles.awarenessPillContainer}>
+          <View style={styles.awarenessPill}>
+            <Ionicons name={iconName} size={16} color={theme.colors.primary.main} style={styles.pillIcon} />
+            <Text style={styles.pillText}>{value}</Text>
+          </View>
+        </View>
       </View>
     );
   };
 
   /**
-   * Render section divider
+   * Render the urge strength section with vertical meter
    */
-  const renderDivider = () => <View style={styles.divider} />;
+  const renderUrgeStrengthSection = () => {
+    if (!instance) return null;
+    
+    // Default to 3 if undefined
+    const strength = instance.urgeStrength !== undefined ? Number(instance.urgeStrength) : 3;
+    
+    // Calculate fill percentage from bottom (1-5 scale)
+    const fillPercent = ((strength - 1) / 4) * 100;
+    
+    return (
+      <View style={styles.gridItem}>
+        <View style={styles.categoryHeader}>
+          <Ionicons name="thermometer" size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
+          <Text style={styles.categoryTitle}>Urge Strength</Text>
+        </View>
+        <View style={styles.urgeContainer}>
+          <View style={styles.verticalUrgeBar}>
+            <View 
+              style={[
+                styles.verticalUrgeFill, 
+                { height: `${fillPercent}%` }
+              ]} 
+            />
+            {/* Scale markers */}
+            <View style={[styles.urgeMarker, { bottom: '0%' }]}>
+              <Text style={styles.urgeMarkerText}>1</Text>
+            </View>
+            <View style={[styles.urgeMarker, { bottom: '25%' }]}>
+              <Text style={styles.urgeMarkerText}>2</Text>
+            </View>
+            <View style={[styles.urgeMarker, { bottom: '50%' }]}>
+              <Text style={styles.urgeMarkerText}>3</Text>
+            </View>
+            <View style={[styles.urgeMarker, { bottom: '75%' }]}>
+              <Text style={styles.urgeMarkerText}>4</Text>
+            </View>
+            <View style={[styles.urgeMarker, { bottom: '100%' }]}>
+              <Text style={styles.urgeMarkerText}>5</Text>
+            </View>
+            
+            {/* Current value marker */}
+            <View style={[styles.currentUrgeMarker, { bottom: `${fillPercent}%` }]}>
+              <Text style={styles.currentUrgeText}>{strength}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   /**
-   * Render content section with title
+   * Render a standard category section with pills
    */
-  const renderSection = (title: string, content: React.ReactNode) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {content}
-    </View>
-  );
-
-  /**
-   * Render a label-value pair
-   */
-  const renderDetail = (label: string, value: string | number) => (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
-  );
+  const renderCategorySection = (
+    title: string,
+    items?: string[],
+    optionsList?: OptionItem[],
+    iconName?: IoniconsName
+  ) => {
+    const itemsToRender = items || [];
+    const icon = iconName || getCategoryIcon(title);
+    
+    return (
+      <View style={styles.gridItem}>
+        <View style={styles.categoryHeader}>
+          <Ionicons name={icon} size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
+          <Text style={styles.categoryTitle}>{title}</Text>
+        </View>
+        <View style={styles.pillsContainer}>
+          {itemsToRender.length > 0 ? (
+            itemsToRender.map((id, index) => {
+              const option = optionsList?.find(opt => opt.id === id) || { label: id, emoji: '📝' };
+              return renderPill(option.label, option.emoji, index);
+            })
+          ) : (
+            <Text style={styles.noneText}>None</Text>
+          )}
+        </View>
+      </View>
+    );
+  };
 
   // Render empty state
   const renderEmptyState = () => (
-    <View style={styles.centeredContent}>
+    <View style={styles.centeredContainer}>
       <View style={styles.iconContainer}>
         <Ionicons name="document-outline" size={32} color={theme.colors.primary.main} />
       </View>
@@ -236,7 +333,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
 
   // Render loading state
   const renderLoadingState = () => (
-    <View style={styles.centeredContent}>
+    <View style={styles.centeredContainer}>
       <ActivityIndicator size="large" color={theme.colors.primary.main} />
       <Text style={styles.loadingText}>Loading details...</Text>
     </View>
@@ -262,74 +359,90 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     
     return (
       <>
-        {/* When */}
-        <Text style={styles.dateText}>{formatDate(instance.time)}</Text>
+        {/* Date header */}
+        <View style={styles.dateHeaderContainer}>
+          <Ionicons name="calendar" size={20} color={theme.colors.text.secondary} style={styles.inlineIcon} />
+          <Text style={styles.dateHeaderText}>{formatDate(instance.time)}</Text>
+        </View>
         
-        {renderDetail("Duration", `${instance.duration} min`)}
+        {/* Time info row */}
+        <View style={styles.timeInfoRow}>
+          <View style={styles.timeInfoItem}>
+            <Ionicons name="time" size={18} color={theme.colors.text.secondary} style={styles.inlineIcon} />
+            <Text style={styles.timeInfoText}>{formatTimeOnly(instance.time)}</Text>
+          </View>
+          
+          <View style={styles.timeInfoItem}>
+            <Ionicons name="hourglass" size={18} color={theme.colors.text.secondary} style={styles.inlineIcon} />
+            <Text style={styles.timeInfoText}>
+              {instance.duration} {instance.duration === 1 ? 'min' : 'mins'}
+            </Text>
+          </View>
+        </View>
         
-        {renderDivider()}
-        
-        {/* BFRB Details */}
-        {renderSection("BFRB Details", (
-          <>
-            {instance.urgeStrength !== undefined && 
-              renderDetail("Urge Strength", `${instance.urgeStrength}/10`)}
+        {/* Categories in 3x2 grid layout */}
+        <View style={styles.categoriesGrid}>
+          {/* Left column */}
+          <View style={styles.gridColumn}>
+            {renderAwarenessSection()}
             
-            {renderDetail("Type", 
-              instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional')}
-          </>
-        ))}
-        
-        {renderDivider()}
-        
-        {/* Environment */}
-        {renderSection("Environment", 
-          renderItems(instance.selectedEnvironments, OptionDictionaries.environmentOptions)
-        )}
-        
-        {renderDivider()}
-        
-        {/* Emotions */}
-        {renderSection("Emotions", 
-          renderItems(instance.selectedEmotions, OptionDictionaries.emotionOptions)
-        )}
-        
-        {renderDivider()}
-        
-        {/* Physical Sensations */}
-        {renderSection("Physical Sensations", 
-          renderItems(instance.selectedSensations, OptionDictionaries.sensationOptions)
-        )}
-        
-        {renderDivider()}
-        
-        {/* Thoughts */}
-        {renderSection("Thoughts", 
-          renderItems(instance.selectedThoughts, OptionDictionaries.thoughtOptions)
-        )}
-        
-        {/* Sensory Triggers */}
-        {instance.selectedSensoryTriggers && instance.selectedSensoryTriggers.length > 0 && (
-          <>
-            {renderDivider()}
-            {renderSection("Sensory Triggers", 
-              renderItems(instance.selectedSensoryTriggers, OptionDictionaries.triggerOptions)
+            {renderCategorySection(
+              "Activity", 
+              instance.selectedActivities,
+              OptionDictionaries.activityOptions,
+              "bicycle"
             )}
-          </>
-        )}
+            
+            {renderCategorySection(
+              "Thought Patterns", 
+              instance.selectedThoughts,
+              OptionDictionaries.thoughtOptions,
+              "cloud"
+            )}
+          </View>
+          
+          {/* Right column */}
+          <View style={styles.gridColumn}>
+            {renderCategorySection(
+              "Location", 
+              instance.selectedEnvironments,
+              OptionDictionaries.locationOptions || OptionDictionaries.environmentOptions,
+              "location"
+            )}
+            
+            {renderCategorySection(
+              "Emotions", 
+              instance.selectedEmotions,
+              OptionDictionaries.emotionOptions,
+              "heart"
+            )}
+            
+            {renderCategorySection(
+              "Physical Sensations", 
+              instance.selectedSensations,
+              OptionDictionaries.sensationOptions,
+              "body"
+            )}
+          </View>
+        </View>
         
-        {/* Notes */}
-        {instance.notes && (
-          <>
-            {renderDivider()}
-            {renderSection("Notes", 
+        {/* Urge strength as its own section */}
+        {renderUrgeStrengthSection()}
+        
+        {/* Notes - always visible */}
+        <View style={styles.notesSection}>
+          <View style={styles.notesTitleRow}>
+            <Ionicons name="document-text" size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
+            <Text style={styles.categoryTitle}>Notes</Text>
+          </View>
+          <View style={styles.notesContainer}>
+            {instance.notes ? (
               <Text style={styles.notesText}>{instance.notes}</Text>
+            ) : (
+              <Text style={styles.noneText}>No notes for this instance</Text>
             )}
-          </>
-        )}
-        
-        {/* Add bottom space */}
-        <View style={styles.bottomSpace} />
+          </View>
+        </View>
       </>
     );
   };
@@ -367,7 +480,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
               <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
                 <ScrollView 
                   style={styles.scrollView}
-                  contentContainerStyle={styles.scrollContent}
+                  contentContainerStyle={styles.contentContainer}
                   showsVerticalScrollIndicator={true}
                 >
                   {renderInstanceContent()}
@@ -391,7 +504,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   modalContainer: {
     width: SCREEN_WIDTH * 0.95,
-    height: SCREEN_HEIGHT * 0.7,
+    height: SCREEN_HEIGHT * 0.8,
     backgroundColor: theme.colors.background.primary,
     borderRadius: 16,
     overflow: 'hidden',
@@ -406,10 +519,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-    backgroundColor: theme.colors.background.primary,
+    borderBottomColor: theme.colors.border.light,
   } as ViewStyle,
   headerSpacer: {
     width: 24,
@@ -418,122 +530,214 @@ const styles = StyleSheet.create({
     padding: 4,
   } as ViewStyle,
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold as '700',
     color: theme.colors.text.primary,
   } as TextStyle,
   contentWrapper: {
     flex: 1,
-    flexGrow: 1,
-    height: "100%",
-    backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
   animatedContainer: {
     flex: 1,
-    flexGrow: 1,
   } as ViewStyle,
   scrollView: {
     flex: 1,
-    flexGrow: 1,
   } as ViewStyle,
-  scrollContent: {
+  contentContainer: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 32,
   } as ViewStyle,
-  section: {
-    marginBottom: 16,
-  } as ViewStyle,
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
+  
+  // Date header
+  dateHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
-  } as TextStyle,
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginVertical: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
   } as ViewStyle,
-  detailRow: {
+  dateHeaderText: {
+    fontSize: 16,
+    fontWeight: '600' as '600',
+    color: theme.colors.text.primary,
+  } as TextStyle,
+  
+  // Time info row
+  timeInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 24,
+  } as ViewStyle,
+  timeInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  timeInfoText: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
+  inlineIcon: {
+    marginRight: 6,
+  } as ViewStyle,
+  
+  // Grid layout
+  categoriesGrid: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  } as ViewStyle,
+  gridColumn: {
+    flex: 1,
+    paddingHorizontal: 4,
+  } as ViewStyle,
+  gridItem: {
+    marginBottom: 16,
+  } as ViewStyle,
+  
+  // Category headers and content
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   } as ViewStyle,
-  detailLabel: {
+  categoryIcon: {
+    marginRight: 8,
+  } as ViewStyle,
+  categoryTitle: {
     fontSize: 15,
-    color: theme.colors.text.secondary,
-    fontWeight: '500',
-  } as TextStyle,
-  detailValue: {
-    fontSize: 15,
+    fontWeight: '600' as '600',
     color: theme.colors.text.primary,
-    fontWeight: '400',
-    textAlign: 'right',
   } as TextStyle,
-  dateText: {
-    fontSize: 15,
-    color: theme.colors.text.primary,
-    marginBottom: 8,
-  } as TextStyle,
-  notesText: {
-    fontSize: 15,
-    color: theme.colors.text.primary,
-    lineHeight: 21,
-  } as TextStyle,
-  centeredContent: {
-    padding: 24,
+  
+  // Awareness section
+  awarenessPillContainer: {
+    alignItems: 'flex-start',
+  } as ViewStyle,
+  awarenessPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary.light + '40',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.primary.main,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  } as ViewStyle,
+  pillIcon: {
+    marginRight: 4,
+  } as ViewStyle,
+  
+  // Urge strength section
+  urgeContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.background.primary,
-    flex: 1,
+    paddingVertical: 8,
+    height: 120,
   } as ViewStyle,
-  loadingText: {
-    fontSize: 15,
-    color: theme.colors.text.secondary,
-    marginTop: 16,
-  } as TextStyle,
-  errorContainer: {
-    margin: 16,
-    padding: 16,
-    alignItems: 'center',
-    backgroundColor: 'rgba(214, 106, 106, 0.08)',
+  verticalUrgeBar: {
+    width: 24,
+    height: '100%',
+    backgroundColor: theme.colors.neutral.lighter,
     borderRadius: 12,
-    flex: 1,
+    overflow: 'visible',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  } as ViewStyle,
+  verticalUrgeFill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.primary.light,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  } as ViewStyle,
+  urgeMarker: {
+    position: 'absolute',
+    left: -20,
+    width: 16,
+    alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  errorText: {
-    fontSize: 15,
-    color: theme.colors.utility.error,
-    marginVertical: 12,
-    textAlign: 'center',
+  urgeMarkerText: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
   } as TextStyle,
-  retryButton: {
-    marginTop: 8,
+  currentUrgeMarker: {
+    position: 'absolute',
+    right: -20,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary.main,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
-  tagContainer: {
+  currentUrgeText: {
+    fontSize: 12,
+    fontWeight: 'bold' as 'bold',
+    color: 'white',
+  } as TextStyle,
+  
+  // Pills
+  pillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 4,
   } as ViewStyle,
-  tag: {
-    backgroundColor: 'rgba(107, 116, 160, 0.1)',
+  pill: {
+    backgroundColor: theme.colors.primary.light + '40',
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.primary.main,
     paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginRight: 8,
-    marginBottom: 8,
+    paddingVertical: 4,
+    margin: 2,
+    marginBottom: 6,
   } as ViewStyle,
-  tagText: {
+  pillText: {
     fontSize: 14,
-    fontWeight: '500',
     color: theme.colors.primary.main,
+    fontWeight: '500' as '500',
   } as TextStyle,
-  emptyValue: {
-    fontSize: 15,
+  noneText: {
+    fontSize: 14,
     color: theme.colors.text.tertiary,
     fontStyle: 'italic',
+    paddingVertical: 4,
   } as TextStyle,
+  
+  // Notes section
+  notesSection: {
+    marginTop: 16,
+  } as ViewStyle,
+  notesTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  } as ViewStyle,
+  notesContainer: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    backgroundColor: 'rgba(240, 242, 245, 0.6)',
+    minHeight: 60,
+  } as ViewStyle,
+  notesText: {
+    fontSize: 14,
+    color: theme.colors.text.primary,
+    lineHeight: 20,
+  } as TextStyle,
+  
+  // Empty, Loading, and Error states
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  } as ViewStyle,
   iconContainer: {
     width: 56,
     height: 56,
@@ -545,17 +749,35 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   emptyStateTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold' as 'bold',
     color: theme.colors.text.primary,
     marginBottom: 8,
   } as TextStyle,
   emptyStateText: {
-    fontSize: 15,
+    fontSize: 14,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   } as TextStyle,
-  bottomSpace: {
-    height: 20,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  } as TextStyle,
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  } as ViewStyle,
+  errorText: {
+    color: theme.colors.utility.error,
+    marginVertical: 12,
+    textAlign: 'center',
+    fontSize: 14,
+  } as TextStyle,
+  retryButton: {
+    marginTop: 8,
   } as ViewStyle,
 });
 

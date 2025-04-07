@@ -42,22 +42,28 @@ export default function DurationPickerModal({
             </TouchableOpacity>
           </View>
           
-          <View style={styles.pickerContainer}>
-            {/* Duration Picker */}
-            <Picker
-              style={styles.picker}
-              selectedValue={selectedDuration}
-              onValueChange={setSelectedDuration}
-            >
-              {Array.from({ length: 120 }, (_, i) => i + 1).map((value) => (
-                <Picker.Item 
-                  key={`duration-${value}`} 
-                  label={`${value} min`} 
-                  value={value} 
-                />
-              ))}
-            </Picker>
-          </View>
+        <View style={styles.pickerContainer}>
+          {/* Duration Picker */}
+          <Picker
+            style={styles.picker}
+            selectedValue={selectedDuration}
+            onValueChange={setSelectedDuration}
+          >
+            <Picker.Item 
+              label="Did Not Engage" 
+              value={0} 
+              key="duration-0" 
+            />
+            {Array.from({ length: 120 }, (_, i) => i + 1).map((value) => (
+              <Picker.Item 
+                key={`duration-${value}`} 
+                label={`${value} min`} 
+                value={value} 
+              />
+            ))}
+          </Picker>
+        </View>
+
         </View>
       </View>
     </Modal>

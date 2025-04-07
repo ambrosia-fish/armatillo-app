@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import api from '@/app/services/api';
 
 import theme from '@/app/constants/theme';
 import { 
@@ -47,7 +48,7 @@ export default function NewEntryScreen() {
   
   // Duration state
   const [duration, setDuration] = useState(
-    formData.duration?.toString() || '5'
+    formData.duration?.toString() || 'Did not engage'
   );
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState(
@@ -230,7 +231,7 @@ export default function NewEntryScreen() {
   const showDurationPickerModal = () => {
     try {
       // Initialize selected duration from current value
-      setSelectedDuration(parseInt(duration, 10) || 5);
+      setSelectedDuration(parseInt(duration, 10) || 0);
       setShowDurationPicker(true);
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
@@ -498,7 +499,7 @@ export default function NewEntryScreen() {
         {/* Urge Strength */}
         <View style={styles.formSection}>
           <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Urge Strength</Text>
+            <Text style={styles.sectionTitle}>How strong was the urge?</Text>
           </View>
           <View style={styles.urgeStrengthContainer}>
             {OptionDictionaries.urgeStrengthOptions
@@ -534,7 +535,7 @@ export default function NewEntryScreen() {
           <View style={styles.timeAndDurationContainer}>
             {/* Time Picker */}
             <View style={styles.timeContainer}>
-              <Text style={styles.inputLabel}>When?</Text>
+              <Text style={styles.inputLabel}>When did it occur?</Text>
               <TouchableOpacity
                 style={styles.timePickerButton}
                 onPress={showTimePickerModal}
@@ -550,7 +551,7 @@ export default function NewEntryScreen() {
             
             {/* Duration Input */}
             <View style={styles.durationContainer}>
-              <Text style={styles.inputLabel}>How long?</Text>
+              <Text style={styles.inputLabel}>How many minutes?</Text>
               <TouchableOpacity
                 style={styles.durationPickerButton}
                 onPress={showDurationPickerModal}
@@ -558,9 +559,10 @@ export default function NewEntryScreen() {
                 accessibilityHint="Opens duration picker"
                 accessibilityRole="button"
               >
-                <Text style={styles.durationText}>
-                  {duration} min
-                </Text>
+              <Text style={styles.durationText}>
+                {duration > 0 ? `${duration} min` : "Did Not Engage"}
+              </Text>
+
               </TouchableOpacity>
             </View>
           </View>

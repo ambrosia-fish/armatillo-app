@@ -1,9 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TextStyle, ViewStyle } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  ActivityIndicator, 
+  Alert, 
+  TextStyle, 
+  ViewStyle 
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Header, Card, Button } from '../../components';
+import { Header, Button } from '../../components';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { ensureValidToken } from '../../utils/tokenRefresher';
@@ -20,6 +29,7 @@ interface Instance {
   duration?: string | number;
   timeAgo?: string;
   selectedEnvironments?: string[];
+  selectedActivities?: string[];
   selectedEmotions?: string[];
   selectedSensations?: string[];
   selectedThoughts?: string[];
@@ -87,12 +97,37 @@ export default function DetailScreen() {
     }
     return 'Not specified';
   };
+  
+  // Render a category pill
+  const renderPill = (text: string, index: number) => (
+    <View key={index} style={styles.pill}>
+      <Text style={styles.pillText}>{text}</Text>
+    </View>
+  );
+
+  // Render a section of category pills
+  const renderCategorySection = (title: string, items: string[] | undefined) => {
+    if (!items || items.length === 0) return null;
+    
+    return (
+      <View style={styles.formSection}>
+        <View style={styles.sectionTitleContainer}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+        </View>
+        <View style={styles.selectionContainer}>
+          {items.map((item, index) => renderPill(item, index))}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar style="auto" />
+      
       <Header 
-        title="Instance Details"
-        leftIcon="arrow-back"
+        title="Instance Details" 
+        showBackButton
         onLeftPress={() => router.back()}
       />
 
@@ -124,104 +159,84 @@ export default function DetailScreen() {
           />
         </View>
       ) : instance ? (
-        <ScrollView style={styles.content}>
-          <Card containerStyle={styles.card}>
-            <Text style={styles.cardTitle}>When</Text>
-            <Text style={styles.dateText}>{formatDate(instance.createdAt)}</Text>
-            
-            {instance.duration && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Duration:</Text>
+        <ScrollView 
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Awareness Type */}
+          <View style={styles.formSection}>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>Awareness Type</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoValue}>{getBehaviorType()}</Text>
+            </View>
+          </View>
+          
+          {/* Urge Strength */}
+          {instance.urgeStrength !== undefined && (
+            <View style={styles.formSection}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Urge Strength</Text>
+              </View>
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoValue}>{instance.urgeStrength}/10</Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Time Info */}
+          <View style={styles.formSection}>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>When</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoValue}>{formatDate(instance.createdAt)}</Text>
+            </View>
+          </View>
+          
+          {/* Duration */}
+          {instance.duration && (
+            <View style={styles.formSection}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Duration</Text>
+              </View>
+              <View style={styles.infoContainer}>
                 <Text style={styles.infoValue}>
                   {typeof instance.duration === 'number' ? 
                     `${instance.duration} ${instance.duration === 1 ? 'minute' : 'minutes'}` : 
                     instance.duration}
                 </Text>
               </View>
-            )}
-          </Card>
-          
-          <Card containerStyle={styles.card}>
-            <Text style={styles.cardTitle}>BFRB Details</Text>
-            
-            {instance.urgeStrength !== undefined && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Urge Strength:</Text>
-                <Text style={styles.infoValue}>{instance.urgeStrength}/10</Text>
-              </View>
-            )}
-            
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Type:</Text>
-              <Text style={styles.infoValue}>{getBehaviorType()}</Text>
             </View>
-          </Card>
+          )}
           
-          <Card containerStyle={styles.card}>
-            <Text style={styles.cardTitle}>Environment</Text>
-            
-            {instance.selectedEnvironments && instance.selectedEnvironments.length > 0 && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Environments:</Text>
-                <View style={styles.tagContainer}>
-                  {instance.selectedEnvironments.map((env, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{env}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </Card>
+          {/* Location */}
+          {renderCategorySection('Location', instance.selectedEnvironments)}
           
-          <Card containerStyle={styles.card}>
-            <Text style={styles.cardTitle}>Mental & Physical State</Text>
-            
-            {instance.selectedEmotions && instance.selectedEmotions.length > 0 && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Feelings:</Text>
-                <View style={styles.tagContainer}>
-                  {instance.selectedEmotions.map((emotion, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{emotion}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-            
-            {instance.selectedSensations && instance.selectedSensations.length > 0 && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Physical Sensations:</Text>
-                <View style={styles.tagContainer}>
-                  {instance.selectedSensations.map((sensation, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{sensation}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-            
-            {instance.selectedThoughts && instance.selectedThoughts.length > 0 && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Thoughts:</Text>
-                <View style={styles.tagContainer}>
-                  {instance.selectedThoughts.map((thought, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{thought}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </Card>
+          {/* Activity */}
+          {renderCategorySection('Activity', instance.selectedActivities)}
           
+          {/* Emotions */}
+          {renderCategorySection('Emotions', instance.selectedEmotions)}
+          
+          {/* Thought Patterns */}
+          {renderCategorySection('Thought Patterns', instance.selectedThoughts)}
+          
+          {/* Physical Sensations */}
+          {renderCategorySection('Physical Sensations', instance.selectedSensations)}
+          
+          {/* Notes */}
           {instance.notes && (
-            <Card containerStyle={styles.card}>
-              <Text style={styles.cardTitle}>Notes</Text>
-              <Text style={styles.notesText}>{instance.notes}</Text>
-            </Card>
+            <View style={styles.formSection}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Notes</Text>
+              </View>
+              <View style={styles.notesContainer}>
+                <Text style={styles.notesText}>{instance.notes}</Text>
+              </View>
+            </View>
           )}
         </ScrollView>
       ) : (
@@ -229,8 +244,6 @@ export default function DetailScreen() {
           <Text style={styles.emptyStateText}>No instance details found</Text>
         </View>
       )}
-      
-      <StatusBar style="auto" />
     </SafeAreaView>
   );
 }
@@ -242,7 +255,11 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   content: {
     flex: 1,
+  } as ViewStyle,
+  contentContainer: {
     padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.huge,
+    alignItems: 'center',
   } as ViewStyle,
   centeredContainer: {
     flex: 1,
@@ -250,57 +267,80 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.xl,
   } as ViewStyle,
-  card: {
-    marginBottom: theme.spacing.lg,
-    padding: theme.spacing.lg,
+  formSection: {
+    marginBottom: theme.spacing.xl,
+    width: '100%',
+    alignItems: 'center',
   } as ViewStyle,
-  cardTitle: {
-    fontSize: theme.typography.fontSize.lg,
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xs,
+    position: 'relative',
+    width: '100%',
+  } as ViewStyle,
+  sectionTitle: {
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold as '700',
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.md,
-    paddingBottom: theme.spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
+    textAlign: 'center',
   } as TextStyle,
-  dateText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.md,
-  } as TextStyle,
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: theme.spacing.md,
-    alignItems: 'flex-start',
+  infoContainer: {
+    width: '100%',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: theme.spacing.sm,
   } as ViewStyle,
-  infoLabel: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.medium as '500',
-    marginRight: theme.spacing.md,
-    minWidth: 120,
-  } as TextStyle,
   infoValue: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
-    flex: 1,
+    textAlign: 'center',
   } as TextStyle,
-  tagContainer: {
-    flex: 1,
+  selectionContainer: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    minHeight: 45,
   } as ViewStyle,
-  tag: {
-    backgroundColor: theme.colors.primary.light,
+  pill: {
+    backgroundColor: theme.colors.primary.light + '40',
     borderRadius: theme.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.primary.main,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.xs,
-    margin: 2,
+    margin: theme.spacing.xs,
   } as ViewStyle,
-  tagText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.primary.dark,
+  pillText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.medium as '500',
   } as TextStyle,
+  notesContainer: {
+    width: '100%',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    marginTop: theme.spacing.sm,
+    minHeight: 100,
+  } as ViewStyle,
   notesText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
