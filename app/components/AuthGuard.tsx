@@ -17,7 +17,7 @@ interface AuthGuardProps {
  * @returns {React.ReactElement} - The protected component or redirect
  */
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isPendingApproval } = useAuth();
 
   /**
    * Log authentication status on mount and when it changes
@@ -29,6 +29,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         // Log authentication status but only after loading is complete
         if (isAuthenticated) {
           console.log('AuthGuard: User is authenticated');
+        } else if (isPendingApproval) {
+          console.log('AuthGuard: User account is pending approval, redirecting to login');
         } else {
           console.log('AuthGuard: User is not authenticated, redirecting to login');
         }
@@ -41,7 +43,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         context: { component: 'AuthGuard', action: 'checkAuth' }
       });
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, isPendingApproval]);
 
   // If loading, show a loading spinner
   if (isLoading) {
@@ -55,6 +57,31 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         <Text style={styles.text}>Loading...</Text>
       </View>
     );
+  }
+
+  // If pending approval, redirect to login screen which will show approval status
+  if (isPendingApproval) {
+    try {
+      return <Redirect href="/screens/auth/login" />;
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        source: 'auth',
+        level: 'error',
+        displayToUser: false,
+        context: { component: 'AuthGuard', action: 'redirect' }
+      });
+      // Fallback to a more basic redirect if the first attempt fails
+      return (
+        <View 
+          style={styles.container}
+          accessibilityLabel="Account approval required"
+          accessibilityRole="alert"
+        >
+          <Text style={styles.errorText}>Account Pending Approval</Text>
+          <Text style={styles.text}>Redirecting to login...</Text>
+        </View>
+      );
+    }
   }
 
   // If not authenticated, redirect to login
