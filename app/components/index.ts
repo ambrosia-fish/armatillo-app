@@ -22,6 +22,7 @@ export { default as AuthGuard } from './AuthGuard';
 export { default as EmojiPill } from './EmojiPill';
 export { default as EmojiPillRow } from './EmojiPillRow';
 export { default as AnswerSelectorModal } from './AnswerSelectorModal';
+export { default as CategoryPills } from './CategoryPills';
 
 // Existing components
 export { default as CancelFooter } from './CancelFooter';
