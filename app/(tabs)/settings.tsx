@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   ViewStyle, 
   TextStyle, 
-  StatusBar 
+  StatusBar,
+  SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
@@ -69,9 +70,9 @@ export default function SettingsScreen() {
   };
 
   return (
-    <>
+    <View style={styles.outerContainer}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Profile Section */}
           <View style={styles.profileHeader}>
@@ -90,10 +91,10 @@ export default function SettingsScreen() {
 
             {/* General Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>General</Text>
+              {/* <Text style={styles.sectionTitle}>General</Text> */}
               
-              <View style={styles.card}>
-                {/* Notifications */}
+
+              {/* <View style={styles.card}>
                 <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleFeatureDisabled}
@@ -115,7 +116,6 @@ export default function SettingsScreen() {
                   />
                 </TouchableOpacity>
                 
-                {/* Dark Mode */}
                 <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleFeatureDisabled}
@@ -136,7 +136,7 @@ export default function SettingsScreen() {
                     thumbColor={theme.colors.neutral.white}
                   />
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
 
             {/* Account Section */}
@@ -145,7 +145,7 @@ export default function SettingsScreen() {
               
               <View style={styles.card}>
                 {/* Profile */}
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleFeatureDisabled}
                   activeOpacity={0.7}
@@ -155,7 +155,7 @@ export default function SettingsScreen() {
                   </View>
                   <Text style={styles.settingText}>Profile</Text>
                   <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 
                 {/* Sign Out */}
                 <TouchableOpacity 
@@ -180,11 +180,11 @@ export default function SettingsScreen() {
             </View>
 
             {/* About Section */}
-            <View style={styles.section}>
+            
+            {/* <View style={styles.section}>
               <Text style={styles.sectionTitle}>About</Text>
               
               <View style={styles.card}>
-                {/* About Armatillo */}
                 <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleFeatureDisabled}
@@ -197,7 +197,6 @@ export default function SettingsScreen() {
                   <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                 </TouchableOpacity>
                 
-                {/* Privacy Policy */}
                 <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleFeatureDisabled}
@@ -210,15 +209,20 @@ export default function SettingsScreen() {
                   <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                 </TouchableOpacity>
               </View>
-            </View>
+            </View> */}
           </View>
         </ScrollView>
-      </View>
-    </>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
+  } as ViewStyle,
+  
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
