@@ -61,6 +61,8 @@ export default function HomeScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
+        <Text style={styles.aiDisclaimer}>Art is placeholder and AI generated</Text>
+
       </View>
       
       {/* Centered Add Button with animation */}
@@ -140,9 +142,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   } as ViewStyle,
   addButtonLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: theme.colors.text.secondary,
     marginTop: 4,
   } as TextStyle,
+  aiDisclaimer : {
+    fontSize: 11,
+  }
 });
