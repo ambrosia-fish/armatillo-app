@@ -11,14 +11,16 @@ interface User {
   email: string;
   displayName: string;
   username?: string;
+  approved?: boolean;
 }
 
 interface AuthResponse {
   success: boolean;
-  token: string;
+  token?: string;
   refreshToken?: string;
   expiresIn?: number;
-  user: User;
+  user?: User;
+  message?: string;
 }
 
 interface AuthContextType {
@@ -26,6 +28,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isPendingApproval: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -49,8 +52,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!token && !!user && user.approved === true;
 
   useEffect(() => {
     loadAuthState();
@@ -60,6 +64,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
       const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
+      const pendingApproval = await storage.getItem(STORAGE_KEYS.PENDING_APPROVAL);
+
+      if (pendingApproval === 'true') {
+        setIsPendingApproval(true);
+      }
 
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -107,6 +116,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return false;
     } catch (error) {
+      // Check if error is due to not being approved
+      if (error instanceof Error && error.message.includes('not approved')) {
+        await clearAuthState();
+        await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+        setIsPendingApproval(true);
+        setToken(null);
+        setUser(null);
+        router.replace('/screens/auth/login');
+        return false;
+      }
+      
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
         level: 'warning',
@@ -123,6 +143,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await clearAuthTokens();
       setToken(null);
       setUser(null);
+      await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+      setIsPendingApproval(false);
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
@@ -134,10 +156,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const processAuthResponse = async (authResponse: AuthResponse) => {
     try {
-      const { success, token, user, expiresIn, refreshToken } = authResponse;
+      const { success, token, user, expiresIn, refreshToken, message } = authResponse;
+      
+      // Check if user is pending approval
+      if (success && !token && user && user.approved === false) {
+        await storage.setObject(STORAGE_KEYS.USER, user);
+        await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+        setUser(user);
+        setIsPendingApproval(true);
+        
+        Alert.alert(
+          'Account Pending Approval',
+          message || 'Thank You for your interest in Armatillo! It is currently in pre-alpha and testing is only available to certain users. Please contact josef@feztech.io if you would like to participate in testing.'
+        );
+        
+        router.replace('/screens/auth/login');
+        return;
+      }
       
       if (!success || !token || !user) {
         throw new Error('Invalid authentication response');
+      }
+      
+      // Store approved status
+      if (user.approved) {
+        await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+        setIsPendingApproval(false);
       }
       
       await storeAuthTokens(token, expiresIn, refreshToken);
@@ -168,7 +212,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         level: 'error',
         context: { action: 'login', email }
       });
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      
+      // Special handling for approval errors
+      if (error instanceof Error && error.message.includes('Thank You for your interest in Armatillo')) {
+        Alert.alert(
+          'Account Not Approved',
+          error.message
+        );
+      } else {
+        Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -183,13 +237,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (response?.success) {
         if (response.token && response.user) {
           await processAuthResponse(response);
-          return response;
+          return;
+        }
+        
+        // Handle the case where registration is successful but user needs approval
+        if (response.message && response.message.includes('pending approval')) {
+          await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+          setIsPendingApproval(true);
+          
+          if (response.user) {
+            await storage.setObject(STORAGE_KEYS.USER, response.user);
+            setUser(response.user);
+          }
+          
+          Alert.alert(
+            'Registration Successful', 
+            response.message || 'Your account has been created but requires approval. You will be notified when your account is approved.'
+          );
+          
+          router.replace('/screens/auth/login');
+          return;
         }
         
         Alert.alert('Success', 'Account created successfully! Please log in.');
       }
-      
-      return response;
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
@@ -238,6 +309,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     token,
     isLoading,
     isAuthenticated,
+    isPendingApproval,
     login,
     register,
     logout,
