@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'auth_refresh_token',
   USER: 'user_data',
   USER_NAME: 'user_name',
+  PENDING_APPROVAL: 'pending_approval', // New key for pending approval status
 };
 
 /**
