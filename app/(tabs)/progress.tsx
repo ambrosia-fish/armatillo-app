@@ -8,7 +8,8 @@ import {
   ViewStyle,
   TextStyle,
   Platform,
-  StatusBar
+  StatusBar,
+  SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
@@ -268,88 +269,95 @@ export default function ProgressScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Progress</Text>
-        </View>
-        
-        {error && <ErrorState />}
-        
-        {loading && initialLoad ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingIndicator}>
-              <ActivityIndicator size="large" color={theme.colors.primary.main} />
-            </View>
-            <Text style={styles.loadingText}>Loading your progress data...</Text>
+      <View style={styles.outerContainer}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Progress</Text>
           </View>
-        ) : (
-          <FlatList
-            data={instances}
-            renderItem={renderItem}
-            keyExtractor={(item) => item._id}
-            contentContainerStyle={[
-              styles.listContainer,
-              instances.length === 0 && styles.emptyListContainer
-            ]}
-            ListEmptyComponent={!loading ? EmptyState : null}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[theme.colors.primary.main]}
-                tintColor={theme.colors.primary.main}
-              />
-            }
-            ListHeaderComponent={loading && !initialLoad ? (
-              <View style={styles.refreshingIndicator}>
-                <ActivityIndicator size="small" color={theme.colors.primary.main} />
-                <Text style={styles.refreshingText}>Refreshing...</Text>
+          
+          {error && <ErrorState />}
+          
+          {loading && initialLoad ? (
+            <View style={styles.loadingContainer}>
+              <View style={styles.loadingIndicator}>
+                <ActivityIndicator size="large" color={theme.colors.primary.main} />
               </View>
-            ) : null}
-            showsVerticalScrollIndicator={false}
+              <Text style={styles.loadingText}>Loading your progress data...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={instances}
+              renderItem={renderItem}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={[
+                styles.listContainer,
+                instances.length === 0 && styles.emptyListContainer
+              ]}
+              ListEmptyComponent={!loading ? EmptyState : null}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[theme.colors.primary.main]}
+                  tintColor={theme.colors.primary.main}
+                />
+              }
+              ListHeaderComponent={loading && !initialLoad ? (
+                <View style={styles.refreshingIndicator}>
+                  <ActivityIndicator size="small" color={theme.colors.primary.main} />
+                  <Text style={styles.refreshingText}>Refreshing...</Text>
+                </View>
+              ) : null}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+          
+          {/* Export Button */}
+          {instances.length > 0 && (
+            <View style={styles.floatingButtonContainer}>
+              <TouchableOpacity 
+                style={styles.exportButton}
+                onPress={handleExportCSV}
+                disabled={loading || refreshing || exportLoading || instances.length === 0}
+                activeOpacity={0.8}
+              >
+                {exportLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary.contrast} />
+                ) : (
+                  <>
+                    <Ionicons name="download-outline" size={18} color={theme.colors.primary.contrast} />
+                    <Text style={styles.exportButtonText}>Export CSV</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Instance Details Modal */}
+          <InstanceDetailsModal 
+            isVisible={modalVisible}
+            instanceId={selectedInstanceId}
+            onClose={closeModal}
           />
-        )}
-        
-        {/* Export Button */}
-        {instances.length > 0 && (
-          <View style={styles.floatingButtonContainer}>
-            <TouchableOpacity 
-              style={styles.exportButton}
-              onPress={handleExportCSV}
-              disabled={loading || refreshing || exportLoading || instances.length === 0}
-              activeOpacity={0.8}
-            >
-              {exportLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.primary.contrast} />
-              ) : (
-                <>
-                  <Ionicons name="download-outline" size={18} color={theme.colors.primary.contrast} />
-                  <Text style={styles.exportButtonText}>Export CSV</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-        
-        {/* Instance Details Modal */}
-        <InstanceDetailsModal 
-          isVisible={modalVisible}
-          instanceId={selectedInstanceId}
-          onClose={closeModal}
-        />
+        </SafeAreaView>
       </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
+  } as ViewStyle,
+  
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   } as ViewStyle,
   
   header: {
-    paddingTop: theme.spacing.xl,
+    paddingTop: theme.spacing.md,
     paddingBottom: theme.spacing.lg,
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,

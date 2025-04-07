@@ -236,7 +236,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   };
 
   /**
-   * Render the urge strength section with vertical meter
+   * Render the urge strength section with horizontal meter
    */
   const renderUrgeStrengthSection = () => {
     if (!instance) return null;
@@ -244,44 +244,44 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     // Default to 3 if undefined
     const strength = instance.urgeStrength !== undefined ? Number(instance.urgeStrength) : 3;
     
-    // Calculate fill percentage from bottom (1-5 scale)
+    // Calculate fill percentage from left (1-5 scale)
     const fillPercent = ((strength - 1) / 4) * 100;
     
     return (
-      <View style={styles.gridItem}>
+      <View style={styles.urgeStrengthSection}>
         <View style={styles.categoryHeader}>
           <Ionicons name="thermometer" size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
           <Text style={styles.categoryTitle}>Urge Strength</Text>
         </View>
         <View style={styles.urgeContainer}>
-          <View style={styles.verticalUrgeBar}>
+          <View style={styles.horizontalUrgeBar}>
             <View 
               style={[
-                styles.verticalUrgeFill, 
-                { height: `${fillPercent}%` }
+                styles.horizontalUrgeFill, 
+                { width: `${fillPercent}%` }
               ]} 
             />
             {/* Scale markers */}
-            <View style={[styles.urgeMarker, { bottom: '0%' }]}>
+            <View style={[styles.urgeMarker, { left: '0%' }]}>
               <Text style={styles.urgeMarkerText}>1</Text>
             </View>
-            <View style={[styles.urgeMarker, { bottom: '25%' }]}>
+            <View style={[styles.urgeMarker, { left: '25%' }]}>
               <Text style={styles.urgeMarkerText}>2</Text>
             </View>
-            <View style={[styles.urgeMarker, { bottom: '50%' }]}>
+            <View style={[styles.urgeMarker, { left: '50%' }]}>
               <Text style={styles.urgeMarkerText}>3</Text>
             </View>
-            <View style={[styles.urgeMarker, { bottom: '75%' }]}>
+            <View style={[styles.urgeMarker, { left: '75%' }]}>
               <Text style={styles.urgeMarkerText}>4</Text>
             </View>
-            <View style={[styles.urgeMarker, { bottom: '100%' }]}>
+            <View style={[styles.urgeMarker, { left: '100%' }]}>
               <Text style={styles.urgeMarkerText}>5</Text>
             </View>
             
             {/* Current value marker */}
-            <View style={[styles.currentUrgeMarker, { bottom: `${fillPercent}%` }]}>
+            {/* <View style={[styles.currentUrgeMarker, { left: `${fillPercent}%` }]}>
               <Text style={styles.currentUrgeText}>{strength}</Text>
-            </View>
+            </View> */}
           </View>
         </View>
       </View>
@@ -380,6 +380,9 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
           </View>
         </View>
         
+        {/* Urge Strength Section - Now above the grid */}
+        {renderUrgeStrengthSection()}
+        
         {/* Categories in 3x2 grid layout */}
         <View style={styles.categoriesGrid}>
           {/* Left column */}
@@ -425,9 +428,6 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
             )}
           </View>
         </View>
-        
-        {/* Urge strength as its own section */}
-        {renderUrgeStrengthSection()}
         
         {/* Notes - always visible */}
         <View style={styles.notesSection}>
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   } as ViewStyle,
   timeInfoItem: {
     flexDirection: 'row',
@@ -581,6 +581,64 @@ const styles = StyleSheet.create({
   inlineIcon: {
     marginRight: 6,
   } as ViewStyle,
+  
+  // Urge Strength Section - New horizontal styles
+  urgeStrengthSection: {
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  } as ViewStyle,
+  urgeContainer: {
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  } as ViewStyle,
+  horizontalUrgeBar: {
+    height: 24,
+    width: '100%',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: 12,
+    overflow: 'visible',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  } as ViewStyle,
+  horizontalUrgeFill: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: theme.colors.primary.light,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  } as ViewStyle,
+  urgeMarker: {
+    position: 'absolute',
+    top: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateX: -6 }],
+  } as ViewStyle,
+  urgeMarkerText: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
+  currentUrgeMarker: {
+    position: 'absolute',
+    top: -12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary.main,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateX: -12 }],
+  } as ViewStyle,
+  currentUrgeText: {
+    fontSize: 12,
+    fontWeight: 'bold' as 'bold',
+    color: 'white',
+  } as TextStyle,
   
   // Grid layout
   categoriesGrid: {
@@ -627,59 +685,6 @@ const styles = StyleSheet.create({
   pillIcon: {
     marginRight: 4,
   } as ViewStyle,
-  
-  // Urge strength section
-  urgeContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    height: 120,
-  } as ViewStyle,
-  verticalUrgeBar: {
-    width: 24,
-    height: '100%',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: 12,
-    overflow: 'visible',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  } as ViewStyle,
-  verticalUrgeFill: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.primary.light,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-  } as ViewStyle,
-  urgeMarker: {
-    position: 'absolute',
-    left: -20,
-    width: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  urgeMarkerText: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-  } as TextStyle,
-  currentUrgeMarker: {
-    position: 'absolute',
-    right: -20,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.primary.main,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  currentUrgeText: {
-    fontSize: 12,
-    fontWeight: 'bold' as 'bold',
-    color: 'white',
-  } as TextStyle,
   
   // Pills
   pillsContainer: {
