@@ -46,12 +46,12 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
       setRedirected(true);
       if (Platform.OS === 'web') {
         // For more reliable web navigation
-        window.location.href = '/screens/auth/login';
+        window.location.href = '/';
       } else {
         // For native navigation
         window.setTimeout(() => {
           try {
-            window.location.replace('/screens/auth/login');
+            window.location.replace('/');
           } catch (e) {
             console.error("Native navigation error:", e);
           }

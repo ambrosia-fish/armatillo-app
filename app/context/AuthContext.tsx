@@ -199,7 +199,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(token);
       setUser(user);
       
-      router.replace('/(tabs)');
+      router.replace('../(tabs)/index');
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
@@ -280,10 +280,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Force immediate navigation to login screen
       if (Platform.OS === 'web') {
         // For web, try to force a clean navigation
-        window.location.href = '/screens/auth/login';
+        window.location.href = '/';
       } else {
         // For native, use the router
-        router.replace('/screens/auth/login');
+        router.replace('/');
       }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
