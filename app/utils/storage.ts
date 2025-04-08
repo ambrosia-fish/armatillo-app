@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { errorService } from '../services/ErrorService';
+import { Platform } from 'react-native';
 
 // Storage keys
 export const STORAGE_KEYS = {
@@ -13,7 +14,7 @@ export const STORAGE_KEYS = {
 
 /**
  * Storage utility functions 
- * Simplified version that uses AsyncStorage directly
+ * Supports both AsyncStorage for mobile and localStorage for web
  */
 export const storage = {
   /**
@@ -22,6 +23,11 @@ export const storage = {
   setItem: async (key: string, value: string): Promise<void> => {
     try {
       await AsyncStorage.setItem(key, value);
+      
+      // Also store in localStorage for web
+      if (Platform.OS === 'web') {
+        localStorage.setItem(key, value);
+      }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'storage',
@@ -36,7 +42,14 @@ export const storage = {
    */
   getItem: async (key: string): Promise<string | null> => {
     try {
-      return await AsyncStorage.getItem(key);
+      let value = await AsyncStorage.getItem(key);
+      
+      // Try localStorage if AsyncStorage doesn't have the value
+      if (value === null && Platform.OS === 'web') {
+        value = localStorage.getItem(key);
+      }
+      
+      return value;
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'storage',
@@ -52,6 +65,11 @@ export const storage = {
   removeItem: async (key: string): Promise<void> => {
     try {
       await AsyncStorage.removeItem(key);
+      
+      // Also remove from localStorage for web
+      if (Platform.OS === 'web') {
+        localStorage.removeItem(key);
+      }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'storage',
@@ -68,6 +86,11 @@ export const storage = {
     try {
       const jsonValue = JSON.stringify(value);
       await AsyncStorage.setItem(key, jsonValue);
+      
+      // Also store in localStorage for web
+      if (Platform.OS === 'web') {
+        localStorage.setItem(key, jsonValue);
+      }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'storage',
@@ -82,7 +105,13 @@ export const storage = {
    */
   getObject: async <T>(key: string): Promise<T | null> => {
     try {
-      const jsonValue = await AsyncStorage.getItem(key);
+      let jsonValue = await AsyncStorage.getItem(key);
+      
+      // Try localStorage if AsyncStorage doesn't have the value
+      if (jsonValue === null && Platform.OS === 'web') {
+        jsonValue = localStorage.getItem(key);
+      }
+      
       return jsonValue != null ? JSON.parse(jsonValue) : null;
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
@@ -99,6 +128,11 @@ export const storage = {
   clear: async (): Promise<void> => {
     try {
       await AsyncStorage.clear();
+      
+      // Also clear localStorage for web
+      if (Platform.OS === 'web') {
+        localStorage.clear();
+      }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'storage',
