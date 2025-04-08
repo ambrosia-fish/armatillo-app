@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
@@ -17,6 +17,7 @@ interface AuthGuardProps {
  * @returns {React.ReactElement} - The protected component or redirect
  */
 export default function AuthGuard({ children }: AuthGuardProps) {
+  const router = useRouter();
   const { isAuthenticated, isLoading, isPendingApproval } = useAuth();
 
   /**
@@ -30,7 +31,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         if (isAuthenticated) {
           console.log('AuthGuard: User is authenticated');
         } else if (isPendingApproval) {
-          console.log('AuthGuard: User account is pending approval, redirecting to login');
+          console.log('AuthGuard: User account is pending approval, redirecting to approval modal');
+          router.push('/screens/modals/approval-pending-modal');
         } else {
           console.log('AuthGuard: User is not authenticated, redirecting to login');
         }
@@ -59,10 +61,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // If pending approval, redirect to login screen which will show approval status
+  // If pending approval, redirect to the approval modal
   if (isPendingApproval) {
     try {
-      return <Redirect href="/screens/auth/login" />;
+      return <Redirect href="/screens/modals/approval-pending-modal" />;
     } catch (err) {
       errorService.handleError(err instanceof Error ? err : String(err), {
         source: 'auth',
@@ -71,14 +73,15 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         context: { component: 'AuthGuard', action: 'redirect' }
       });
       // Fallback to a more basic redirect if the first attempt fails
+      router.push('/screens/modals/approval-pending-modal');
       return (
         <View 
           style={styles.container}
           accessibilityLabel="Account approval required"
           accessibilityRole="alert"
         >
-          <Text style={styles.errorText}>Account Pending Approval</Text>
-          <Text style={styles.text}>Redirecting to login...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary.main} />
+          <Text style={styles.text}>Redirecting...</Text>
         </View>
       );
     }
