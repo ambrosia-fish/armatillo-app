@@ -33,7 +33,7 @@ export default function ApprovalPendingModal() {
     <View style={[
       styles.container,
       { 
-        paddingTop: insets.top,
+        // paddingTop: insets.top,
         paddingBottom: Math.max(insets.bottom, theme.spacing.md) 
       }
     ]}>
