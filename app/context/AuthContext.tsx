@@ -160,8 +160,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // New function specifically for clearing approval status and auth state from modal
   const clearApprovalStatus = async () => {
     try {
-      console.log("Auth context: clearing approval status");
-      
       // Ensure state is updated first to prevent navigation loops
       setIsPendingApproval(false);
       setToken(null);
@@ -183,13 +181,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await storage.removeItem(key);
       }
       
-      console.log("Auth context: approval status and auth cleared successfully");
       return true;
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
         displayToUser: false,
-        context: { action: 'clearApprovalStatus' }
+        context: { action: 'clearApprovalStatus' },
+        silent: true
       });
       return false;
     }
@@ -252,12 +250,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             error.message.includes('testing is only available') || 
             error.message.includes('Thank You for your interest in Armatillo'))) {
           
-          console.log("Login detected pre-alpha approval message");
-          
           // Log the error for debugging but don't re-throw
           errorService.handleError(error, {
             source: 'auth',
-            level: 'info', // Downgrade from error to info since this is expected
+            level: 'silent', // Completely suppress these messages
             displayToUser: false,
             context: { action: 'login.pendingApproval', email }
           });
@@ -322,12 +318,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             error.message.includes('testing is only available') || 
             error.message.includes('Thank You for your interest in Armatillo'))) {
             
-          console.log("Registration detected pre-alpha approval message");
-          
           // Log the error for debugging but don't re-throw
           errorService.handleError(error, {
             source: 'auth',
-            level: 'info', // Downgrade from error to info
+            level: 'silent', // Completely suppress these messages
             displayToUser: false,
             context: { action: 'register.pendingApproval', email: userData.email }
           });
