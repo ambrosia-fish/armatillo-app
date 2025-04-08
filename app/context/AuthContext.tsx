@@ -200,6 +200,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(user);
       
       router.replace('../(tabs)/index');
+      window.location.href = '../(tabs)/index';
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
