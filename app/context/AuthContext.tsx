@@ -142,7 +142,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const clearAuthState = async () => {
     try {
+      // Clear tokens using the clearAuthTokens utility
       await clearAuthTokens();
+      
+      // For web, directly clear localStorage as a fallback
+      if (Platform.OS === 'web') {
+        // Force clear all auth-related items from localStorage
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.USER_NAME);
+        console.log('Web localStorage cleared'); // Debug log
+      }
+      
+      // Update state
       setToken(null);
       setUser(null);
     } catch (error) {
@@ -151,6 +165,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayToUser: false,
         context: { action: 'clearAuthState' }
       });
+      
+      // Even if we get an error, still try to update local state
+      setToken(null);
+      setUser(null);
     }
   };
 
@@ -246,6 +264,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           await api.auth.logout();
         } catch (error) {
+          // Don't let server errors prevent client-side logout
           errorService.handleError(error instanceof Error ? error : String(error), {
             source: 'auth',
             level: 'warning',
@@ -255,13 +274,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
       
+      // Clear all auth state
       await clearAuthState();
-      router.replace('/screens/auth/login');
+      
+      // Force immediate navigation to login screen
+      if (Platform.OS === 'web') {
+        // For web, try to force a clean navigation
+        window.location.href = '/screens/auth/login';
+      } else {
+        // For native, use the router
+        router.replace('/screens/auth/login');
+      }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
         context: { action: 'logout' }
       });
+      
+      // Still try to navigate to login even if there was an error
+      router.replace('/screens/auth/login');
+      
       Alert.alert('Logout Failed', 'Please try again.');
     } finally {
       setIsLoading(false);
