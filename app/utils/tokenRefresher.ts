@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { STORAGE_KEYS } from './storage';
 import { isTokenExpired, getRefreshToken, storeAuthTokens } from './tokenUtils';
 import config from '../constants/config';
@@ -85,6 +86,17 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
       data.expiresIn,
       data.refreshToken // May be the same or a new refresh token
     );
+    
+    // For web platform, ensure token is immediately available in localStorage
+    if (Platform.OS === 'web') {
+      const expiryTime = Date.now() + (data.expiresIn || config.authConfig.tokenExpiration / 1000) * 1000;
+      localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+      
+      if (data.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      }
+    }
     
     return true;
   } catch (error) {
