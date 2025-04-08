@@ -385,24 +385,17 @@ export default function NewEntryScreen() {
           await api.instances.createInstance(payload);
           
           // Show success message
-          if (Platform.OS === 'web') {
-            // For web: use window.alert
-            window.alert('Your BFRB instance has been recorded successfully.');
-            router.replace('/');
-          } else {
-            // For native: use React Native Alert
-            Alert.alert(
-              'Success',
-              'Your BFRB instance has been recorded successfully.',
-              [{ 
-                text: 'OK', 
-                onPress: () => {
-                  // Navigate to home screen after submitting
-                  router.replace('/');
-                }
-              }]
-            );
-          }
+          Alert.alert(
+            'Success',
+            'Your BFRB instance has been recorded successfully.',
+            [{ 
+              text: 'OK', 
+              onPress: () => {
+                // Navigate to home screen after submitting
+                router.replace('/');
+              }
+            }]
+          );
         } else {
           // Just navigate home if API isn't available
           router.replace('/');
@@ -411,24 +404,17 @@ export default function NewEntryScreen() {
         console.error('Error submitting BFRB instance:', error);
         
         // Show error but continue navigation
-        if (Platform.OS === 'web') {
-          // For web: use window.alert
-          window.alert('There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.');
-          router.replace('/');
-        } else {
-          // For native: use React Native Alert
-          Alert.alert(
-            'Error',
-            'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
-            [{ 
-              text: 'OK', 
-              onPress: () => {
-                // Navigate to home screen after error
-                router.replace('/');
-              }
-            }]
-          );
-        }
+        Alert.alert(
+          'Error',
+          'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
+          [{ 
+            text: 'OK', 
+            onPress: () => {
+              // Navigate to home screen after error
+              router.replace('/');
+            }
+          }]
+        );
       }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
@@ -704,4 +690,337 @@ export default function NewEntryScreen() {
                 selectedItems={selectedThoughts}
                 options={OptionDictionaries.thoughtOptions}
                 onToggleItem={toggleCategoryItem}
-                on
+                onOpenModal={openModal}
+              />
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'thought',
+                  'Select Thought Patterns',
+                  OptionDictionaries.thoughtOptions,
+                  selectedThoughts
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add thought patterns"
+                accessibilityHint="Opens modal to select thought patterns"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Physical Sensations */}
+        <View style={styles.formSection}>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>Physical Sensations</Text>
+          </View>
+          
+          <View style={styles.selectionContainer}>
+            {selectedSensations.length > 0 ? (
+              <CategoryPills
+                categoryType="sensation"
+                selectedItems={selectedSensations}
+                options={OptionDictionaries.sensationOptions}
+                onToggleItem={toggleCategoryItem}
+                onOpenModal={openModal}
+              />
+            ) : (
+              <TouchableOpacity
+                onPress={() => openModal(
+                  'sensation',
+                  'Select Physical Sensations',
+                  OptionDictionaries.sensationOptions,
+                  selectedSensations
+                )}
+                style={styles.bigAddButton}
+                accessibilityLabel="Add physical sensations"
+                accessibilityHint="Opens modal to select physical sensations"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Notes */}
+        <View style={styles.formSection}>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+          </View>
+          <TextInput
+            style={styles.notesInput}
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Optional notes about this instance..."
+            placeholderTextColor={theme.colors.text.tertiary}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            accessibilityLabel="Notes field"
+            accessibilityHint="Add any additional notes about this instance"
+          />
+        </View>
+      </ScrollView>
+
+      {/* iOS-style Time Picker Modal */}
+      {Platform.OS === 'ios' && (
+        <TimePickerModal
+          visible={showTimePicker}
+          onCancel={() => setShowTimePicker(false)}
+          onDone={updateSelectedTime}
+          selectedHours={selectedHours}
+          selectedMinutes={selectedMinutes}
+          setSelectedHours={setSelectedHours}
+          setSelectedMinutes={setSelectedMinutes}
+        />
+      )}
+      
+      {/* iOS-style Duration Picker Modal */}
+      {Platform.OS === 'ios' && (
+        <DurationPickerModal
+          visible={showDurationPicker}
+          onCancel={() => setShowDurationPicker(false)}
+          onDone={updateSelectedDuration}
+          selectedDuration={selectedDuration}
+          setSelectedDuration={setSelectedDuration}
+        />
+      )}
+
+      {/* Answer Selector Modal */}
+      <AnswerSelectorModal
+        visible={modalVisible}
+        title={modalTitle}
+        options={modalOptions}
+        selectedIds={modalSelected}
+        onSelect={handleModalSelect}
+        onClose={() => setModalVisible(false)}
+        allowMultiple={true}
+        allowCustom={true}
+      />
+      
+      {/* Footer Buttons */}
+      <View style={styles.footer}>
+        <Button
+          title="Submit"
+          variant="primary"
+          onPress={handleSubmit}
+          style={styles.submitButton}
+        />
+        
+        <Button
+          title="Cancel"
+          variant="text"
+          onPress={handleCancel}
+          style={styles.cancelButton}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
+  },
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.huge,
+    alignItems: 'center',
+  },
+  formSection: {
+    marginBottom: theme.spacing.xl,
+    width: '100%',
+    alignItems: 'center',
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xs,
+    position: 'relative',
+    width: '100%',
+  },
+  sectionTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  // Selection Container
+  selectionContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    minHeight: 45, // Minimum height to fit at least one pill
+  },
+  // Add buttons
+  bigAddButton: {
+    height: 50,
+    width: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderColor: theme.colors.border.light,
+  },
+  addButtonText: {
+    fontSize: 24,
+    color: theme.colors.primary.main,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  // Awareness Type Styles
+  awarenessContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginVertical: theme.spacing.md,
+  },
+  toggleLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleLabel: {
+    fontSize: theme.typography.fontSize.lg,
+    color: theme.colors.text.secondary,
+    marginHorizontal: theme.spacing.md,
+  },
+  toggleLabelActive: {
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.bold,
+  },
+  // Urge Strength Styles
+  urgeStrengthContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+    width: '90%',
+    marginVertical: theme.spacing.md,
+  },
+  urgeStrengthOption: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.neutral.lighter,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+    marginHorizontal: theme.spacing.xs,
+    opacity: 0.7,
+  },
+  urgeStrengthSelected: {
+    backgroundColor: theme.colors.primary.light + '40',
+    borderColor: theme.colors.primary.main,
+    opacity: 1,
+  },
+  urgeStrengthEmoji: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  urgeStrengthText: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.secondary,
+  },
+  urgeStrengthTextSelected: {
+    color: theme.colors.primary.main,
+  },
+  // Time and Duration Styles (side by side)
+  timeAndDurationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginVertical: theme.spacing.md,
+  },
+  timeContainer: {
+    flex: 1,
+    marginRight: theme.spacing.md,
+  },
+  durationContainer: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
+  },
+  inputLabel: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  timePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    padding: theme.spacing.md,
+    width: '100%',
+  },
+  timeText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    marginRight: theme.spacing.sm,
+  },
+  durationPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    padding: theme.spacing.md,
+    width: '100%',
+  },
+  durationText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  // Notes styles
+  notesInput: {
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.input,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    width: '100%',
+    marginTop: theme.spacing.sm,
+  },
+  // Footer styles
+  footer: {
+    padding: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border.light,
+    backgroundColor: theme.colors.background.primary,
+  },
+  submitButton: {
+    marginBottom: theme.spacing.md,
+  },
+  cancelButton: {},
+});
