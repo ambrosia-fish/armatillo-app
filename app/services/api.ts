@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { STORAGE_KEYS } from '../utils/storage';
 import { ensureValidToken } from '../utils/tokenRefresher';
 import config from '../constants/config';
@@ -9,7 +10,19 @@ const API_BASE_PATH = config.apiBasePath;
 
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    // First try AsyncStorage
+    let token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+    
+    // If on web and token not found in AsyncStorage, check localStorage directly
+    if (!token && Platform.OS === 'web') {
+      token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      
+      // If found in localStorage but not in AsyncStorage, sync them
+      if (token) {
+        await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      }
+    }
+    
     return token;
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
