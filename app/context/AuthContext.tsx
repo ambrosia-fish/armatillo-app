@@ -32,6 +32,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  clearApprovalStatus: () => Promise<void>;
   refreshAuth: () => Promise<boolean>;
 }
 
@@ -68,6 +69,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (pendingApproval === 'true') {
         setIsPendingApproval(true);
+      } else {
+        setIsPendingApproval(false);
       }
 
       if (storedToken && storedUser) {
@@ -151,6 +154,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayToUser: false,
         context: { action: 'clearAuthState' }
       });
+    }
+  };
+
+  // New function specifically for clearing approval status and auth state from modal
+  const clearApprovalStatus = async () => {
+    try {
+      console.log("Auth context: clearing approval status");
+      
+      // Ensure state is updated first to prevent navigation loops
+      setIsPendingApproval(false);
+      setToken(null);
+      setUser(null);
+      
+      // Then clear storage
+      await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+      
+      // Clear all auth-related storage
+      const keysToRemove = [
+        STORAGE_KEYS.TOKEN,
+        STORAGE_KEYS.TOKEN_EXPIRY,
+        STORAGE_KEYS.REFRESH_TOKEN,
+        STORAGE_KEYS.USER,
+        STORAGE_KEYS.USER_NAME
+      ].filter(Boolean);
+      
+      for (const key of keysToRemove) {
+        await storage.removeItem(key);
+      }
+      
+      console.log("Auth context: approval status and auth cleared successfully");
+      return true;
+    } catch (error) {
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'auth',
+        displayToUser: false,
+        context: { action: 'clearApprovalStatus' }
+      });
+      return false;
     }
   };
 
@@ -304,6 +345,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     register,
     logout,
+    clearApprovalStatus,
     refreshAuth
   };
 
