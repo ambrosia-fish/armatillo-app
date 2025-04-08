@@ -3,58 +3,55 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import theme from '@/app/constants/theme';
-import { AuthGuard } from '@/app/components';
 
 export default function TabLayout() {
   return (
-    <AuthGuard>
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: theme.colors.primary.main,
-          tabBarInactiveTintColor: theme.colors.text.tertiary,
-          headerShown: false,
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabLabel,
-          tabBarItemStyle: styles.tabItem,
-        }}>
-        <Tabs.Screen
-          name="progress"
-          options={{
-            title: 'Progress',
-            tabBarIcon: ({ color, focused }) => 
-              <Ionicons 
-                name={focused ? 'time' : 'time-outline'} 
-                size={24} 
-                color={color} 
-              />,
-          }}
-        />
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color, focused }) => 
-              <Ionicons 
-                name={focused ? 'home' : 'home-outline'} 
-                size={24} 
-                color={color} 
-              />,
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: 'Settings',
-            tabBarIcon: ({ color, focused }) => 
-              <Ionicons 
-                name={focused ? 'settings' : 'settings-outline'} 
-                size={24} 
-                color={color} 
-              />,
-          }}
-        />
-      </Tabs>
-    </AuthGuard>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: theme.colors.primary.main,
+        tabBarInactiveTintColor: theme.colors.text.tertiary,
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
+      }}>
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progress',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'time' : 'time-outline'} 
+              size={24} 
+              color={color} 
+            />,
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'home' : 'home-outline'} 
+              size={24} 
+              color={color} 
+            />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'settings' : 'settings-outline'} 
+              size={24} 
+              color={color} 
+            />,
+        }}
+      />
+    </Tabs>
   );
 }
 
