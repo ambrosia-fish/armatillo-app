@@ -34,6 +34,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const publicRoutes = [
     '/screens/auth/login',
     '/+not-found',
+    '/'
   ];
   
   // Check if current route needs protection
