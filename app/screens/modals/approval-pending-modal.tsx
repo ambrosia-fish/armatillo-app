@@ -3,14 +3,14 @@ import { Platform, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Linking }
 import { useRouter, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Text, View, Button } from '../../components';
 import theme from '../../constants/theme';
-import storage, { STORAGE_KEYS } from '../../utils/storage';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ApprovalPendingModal() {
   const insets = useSafeAreaInsets();
+  const { clearApprovalStatus } = useAuth();
 
   const handleContactRequest = () => {
     Linking.openURL('mailto:josef@feztech.io?subject=Armatillo%20App%20Access%20Request');
@@ -18,42 +18,19 @@ export default function ApprovalPendingModal() {
 
   const handleGoBack = async () => {
     try {
-      console.log("Starting direct logout process...");
+      console.log("Starting approval status clearing process...");
       
-      // First remove the pending approval flag - this is critical
-      await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
-      console.log("Pending approval flag removed");
-      
-      // Clear all auth-related storage
-      const keysToRemove = [
-        STORAGE_KEYS.TOKEN,
-        STORAGE_KEYS.TOKEN_EXPIRY,
-        STORAGE_KEYS.REFRESH_TOKEN,
-        STORAGE_KEYS.USER,
-        STORAGE_KEYS.USER_NAME
-      ].filter(Boolean);
-      
-      for (const key of keysToRemove) {
-        await AsyncStorage.removeItem(key);
-      }
-      console.log("Auth storage cleared");
+      // Use the new method from AuthContext that ensures state and storage are in sync
+      await clearApprovalStatus();
       
       console.log("Navigating to login...");
       
       // Use direct navigation with global router
       router.replace('/screens/auth/login');
     } catch (error) {
-      console.error('Error during logout process:', error);
+      console.error('Error during approval clearing process:', error);
       
-      // Fallback - try AsyncStorage.clear() as a last resort
-      try {
-        await AsyncStorage.clear();
-        console.log("All storage cleared as fallback");
-      } catch (clearError) {
-        console.error('Error clearing all storage:', clearError);
-      }
-      
-      // Try different navigation approach
+      // Fallback navigation as a last resort
       router.replace('/screens/auth/login');
     }
   };
