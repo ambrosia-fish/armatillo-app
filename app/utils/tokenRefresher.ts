@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { STORAGE_KEYS } from './storage';
 import { isTokenExpired, getRefreshToken, storeAuthTokens } from './tokenUtils';
 import config from '../constants/config';
@@ -25,11 +26,9 @@ export async function ensureValidToken(): Promise<boolean> {
     // Get refresh token
     const refreshToken = await getRefreshToken();
     if (!refreshToken) {
-      // Log as info level instead of warning since this is an expected condition
-      // when a user is not logged in or pending approval
       errorService.handleError('No refresh token available', {
         source: 'auth',
-        level: 'info', // Changed from warning to info
+        level: 'warning',
         displayToUser: false,
         context: { action: 'ensureValidToken' }
       });
@@ -45,7 +44,7 @@ export async function ensureValidToken(): Promise<boolean> {
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'auth',
-      level: 'info', // Changed from warning to info for better readability
+      level: 'warning',
       displayToUser: false,
       context: { action: 'ensureValidToken' }
     });
@@ -88,25 +87,25 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
       data.refreshToken // May be the same or a new refresh token
     );
     
+    // For web platform, ensure token is immediately available in localStorage
+    if (Platform.OS === 'web') {
+      const expiryTime = Date.now() + (data.expiresIn || config.authConfig.tokenExpiration / 1000) * 1000;
+      localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+      
+      if (data.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      }
+    }
+    
     return true;
   } catch (error) {
-    // Check if error message contains approval-related terms
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const isApprovalRelated = 
-      errorMessage.includes('pre-alpha') || 
-      errorMessage.includes('testing is only available') ||
-      errorMessage.includes('pending approval');
-    
-    errorService.handleError(errorMessage, {
+    errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'auth',
-      level: isApprovalRelated ? 'info' : 'warning', // Use info level for approval-related errors
+      level: 'warning',
       displayToUser: false,
-      context: { 
-        action: 'refreshTokenFlow',
-        approvalRelated: isApprovalRelated
-      }
+      context: { action: 'refreshTokenFlow' }
     });
-    
     return false;
   }
 }
