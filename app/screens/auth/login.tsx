@@ -210,7 +210,7 @@ export default function LoginScreen() {
             )}
           </Card>
           
-          <View style={styles.privacyContainer}>
+          {/* <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
               By using this app, you agree to our{' '}
               <Text style={styles.privacyLink} onPress={() => console.log('Show terms')}>
@@ -221,7 +221,7 @@ export default function LoginScreen() {
                 Privacy Policy
               </Text>
             </Text>
-          </View>
+          </View> */}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
