@@ -21,6 +21,19 @@ const getAuthToken = async (): Promise<string | null> => {
   }
 };
 
+// Check if an error contains approval-related text
+const isApprovalRelatedError = (message: string): boolean => {
+  const approvalPhrases = [
+    'pre-alpha',
+    'testing is only available',
+    'Thank You for your interest',
+    'pending approval',
+    'contact josef@feztech.io'
+  ];
+  
+  return approvalPhrases.some(phrase => message.includes(phrase));
+};
+
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   try {
     await ensureValidToken();
@@ -72,13 +85,32 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       
       if (!response.ok) {
         const errorMessage = data.message || data.error || 'API error occurred';
-        errorService.handleError(errorMessage, {
-          source: 'api',
-          context: {
-            endpoint,
-            statusCode: response.status
-          }
-        });
+        
+        // Handle approval-related errors with a lower severity
+        const isApprovalError = isApprovalRelatedError(errorMessage);
+        
+        if (isApprovalError) {
+          // Log as info instead of error for approval-related responses
+          errorService.handleError(errorMessage, {
+            source: 'api',
+            level: 'info', // Lower severity for expected condition
+            context: {
+              endpoint,
+              statusCode: response.status,
+              approvalRelated: true
+            }
+          });
+        } else {
+          // Regular error handling for all other errors
+          errorService.handleError(errorMessage, {
+            source: 'api',
+            context: {
+              endpoint,
+              statusCode: response.status
+            }
+          });
+        }
+        
         throw new Error(errorMessage);
       }
       
@@ -101,10 +133,29 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       return responseText;
     }
   } catch (error) {
-    errorService.handleError(error instanceof Error ? error : String(error), {
-      source: 'api',
-      context: { endpoint, method: options.method }
-    });
+    // Check if this is an approval-related error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isApprovalError = isApprovalRelatedError(errorMessage);
+    
+    if (isApprovalError) {
+      // Log as info instead of error for approval-related errors
+      errorService.handleError(errorMessage, {
+        source: 'api',
+        level: 'info', // Lower severity for expected condition
+        context: { 
+          endpoint, 
+          method: options.method,
+          approvalRelated: true 
+        }
+      });
+    } else {
+      // Regular error handling for all other errors
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'api',
+        context: { endpoint, method: options.method }
+      });
+    }
+    
     throw error;
   }
 };
