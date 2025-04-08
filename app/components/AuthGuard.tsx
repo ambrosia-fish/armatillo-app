@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
@@ -17,31 +17,42 @@ interface AuthGuardProps {
  * @returns {React.ReactElement} - The protected component or redirect
  */
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, isLoading, isPendingApproval } = useAuth();
+  const [redirectHandled, setRedirectHandled] = useState(false);
 
   /**
    * Log authentication status on mount and when it changes
    * Provides helpful debugging information
    */
   useEffect(() => {
+    if (isLoading) return;
+    
     try {
-      if (!isLoading) {
-        // Log authentication status but only after loading is complete
+      // Only handle navigation once to prevent loops
+      if (!redirectHandled) {
         if (isAuthenticated) {
           console.log('AuthGuard: User is authenticated');
+        } else if (isPendingApproval) {
+          console.log('AuthGuard: User account is pending approval, redirecting to approval modal');
+          setRedirectHandled(true);
+          router.push('/screens/modals/approval-pending-modal');
         } else {
           console.log('AuthGuard: User is not authenticated, redirecting to login');
+          setRedirectHandled(true);
+          router.push('/screens/auth/login');
         }
       }
     } catch (err) {
+      // Log the error but don't treat it as critical
       errorService.handleError(err instanceof Error ? err : String(err), {
         source: 'auth',
-        level: 'warning',
+        level: 'info', // Downgraded from warning since this is expected
         displayToUser: false,
         context: { component: 'AuthGuard', action: 'checkAuth' }
       });
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, isPendingApproval, redirectHandled]);
 
   // If loading, show a loading spinner
   if (isLoading) {
@@ -57,29 +68,32 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // If not authenticated, redirect to login
+  // If pending approval, show loading while redirecting
+  if (isPendingApproval) {
+    return (
+      <View 
+        style={styles.container}
+        accessibilityLabel="Account approval required"
+        accessibilityRole="alert"
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+        <Text style={styles.text}>Redirecting to approval screen...</Text>
+      </View>
+    );
+  }
+
+  // If not authenticated, show loading while redirecting
   if (!isAuthenticated) {
-    try {
-      return <Redirect href="/screens/auth/login" />;
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        source: 'auth',
-        level: 'error',
-        displayToUser: false,
-        context: { component: 'AuthGuard', action: 'redirect' }
-      });
-      // Fallback to a more basic redirect if the first attempt fails
-      return (
-        <View 
-          style={styles.container}
-          accessibilityLabel="Authentication required"
-          accessibilityRole="alert"
-        >
-          <Text style={styles.errorText}>Authentication required</Text>
-          <Text style={styles.text}>Redirecting to login...</Text>
-        </View>
-      );
-    }
+    return (
+      <View 
+        style={styles.container}
+        accessibilityLabel="Authentication required"
+        accessibilityRole="alert"
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+        <Text style={styles.text}>Redirecting to login...</Text>
+      </View>
+    );
   }
 
   // If authenticated, render the children

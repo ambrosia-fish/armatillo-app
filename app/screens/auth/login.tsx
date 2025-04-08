@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Image, 
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 
 // Import themed components
@@ -21,7 +21,8 @@ import { View, Text, Button, Input, Card } from '@/app/components';
 import theme from '@/app/constants/theme';
 
 export default function LoginScreen() {
-  const { login, register, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const { login, register, isAuthenticated, isLoading, isPendingApproval } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +35,13 @@ export default function LoginScreen() {
   if (isAuthenticated && !isLoading) {
     return <Redirect href="/(tabs)" />;
   }
+
+  // If pending approval, show the modal
+  useEffect(() => {
+    if (isPendingApproval && !isLoading) {
+      router.push('/screens/modals/approval-pending-modal');
+    }
+  }, [isPendingApproval, isLoading]);
 
   // Validate form inputs
   const validateForm = () => {
@@ -94,7 +102,9 @@ export default function LoginScreen() {
         password,
         displayName: username
       });
-      Alert.alert('Success', 'Account created successfully! Please log in.');
+      
+      // Don't show success alert as AuthContext will handle it
+      // and show the modal if needed
       setIsSignUp(false);
     } catch (error) {
       console.error('Registration error:', error);
@@ -200,7 +210,7 @@ export default function LoginScreen() {
             )}
           </Card>
           
-          <View style={styles.privacyContainer}>
+          {/* <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
               By using this app, you agree to our{' '}
               <Text style={styles.privacyLink} onPress={() => console.log('Show terms')}>
@@ -211,7 +221,7 @@ export default function LoginScreen() {
                 Privacy Policy
               </Text>
             </Text>
-          </View>
+          </View> */}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

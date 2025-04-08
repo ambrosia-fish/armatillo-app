@@ -11,14 +11,16 @@ interface User {
   email: string;
   displayName: string;
   username?: string;
+  approved?: boolean;
 }
 
 interface AuthResponse {
   success: boolean;
-  token: string;
+  token?: string;
   refreshToken?: string;
   expiresIn?: number;
-  user: User;
+  user?: User;
+  message?: string;
 }
 
 interface AuthContextType {
@@ -26,9 +28,11 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isPendingApproval: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  clearApprovalStatus: () => Promise<void>;
   refreshAuth: () => Promise<boolean>;
 }
 
@@ -49,8 +53,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!token && !!user && user.approved === true;
 
   useEffect(() => {
     loadAuthState();
@@ -60,6 +65,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
       const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
+      const pendingApproval = await storage.getItem(STORAGE_KEYS.PENDING_APPROVAL);
+
+      if (pendingApproval === 'true') {
+        setIsPendingApproval(true);
+      } else {
+        setIsPendingApproval(false);
+      }
 
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -107,6 +119,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return false;
     } catch (error) {
+      // Check if error is due to not being approved
+      if (error instanceof Error && error.message.includes('not approved')) {
+        await clearAuthState();
+        await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+        setIsPendingApproval(true);
+        setToken(null);
+        setUser(null);
+        router.replace('/screens/auth/login');
+        return false;
+      }
+      
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
         level: 'warning',
@@ -123,6 +146,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await clearAuthTokens();
       setToken(null);
       setUser(null);
+      await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+      setIsPendingApproval(false);
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
@@ -132,12 +157,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // New function specifically for clearing approval status and auth state from modal
+  const clearApprovalStatus = async () => {
+    try {
+      // Ensure state is updated first to prevent navigation loops
+      setIsPendingApproval(false);
+      setToken(null);
+      setUser(null);
+      
+      // Then clear storage
+      await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+      
+      // Clear all auth-related storage
+      const keysToRemove = [
+        STORAGE_KEYS.TOKEN,
+        STORAGE_KEYS.TOKEN_EXPIRY,
+        STORAGE_KEYS.REFRESH_TOKEN,
+        STORAGE_KEYS.USER,
+        STORAGE_KEYS.USER_NAME
+      ].filter(Boolean);
+      
+      for (const key of keysToRemove) {
+        await storage.removeItem(key);
+      }
+      
+      return true;
+    } catch (error) {
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'auth',
+        displayToUser: false,
+        context: { action: 'clearApprovalStatus' },
+        silent: true
+      });
+      return false;
+    }
+  };
+
   const processAuthResponse = async (authResponse: AuthResponse) => {
     try {
-      const { success, token, user, expiresIn, refreshToken } = authResponse;
+      const { success, token, user, expiresIn, refreshToken, message } = authResponse;
+      
+      // Check if user is pending approval
+      if (success && !token && user && user.approved === false) {
+        await storage.setObject(STORAGE_KEYS.USER, user);
+        await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+        setUser(user);
+        setIsPendingApproval(true);
+        
+        // Show approval pending modal instead of alert
+        router.push('/screens/modals/approval-pending-modal');
+        return;
+      }
       
       if (!success || !token || !user) {
         throw new Error('Invalid authentication response');
+      }
+      
+      // Store approved status
+      if (user.approved) {
+        await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+        setIsPendingApproval(false);
       }
       
       await storeAuthTokens(token, expiresIn, refreshToken);
@@ -160,16 +239,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await api.auth.login(email, password);
-      await processAuthResponse(response);
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'error',
-        context: { action: 'login', email }
-      });
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
-      throw error;
+      
+      try {
+        const response = await api.auth.login(email, password);
+        await processAuthResponse(response);
+      } catch (error) {
+        // Special handling for approval errors - don't throw the error, just handle it gracefully
+        if (error instanceof Error && 
+           (error.message.includes('pre-alpha') || 
+            error.message.includes('testing is only available') || 
+            error.message.includes('Thank You for your interest in Armatillo'))) {
+          
+          // Log the error for debugging but don't re-throw
+          errorService.handleError(error, {
+            source: 'auth',
+            level: 'silent', // Completely suppress these messages
+            displayToUser: false,
+            context: { action: 'login.pendingApproval', email }
+          });
+          
+          await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+          setIsPendingApproval(true);
+          
+          // Navigate to approval modal
+          router.push('/screens/modals/approval-pending-modal');
+          return; // Return without throwing
+        } else {
+          // For other errors, log and show alert
+          errorService.handleError(error instanceof Error ? error : String(error), {
+            source: 'auth',
+            level: 'error',
+            context: { action: 'login', email }
+          });
+          
+          Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+          throw error; // Only throw for non-approval errors
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -178,26 +284,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (userData: RegisterData) => {
     try {
       setIsLoading(true);
-      const response = await api.auth.register(userData);
       
-      if (response?.success) {
-        if (response.token && response.user) {
-          await processAuthResponse(response);
-          return response;
-        }
+      try {
+        const response = await api.auth.register(userData);
         
-        Alert.alert('Success', 'Account created successfully! Please log in.');
+        if (response?.success) {
+          if (response.token && response.user) {
+            await processAuthResponse(response);
+            return;
+          }
+          
+          // Handle the case where registration is successful but user needs approval
+          if (response.message && response.message.includes('pending approval')) {
+            await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+            setIsPendingApproval(true);
+            
+            if (response.user) {
+              await storage.setObject(STORAGE_KEYS.USER, response.user);
+              setUser(response.user);
+            }
+            
+            // Show approval pending modal instead of alert
+            router.push('/screens/modals/approval-pending-modal');
+            return;
+          }
+          
+          Alert.alert('Success', 'Account created successfully! Please log in.');
+        }
+      } catch (error) {
+        // Special handling for approval errors - don't throw the error
+        if (error instanceof Error && 
+           (error.message.includes('pre-alpha') || 
+            error.message.includes('testing is only available') || 
+            error.message.includes('Thank You for your interest in Armatillo'))) {
+            
+          // Log the error for debugging but don't re-throw
+          errorService.handleError(error, {
+            source: 'auth',
+            level: 'silent', // Completely suppress these messages
+            displayToUser: false,
+            context: { action: 'register.pendingApproval', email: userData.email }
+          });
+          
+          await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+          setIsPendingApproval(true);
+          
+          // Navigate to approval modal
+          router.push('/screens/modals/approval-pending-modal');
+          return; // Return without throwing
+        } else {
+          // For other errors, log and show alert
+          errorService.handleError(error instanceof Error ? error : String(error), {
+            source: 'auth',
+            level: 'error',
+            context: { action: 'register', email: userData.email }
+          });
+          
+          Alert.alert('Registration Failed', 'Could not create account. Please try again.');
+          throw error; // Only throw for non-approval errors
+        }
       }
-      
-      return response;
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'error',
-        context: { action: 'register', email: userData.email }
-      });
-      Alert.alert('Registration Failed', 'Could not create account. Please try again.');
-      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -238,9 +384,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     token,
     isLoading,
     isAuthenticated,
+    isPendingApproval,
     login,
     register,
     logout,
+    clearApprovalStatus,
     refreshAuth
   };
 

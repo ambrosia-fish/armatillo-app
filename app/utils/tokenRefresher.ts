@@ -25,9 +25,11 @@ export async function ensureValidToken(): Promise<boolean> {
     // Get refresh token
     const refreshToken = await getRefreshToken();
     if (!refreshToken) {
+      // Log as info level instead of warning since this is an expected condition
+      // when a user is not logged in or pending approval
       errorService.handleError('No refresh token available', {
         source: 'auth',
-        level: 'warning',
+        level: 'info', // Changed from warning to info
         displayToUser: false,
         context: { action: 'ensureValidToken' }
       });
@@ -43,7 +45,7 @@ export async function ensureValidToken(): Promise<boolean> {
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'auth',
-      level: 'warning',
+      level: 'info', // Changed from warning to info for better readability
       displayToUser: false,
       context: { action: 'ensureValidToken' }
     });
@@ -88,12 +90,23 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
     
     return true;
   } catch (error) {
-    errorService.handleError(error instanceof Error ? error : String(error), {
+    // Check if error message contains approval-related terms
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isApprovalRelated = 
+      errorMessage.includes('pre-alpha') || 
+      errorMessage.includes('testing is only available') ||
+      errorMessage.includes('pending approval');
+    
+    errorService.handleError(errorMessage, {
       source: 'auth',
-      level: 'warning',
+      level: isApprovalRelated ? 'info' : 'warning', // Use info level for approval-related errors
       displayToUser: false,
-      context: { action: 'refreshTokenFlow' }
+      context: { 
+        action: 'refreshTokenFlow',
+        approvalRelated: isApprovalRelated
+      }
     });
+    
     return false;
   }
 }

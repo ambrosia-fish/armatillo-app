@@ -100,6 +100,16 @@ function RootLayoutNav() {
               options={{ presentation: 'modal' }} 
             />
             
+            {/* Modal Screens */}
+            <Stack.Screen 
+              name="screens/modals/approval-pending-modal" 
+              options={{ 
+                presentation: 'modal',
+                headerShown: false,
+                gestureEnabled: false,
+              }} 
+            />
+            
             {/* Authentication Screens */}
             <Stack.Screen
               name="screens/auth/login"
