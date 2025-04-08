@@ -199,8 +199,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(token);
       setUser(user);
       
-      router.replace('../(tabs)/index');
-      window.location.href = '../(tabs)/index';
+      router.replace('/(tabs)');
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
