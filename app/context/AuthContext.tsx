@@ -165,12 +165,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(user);
         setIsPendingApproval(true);
         
-        Alert.alert(
-          'Account Pending Approval',
-          message || 'Thank You for your interest in Armatillo! It is currently in pre-alpha and testing is only available to certain users. Please contact josef@feztech.io if you would like to participate in testing.'
-        );
-        
-        router.replace('/screens/auth/login');
+        // Show approval pending modal instead of alert
+        router.push('/screens/modals/approval-pending-modal');
         return;
       }
       
@@ -215,10 +211,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Special handling for approval errors
       if (error instanceof Error && error.message.includes('Thank You for your interest in Armatillo')) {
-        Alert.alert(
-          'Account Not Approved',
-          error.message
-        );
+        await storage.setItem(STORAGE_KEYS.PENDING_APPROVAL, 'true');
+        setIsPendingApproval(true);
+        router.push('/screens/modals/approval-pending-modal');
       } else {
         Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
       }
@@ -250,12 +245,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(response.user);
           }
           
-          Alert.alert(
-            'Registration Successful', 
-            response.message || 'Your account has been created but requires approval. You will be notified when your account is approved.'
-          );
-          
-          router.replace('/screens/auth/login');
+          // Show approval pending modal instead of alert
+          router.push('/screens/modals/approval-pending-modal');
           return;
         }
         
