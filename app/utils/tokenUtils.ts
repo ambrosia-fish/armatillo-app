@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from './storage';
 import config from '../constants/config';
 import { errorService } from '../services/ErrorService';
+import { Platform } from 'react-native';
 
 export const DEFAULT_TOKEN_EXPIRATION = config.authConfig.tokenExpiration;
 
@@ -20,6 +21,15 @@ export async function storeAuthTokens(
     if (refreshToken) {
       await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     }
+    
+    // Also store in localStorage for web platform
+    if (Platform.OS === 'web') {
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTimeString);
+      if (refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      }
+    }
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'storage',
@@ -33,7 +43,12 @@ export async function isTokenExpired(
   bufferMs: number = config.authConfig.tokenRefreshBuffer
 ): Promise<boolean> {
   try {
-    const expiryTimeString = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    let expiryTimeString = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    
+    // Check localStorage for web platform if AsyncStorage doesn't have the value
+    if (!expiryTimeString && Platform.OS === 'web') {
+      expiryTimeString = localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    }
     
     if (!expiryTimeString) {
       return true;
@@ -55,12 +70,21 @@ export async function isTokenExpired(
 
 export async function clearAuthTokens(): Promise<void> {
   try {
+    // Clear AsyncStorage
     await Promise.all([
       AsyncStorage.removeItem(STORAGE_KEYS.TOKEN),
       AsyncStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY),
       AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN),
       AsyncStorage.removeItem(STORAGE_KEYS.USER),
     ]);
+    
+    // Also clear localStorage for web platform
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+    }
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'storage',
@@ -72,7 +96,14 @@ export async function clearAuthTokens(): Promise<void> {
 
 export async function getRefreshToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    let refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    
+    // Check localStorage for web platform if AsyncStorage doesn't have the value
+    if (!refreshToken && Platform.OS === 'web') {
+      refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    }
+    
+    return refreshToken;
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'storage',
