@@ -371,7 +371,14 @@ export default function NewEntryScreen() {
       try {
         // Store locally for sync later if needed
         const allData = JSON.stringify(payload);
-        await SecureStore.setItemAsync('bfrb_all_data', allData);
+        
+        if (Platform.OS === 'web') {
+          // Use localStorage for web
+          localStorage.setItem('bfrb_all_data', allData);
+        } else {
+          // Use SecureStore for native platforms
+          await SecureStore.setItemAsync('bfrb_all_data', allData);
+        }
         
         // Submit to API if authentication service is available
         if (typeof api !== 'undefined' && api.instances && api.instances.createInstance) {

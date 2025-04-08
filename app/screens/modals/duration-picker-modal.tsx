@@ -4,7 +4,8 @@ import {
   Text, 
   Modal, 
   StyleSheet, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Platform
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import theme from '@/app/constants/theme';
@@ -24,6 +25,54 @@ export default function DurationPickerModal({
   selectedDuration,
   setSelectedDuration
 }: DurationPickerModalProps) {
+  // Generate picker options for both web and native
+  const pickerOptions = [
+    { label: "Did Not Engage", value: 0 },
+    ...Array.from({ length: 120 }, (_, i) => ({ 
+      label: `${i + 1} min`, 
+      value: i + 1 
+    }))
+  ];
+
+  // Render web picker (select element)
+  const renderWebPicker = () => (
+    <select
+      value={selectedDuration}
+      onChange={(e) => setSelectedDuration(Number(e.target.value))}
+      style={{
+        height: 200,
+        width: '100%',
+        fontSize: 16,
+        backgroundColor: theme.colors.background.primary,
+        color: theme.colors.text.primary,
+        border: 'none',
+      }}
+    >
+      {pickerOptions.map((option) => (
+        <option key={`duration-${option.value}`} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+
+  // Render native picker
+  const renderNativePicker = () => (
+    <Picker
+      style={styles.picker}
+      selectedValue={selectedDuration}
+      onValueChange={setSelectedDuration}
+    >
+      {pickerOptions.map((option) => (
+        <Picker.Item
+          key={`duration-${option.value}`}
+          label={option.label}
+          value={option.value}
+        />
+      ))}
+    </Picker>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -42,28 +91,13 @@ export default function DurationPickerModal({
             </TouchableOpacity>
           </View>
           
-        <View style={styles.pickerContainer}>
-          {/* Duration Picker */}
-          <Picker
-            style={styles.picker}
-            selectedValue={selectedDuration}
-            onValueChange={setSelectedDuration}
-          >
-            <Picker.Item 
-              label="Did Not Engage" 
-              value={0} 
-              key="duration-0" 
-            />
-            {Array.from({ length: 120 }, (_, i) => i + 1).map((value) => (
-              <Picker.Item 
-                key={`duration-${value}`} 
-                label={`${value} min`} 
-                value={value} 
-              />
-            ))}
-          </Picker>
-        </View>
-
+          <View style={styles.pickerContainer}>
+            {/* Conditionally render web or native picker based on platform */}
+            {Platform.OS === 'web' 
+              ? renderWebPicker() 
+              : renderNativePicker()
+            }
+          </View>
         </View>
       </View>
     </Modal>

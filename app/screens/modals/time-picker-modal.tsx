@@ -4,7 +4,8 @@ import {
   Text, 
   Modal, 
   StyleSheet, 
-  TouchableOpacity 
+  TouchableOpacity,
+  Platform
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import theme from '@/app/constants/theme';
@@ -28,6 +29,100 @@ export default function TimePickerModal({
   setSelectedHours,
   setSelectedMinutes
 }: TimePickerModalProps) {
+  // Generate hours options for both web and native
+  const hoursOptions = Array.from({ length: 24 }, (_, i) => ({
+    label: i.toString().padStart(2, '0'),
+    value: i
+  }));
+
+  // Generate minutes options for both web and native
+  const minutesOptions = Array.from({ length: 60 }, (_, i) => ({
+    label: i.toString().padStart(2, '0'),
+    value: i
+  }));
+
+  // Render web hours picker
+  const renderWebHoursPicker = () => (
+    <select
+      value={selectedHours}
+      onChange={(e) => setSelectedHours(Number(e.target.value))}
+      style={{
+        height: 200,
+        width: '100%',
+        fontSize: 16,
+        backgroundColor: theme.colors.background.primary,
+        color: theme.colors.text.primary,
+        border: 'none',
+        flex: 1,
+        textAlign: 'center',
+      }}
+    >
+      {hoursOptions.map((option) => (
+        <option key={`hour-${option.value}`} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+
+  // Render web minutes picker
+  const renderWebMinutesPicker = () => (
+    <select
+      value={selectedMinutes}
+      onChange={(e) => setSelectedMinutes(Number(e.target.value))}
+      style={{
+        height: 200,
+        width: '100%',
+        fontSize: 16,
+        backgroundColor: theme.colors.background.primary,
+        color: theme.colors.text.primary,
+        border: 'none',
+        flex: 1,
+        textAlign: 'center',
+      }}
+    >
+      {minutesOptions.map((option) => (
+        <option key={`minute-${option.value}`} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+
+  // Render native hours picker
+  const renderNativeHoursPicker = () => (
+    <Picker
+      style={styles.picker}
+      selectedValue={selectedHours}
+      onValueChange={setSelectedHours}
+    >
+      {hoursOptions.map((option) => (
+        <Picker.Item
+          key={`hour-${option.value}`}
+          label={option.label}
+          value={option.value}
+        />
+      ))}
+    </Picker>
+  );
+
+  // Render native minutes picker
+  const renderNativeMinutesPicker = () => (
+    <Picker
+      style={styles.picker}
+      selectedValue={selectedMinutes}
+      onValueChange={setSelectedMinutes}
+    >
+      {minutesOptions.map((option) => (
+        <Picker.Item
+          key={`minute-${option.value}`}
+          label={option.label}
+          value={option.value}
+        />
+      ))}
+    </Picker>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -46,37 +141,19 @@ export default function TimePickerModal({
           </View>
           
           <View style={styles.pickerContainer}>
-            {/* Hours Picker */}
-            <Picker
-              style={styles.picker}
-              selectedValue={selectedHours}
-              onValueChange={setSelectedHours}
-            >
-              {Array.from({ length: 24 }, (_, i) => (
-                <Picker.Item 
-                  key={`hour-${i}`} 
-                  label={i.toString().padStart(2, '0')} 
-                  value={i} 
-                />
-              ))}
-            </Picker>
+            {/* Hours Picker - conditionally render based on platform */}
+            {Platform.OS === 'web' 
+              ? renderWebHoursPicker() 
+              : renderNativeHoursPicker()
+            }
             
             <Text style={styles.pickerSeparator}>:</Text>
             
-            {/* Minutes Picker */}
-            <Picker
-              style={styles.picker}
-              selectedValue={selectedMinutes}
-              onValueChange={setSelectedMinutes}
-            >
-              {Array.from({ length: 60 }, (_, i) => (
-                <Picker.Item 
-                  key={`minute-${i}`} 
-                  label={i.toString().padStart(2, '0')} 
-                  value={i} 
-                />
-              ))}
-            </Picker>
+            {/* Minutes Picker - conditionally render based on platform */}
+            {Platform.OS === 'web' 
+              ? renderWebMinutesPicker() 
+              : renderNativeMinutesPicker()
+            }
           </View>
         </View>
       </View>
