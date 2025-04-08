@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
@@ -58,8 +58,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loadAuthState = async () => {
     try {
-      const storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
-      const storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
+      // First try to load from AsyncStorage (works for both native and web)
+      let storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
+      let storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
+      
+      // If on web and tokens not found in AsyncStorage, check localStorage directly
+      if (Platform.OS === 'web' && (!storedToken || !storedUser)) {
+        const localToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
+        if (localToken) {
+          storedToken = localToken;
+          // Also make sure it's available in AsyncStorage
+          await storage.setItem(STORAGE_KEYS.TOKEN, localToken);
+        }
+        
+        const localUserJson = localStorage.getItem(STORAGE_KEYS.USER);
+        if (localUserJson) {
+          try {
+            storedUser = JSON.parse(localUserJson);
+            // Also make sure it's available in AsyncStorage
+            await storage.setObject(STORAGE_KEYS.USER, storedUser);
+          } catch (parseError) {
+            console.error('Failed to parse user from localStorage:', parseError);
+          }
+        }
+      }
 
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -142,6 +164,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       await storeAuthTokens(token, expiresIn, refreshToken);
       await storage.setObject(STORAGE_KEYS.USER, user);
+      
+      // For web platform, ensure localStorage is also set directly
+      if (Platform.OS === 'web') {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+        if (refreshToken) {
+          localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+        }
+        if (expiresIn) {
+          const expiryTime = Date.now() + expiresIn * 1000;
+          localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
+        }
+      }
       
       setToken(token);
       setUser(user);
