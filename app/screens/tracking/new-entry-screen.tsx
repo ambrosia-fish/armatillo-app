@@ -384,18 +384,25 @@ export default function NewEntryScreen() {
         if (typeof api !== 'undefined' && api.instances && api.instances.createInstance) {
           await api.instances.createInstance(payload);
           
-          // Show success message
-          Alert.alert(
-            'Success',
-            'Your BFRB instance has been recorded successfully.',
-            [{ 
-              text: 'OK', 
-              onPress: () => {
-                // Navigate to home screen after submitting
-                router.replace('/');
-              }
-            }]
-          );
+          // Show success message with platform-specific alert
+          if (Platform.OS === 'web') {
+            // For web: use window.alert
+            window.alert('Your BFRB instance has been recorded successfully.');
+            router.replace('/');
+          } else {
+            // For native: use React Native Alert
+            Alert.alert(
+              'Success',
+              'Your BFRB instance has been recorded successfully.',
+              [{ 
+                text: 'OK', 
+                onPress: () => {
+                  // Navigate to home screen after submitting
+                  router.replace('/');
+                }
+              }]
+            );
+          }
         } else {
           // Just navigate home if API isn't available
           router.replace('/');
@@ -403,18 +410,25 @@ export default function NewEntryScreen() {
       } catch (error) {
         console.error('Error submitting BFRB instance:', error);
         
-        // Show error but continue navigation
-        Alert.alert(
-          'Error',
-          'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              // Navigate to home screen after error
-              router.replace('/');
-            }
-          }]
-        );
+        // Show error with platform-specific alert
+        if (Platform.OS === 'web') {
+          // For web: use window.alert
+          window.alert('There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.');
+          router.replace('/');
+        } else {
+          // For native: use React Native Alert
+          Alert.alert(
+            'Error',
+            'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
+            [{ 
+              text: 'OK', 
+              onPress: () => {
+                // Navigate to home screen after error
+                router.replace('/');
+              }
+            }]
+          );
+        }
       }
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
@@ -766,28 +780,28 @@ export default function NewEntryScreen() {
       </ScrollView>
 
       {/* iOS-style Time Picker Modal */}
-      {Platform.OS === 'ios' && (
-        <TimePickerModal
-          visible={showTimePicker}
-          onCancel={() => setShowTimePicker(false)}
-          onDone={updateSelectedTime}
-          selectedHours={selectedHours}
-          selectedMinutes={selectedMinutes}
-          setSelectedHours={setSelectedHours}
-          setSelectedMinutes={setSelectedMinutes}
-        />
-      )}
+      {(Platform.OS === 'ios' || Platform.OS === 'web') && (
+          <TimePickerModal
+            visible={showTimePicker}
+            onCancel={() => setShowTimePicker(false)}
+            onDone={updateSelectedTime}
+            selectedHours={selectedHours}
+            selectedMinutes={selectedMinutes}
+            setSelectedHours={setSelectedHours}
+            setSelectedMinutes={setSelectedMinutes}
+          />
+        )}
       
       {/* iOS-style Duration Picker Modal */}
-      {Platform.OS === 'ios' && (
-        <DurationPickerModal
-          visible={showDurationPicker}
-          onCancel={() => setShowDurationPicker(false)}
-          onDone={updateSelectedDuration}
-          selectedDuration={selectedDuration}
-          setSelectedDuration={setSelectedDuration}
-        />
-      )}
+      {(Platform.OS === 'ios' || Platform.OS === 'web') && (
+          <DurationPickerModal
+            visible={showDurationPicker}
+            onCancel={() => setShowDurationPicker(false)}
+            onDone={updateSelectedDuration}
+            selectedDuration={selectedDuration}
+            setSelectedDuration={setSelectedDuration}
+          />
+        )}
 
       {/* Answer Selector Modal */}
       <AnswerSelectorModal
