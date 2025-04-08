@@ -18,18 +18,12 @@ export default function ApprovalPendingModal() {
 
   const handleGoBack = async () => {
     try {
-      console.log("Starting approval status clearing process...");
-      
       // Use the new method from AuthContext that ensures state and storage are in sync
       await clearApprovalStatus();
-      
-      console.log("Navigating to login...");
       
       // Use direct navigation with global router
       router.replace('/screens/auth/login');
     } catch (error) {
-      console.error('Error during approval clearing process:', error);
-      
       // Fallback navigation as a last resort
       router.replace('/screens/auth/login');
     }
