@@ -199,7 +199,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(token);
       setUser(user);
       
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/index');
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
