@@ -30,30 +30,18 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [modalRedirectHandled, setModalRedirectHandled] = useState(false);
 
   // If already authenticated, redirect to home
   if (isAuthenticated && !isLoading) {
     return <Redirect href="/(tabs)" />;
   }
 
-  // If pending approval, show the modal - but with additional safeguards
+  // If pending approval, show the modal
   useEffect(() => {
-    // Only redirect if not already handled and both conditions are true
-    if (isPendingApproval && !isLoading && !modalRedirectHandled) {
-      console.log("Login screen detected pending approval, redirecting to modal");
-      setModalRedirectHandled(true); // Mark as handled to prevent loops
+    if (isPendingApproval && !isLoading) {
       router.push('/screens/modals/approval-pending-modal');
     }
-  }, [isPendingApproval, isLoading, modalRedirectHandled]);
-
-  // Reset the redirect flag if isPendingApproval becomes false
-  useEffect(() => {
-    if (!isPendingApproval && modalRedirectHandled) {
-      console.log("Approval status changed, resetting redirect flag");
-      setModalRedirectHandled(false);
-    }
-  }, [isPendingApproval]);
+  }, [isPendingApproval, isLoading]);
 
   // Validate form inputs
   const validateForm = () => {
