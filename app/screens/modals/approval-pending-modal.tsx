@@ -1,24 +1,71 @@
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Linking } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Text, View, Button } from '../../components';
 import theme from '../../constants/theme';
+import storage, { STORAGE_KEYS } from '../../utils/storage';
 
 export default function ApprovalPendingModal() {
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handleContactRequest = () => {
     Linking.openURL('mailto:josef@feztech.io?subject=Armatillo%20App%20Access%20Request');
   };
 
-  const handleGoBack = () => {
-    router.back();
+  const handleGoBack = async () => {
+    try {
+      console.log("Starting direct logout process...");
+      
+      // First remove the pending approval flag - this is critical
+      await storage.removeItem(STORAGE_KEYS.PENDING_APPROVAL);
+      console.log("Pending approval flag removed");
+      
+      // Clear all auth-related storage
+      const keysToRemove = [
+        STORAGE_KEYS.TOKEN,
+        STORAGE_KEYS.TOKEN_EXPIRY,
+        STORAGE_KEYS.REFRESH_TOKEN,
+        STORAGE_KEYS.USER,
+        STORAGE_KEYS.USER_NAME
+      ].filter(Boolean);
+      
+      for (const key of keysToRemove) {
+        await AsyncStorage.removeItem(key);
+      }
+      console.log("Auth storage cleared");
+      
+      console.log("Navigating to login...");
+      
+      // Use direct navigation with global router
+      router.replace('/screens/auth/login');
+    } catch (error) {
+      console.error('Error during logout process:', error);
+      
+      // Fallback - try AsyncStorage.clear() as a last resort
+      try {
+        await AsyncStorage.clear();
+        console.log("All storage cleared as fallback");
+      } catch (clearError) {
+        console.error('Error clearing all storage:', clearError);
+      }
+      
+      // Try different navigation approach
+      router.replace('/screens/auth/login');
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      { 
+        paddingTop: insets.top,
+        paddingBottom: Math.max(insets.bottom, theme.spacing.md) 
+      }
+    ]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={theme.colors.text.primary} />
@@ -95,6 +142,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: theme.spacing.xl,
   } as ViewStyle,
   icon: {
     marginBottom: theme.spacing.xl,
@@ -114,12 +162,13 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
   } as TextStyle,
   contactButton: {
-    marginTop: theme.spacing.xl,
+    marginTop: theme.spacing.md,
     marginBottom: theme.spacing.md,
     width: '100%',
   } as ViewStyle,
   backButton: {
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.md,
     width: '100%',
   } as ViewStyle,
 });
