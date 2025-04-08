@@ -9,7 +9,8 @@ import {
   ViewStyle, 
   TextStyle, 
   StatusBar,
-  SafeAreaView
+  SafeAreaView,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
@@ -32,21 +33,36 @@ export default function SettingsScreen() {
    */
   const handleLogout = () => {
     try {
-      Alert.alert(
-        'Sign Out',
-        'Are you sure you want to sign out?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign Out', style: 'destructive', onPress: logout },
-        ],
-        { cancelable: true }
-      );
+      if (Platform.OS === 'web') {
+        // For web, use a simpler approach that doesn't rely on Alert
+        if (window.confirm('Are you sure you want to sign out?')) {
+          logout();
+        }
+      } else {
+        // For native platforms, use Alert as before
+        Alert.alert(
+          'Sign Out',
+          'Are you sure you want to sign out?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign Out', style: 'destructive', onPress: logout },
+          ],
+          { cancelable: true }
+        );
+      }
     } catch (err) {
       errorService.handleError(err instanceof Error ? err : String(err), {
         level: 'error',
         source: 'ui',
         context: { action: 'logout_confirmation' }
       });
+      
+      // If there's an error in the confirmation dialog, try to log out anyway
+      try {
+        logout();
+      } catch (logoutErr) {
+        // Ignore any errors from the fallback logout
+      }
     }
   };
 
@@ -55,11 +71,15 @@ export default function SettingsScreen() {
    */
   const handleFeatureDisabled = () => {
     try {
-      Alert.alert(
-        'Feature Unavailable',
-        'This feature is currently disabled.',
-        [{ text: 'OK' }]
-      );
+      if (Platform.OS === 'web') {
+        window.alert('This feature is currently disabled.');
+      } else {
+        Alert.alert(
+          'Feature Unavailable',
+          'This feature is currently disabled.',
+          [{ text: 'OK' }]
+        );
+      }
     } catch (err) {
       errorService.handleError(err instanceof Error ? err : String(err), {
         level: 'error',
