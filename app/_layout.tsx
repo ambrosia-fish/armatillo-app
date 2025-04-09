@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Slot, Stack, SplashScreen } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Platform, View, Text, ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
 import { StyleSheet } from 'react-native';
@@ -26,7 +26,7 @@ SplashScreen.preventAutoHideAsync();
  * Root layout component
  */
 export default function RootLayout() {
-  // Always declare all hooks at the top level, never conditionally
+  // Always declare all hooks at the top level
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
@@ -35,8 +35,11 @@ export default function RootLayout() {
   // Add colorScheme here so it's consistent in all renders
   const colorScheme = useColorScheme();
   
-  // Always include all useState hooks even if some are only used conditionally
+  // State to track initialization
   const [layoutReady, setLayoutReady] = useState(false);
+  
+  // Use ref to track if we've already hidden the splash screen
+  const splashHiddenRef = useRef(false);
   
   // Handle error state
   useEffect(() => {
@@ -45,9 +48,19 @@ export default function RootLayout() {
   
   // Hide splash screen when fonts are loaded
   const onLayoutRootView = useCallback(async () => {
-    if (loaded) {
-      setLayoutReady(true);
-      await SplashScreen.hideAsync();
+    if (loaded && !splashHiddenRef.current) {
+      try {
+        splashHiddenRef.current = true;
+        await SplashScreen.hideAsync();
+        console.log('Splash screen hidden');
+        
+        // Set layout ready after splash screen is hidden
+        setTimeout(() => {
+          setLayoutReady(true);
+        }, 100);
+      } catch (e) {
+        console.error('Error hiding splash screen:', e);
+      }
     }
   }, [loaded]);
   
@@ -80,7 +93,12 @@ interface RootNavigatorProps {
 function RootNavigator({ onLayout }: RootNavigatorProps) {
   return (
     <View style={{ flex: 1 }} onLayout={onLayout}>
-      <Stack>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: Platform.OS === 'web' ? 'none' : 'default',
+          gestureEnabled: false,
+        }}>
         {/* Authentication Screens */}
         <Stack.Screen
           name="screens/auth/login"
@@ -96,7 +114,10 @@ function RootNavigator({ onLayout }: RootNavigatorProps) {
         {/* Modal Screens */}
         <Stack.Screen 
           name="screens/modals/modal" 
-          options={{ presentation: 'modal' }} 
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
         />
         <Stack.Screen 
           name="screens/modals/approval-pending-modal" 
