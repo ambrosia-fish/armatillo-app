@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import theme from '@/app/constants/theme';
+import { useAuth } from '@/app/context/AuthContext';
 
+/**
+ * Tab layout component for the main authenticated tabs
+ */
 export default function TabLayout() {
+  const { isAuthenticated, authState } = useAuth();
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log('TabLayout mounted, auth state:', authState);
+  }, [authState]);
+
   return (
     <Tabs
       initialRouteName="index"
@@ -25,6 +36,7 @@ export default function TabLayout() {
               name={focused ? 'time' : 'time-outline'} 
               size={24} 
               color={color} 
+              accessibilityLabel="Progress tab"
             />,
         }}
       />
@@ -37,6 +49,7 @@ export default function TabLayout() {
               name={focused ? 'home' : 'home-outline'} 
               size={24} 
               color={color} 
+              accessibilityLabel="Home tab"
             />,
         }}
       />
@@ -49,6 +62,7 @@ export default function TabLayout() {
               name={focused ? 'settings' : 'settings-outline'} 
               size={24} 
               color={color} 
+              accessibilityLabel="Settings tab"
             />,
         }}
       />
