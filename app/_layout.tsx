@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Slot, Stack, SplashScreen } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, View, Text, ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
 import { StyleSheet } from 'react-native';
@@ -26,10 +26,17 @@ SplashScreen.preventAutoHideAsync();
  * Root layout component
  */
 export default function RootLayout() {
+  // Always declare all hooks at the top level, never conditionally
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+  
+  // Add colorScheme here so it's consistent in all renders
+  const colorScheme = useColorScheme();
+  
+  // Always include all useState hooks even if some are only used conditionally
+  const [layoutReady, setLayoutReady] = useState(false);
   
   // Handle error state
   useEffect(() => {
@@ -39,10 +46,12 @@ export default function RootLayout() {
   // Hide splash screen when fonts are loaded
   const onLayoutRootView = useCallback(async () => {
     if (loaded) {
+      setLayoutReady(true);
       await SplashScreen.hideAsync();
     }
   }, [loaded]);
   
+  // Always return null for the same condition
   if (!loaded) {
     return null;
   }
@@ -52,7 +61,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <AuthProvider>
         <FormProvider>
-          <ThemeProvider value={useColorScheme() === 'dark' ? DarkTheme : DefaultTheme}>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <RootNavigator onLayout={onLayoutRootView} />
           </ThemeProvider>
         </FormProvider>
