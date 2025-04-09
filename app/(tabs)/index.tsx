@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
-import { errorService } from '@/app/services/ErrorService';
+import { useAuth } from '@/app/context/AuthContext';
 
 /**
  * Home screen component that displays the app logo and add new entry button
@@ -13,15 +13,23 @@ import { errorService } from '@/app/services/ErrorService';
  */
 export default function HomeScreen() {
   const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
   
   // Animation value for button press effect
-  const [buttonScale] = React.useState(new Animated.Value(1));
+  const [buttonScale] = useState(new Animated.Value(1));
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log('HomeScreen: Mounted, auth status:', isAuthenticated);
+  }, [isAuthenticated]);
   
   /**
    * Navigate to the new options screen to begin the tracking flow
    */
   const addNewEntry = () => {
     try {
+      console.log('HomeScreen: Starting new entry');
+      
       // Animate button press
       Animated.sequence([
         Animated.timing(buttonScale, {
@@ -36,14 +44,12 @@ export default function HomeScreen() {
         })
       ]).start();
       
-      // Navigate to new options screen instead of directly to time screen
-      router.push('/screens/tracking/new-options-screen');
+      // Navigate to new options screen
+      setTimeout(() => {
+        router.push('/screens/tracking/new-options-screen');
+      }, 150);
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), { 
-        source: 'ui', 
-        level: 'error',
-        context: { action: 'navigate_to_new_options_screen' }
-      });
+      console.error('HomeScreen: Navigation error', error);
     }
   };
 
@@ -54,15 +60,24 @@ export default function HomeScreen() {
         <Text style={styles.subtitle}>BFRB Habit Reversal Tracker</Text>
       </View>
       
+      {/* Welcome message with user name if available */}
+      {user && user.displayName && (
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeText}>
+            Welcome back, {user.displayName}
+          </Text>
+        </View>
+      )}
+      
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image 
           source={require('../../assets/images/armatillo-placeholder-logo.png')} 
           style={styles.logo}
           resizeMode="contain"
+          accessibilityLabel="Armatillo logo"
         />
         <Text style={styles.aiDisclaimer}>Art is placeholder and AI generated</Text>
-
       </View>
       
       {/* Centered Add Button with animation */}
@@ -108,6 +123,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.text.secondary,
   } as TextStyle,
+  welcomeContainer: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: 12,
+    alignItems: 'center',
+  } as ViewStyle,
+  welcomeText: {
+    fontSize: 16,
+    color: theme.colors.text.primary,
+    fontWeight: '500',
+  } as TextStyle,
   logoContainer: {
     flex: 1,
     alignItems: 'center',
@@ -147,7 +176,9 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginTop: 4,
   } as TextStyle,
-  aiDisclaimer : {
+  aiDisclaimer: {
     fontSize: 11,
-  }
+    color: theme.colors.text.tertiary,
+    marginTop: 4,
+  } as TextStyle
 });
