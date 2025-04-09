@@ -20,22 +20,8 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
-      {/* Home tab - MUST BE FIRST for it to be the default */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => 
-            <Ionicons 
-              name={focused ? 'home' : 'home-outline'} 
-              size={24} 
-              color={color} 
-              accessibilityLabel="Home tab"
-            />,
-        }}
-      />
       
-      {/* Progress tab */}
+      
       <Tabs.Screen
         name="progress"
         options={{
@@ -50,6 +36,20 @@ export default function TabLayout() {
         }}
       />
       
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'home' : 'home-outline'} 
+              size={24} 
+              color={color} 
+              accessibilityLabel="Home tab"
+            />,
+        }}
+      />
+
       {/* Settings tab */}
       <Tabs.Screen
         name="settings"
