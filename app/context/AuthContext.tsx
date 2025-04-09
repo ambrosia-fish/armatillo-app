@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useReducer } from 'react';
 import { Alert, Platform } from 'react-native';
-import { router } from 'expo-router';
+import { router, useRouter, useSegments } from 'expo-router';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
 import api from '../services/api';
@@ -231,55 +231,11 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
   const [isLoading, setIsLoading] = useState(true);
+  const segments = useSegments();
 
   useEffect(() => {
     loadAuthState();
   }, []);
-
-  /**
-   * Navigation side effect whenever auth state changes
-   */
-  useEffect(() => {
-    // Skip navigation during initial loading
-    if (isLoading) return;
-
-    const handleNavigation = async () => {
-      try {
-        if (state.authState === AuthState.AUTHENTICATED) {
-          // Small delay to ensure state updates before navigation
-          await new Promise(resolve => setTimeout(resolve, 50));
-          router.replace('/(tabs)/index');
-        } else if (state.authState === AuthState.PENDING_APPROVAL) {
-          // Small delay to ensure state updates before navigation
-          await new Promise(resolve => setTimeout(resolve, 50));
-          router.replace('/screens/modals/approval-pending-modal');
-        } else if (state.authState === AuthState.UNAUTHENTICATED) {
-          if (state.error) {
-            // If there was an error, we might already be on the login screen
-            // Don't navigate if we're already there to avoid navigation loops
-            const currentPath = router.canGoBack() ? router.getCurrentRoute()?.path : null;
-            if (currentPath !== '/' && currentPath !== '/screens/auth/login') {
-              await new Promise(resolve => setTimeout(resolve, 50));
-              router.replace('/screens/auth/login');
-            }
-          } else {
-            // Clean logout or initial load
-            await new Promise(resolve => setTimeout(resolve, 50));
-            router.replace('/');
-          }
-        }
-      } catch (error) {
-        errorService.handleError(error instanceof Error ? error : String(error), {
-          source: 'auth',
-          level: 'warning',
-          displayToUser: false,
-          context: { action: 'authStateNavigation', authState: state.authState }
-        });
-      }
-    };
-
-    handleNavigation();
-  }, [state.authState, isLoading]);
 
   /**
    * Load authentication state from storage
@@ -605,7 +561,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Update state to reflect logout
       dispatch({ type: 'LOGOUT_SUCCESS' });
       
-      // Navigation will be handled by the useEffect watching authState
+      // Let the router in ProtectedLayout handle the navigation
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         source: 'auth',
