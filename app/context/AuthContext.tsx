@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useReducer } from 'react';
 import { Alert, Platform } from 'react-native';
-import { router, useRouter, useSegments } from 'expo-router';
 import storage, { STORAGE_KEYS } from '../utils/storage';
 import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
 import api from '../services/api';
@@ -31,7 +30,7 @@ interface AuthResponse {
 /**
  * Auth state enum
  */
-enum AuthState {
+export enum AuthState {
   INITIALIZING = 'initializing',
   AUTHENTICATED = 'authenticated',
   UNAUTHENTICATED = 'unauthenticated',
@@ -189,9 +188,9 @@ function authReducer(state: AuthStateInterface, action: AuthAction): AuthStateIn
     case 'LOGOUT_ERROR':
       return {
         ...state,
-        user: null, // Still clear user data even on error
-        token: null, // Still clear token even on error
-        authState: AuthState.UNAUTHENTICATED, // Still consider user logged out even on error
+        user: null,
+        token: null,
+        authState: AuthState.UNAUTHENTICATED,
         error: action.payload.error
       };
     case 'REFRESH_SUCCESS':
@@ -231,8 +230,8 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
   const [isLoading, setIsLoading] = useState(true);
-  const segments = useSegments();
 
+  // Load auth state when the app starts
   useEffect(() => {
     loadAuthState();
   }, []);
@@ -243,8 +242,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const loadAuthState = async () => {
     try {
       setIsLoading(true);
+      console.log('AuthContext: Loading auth state');
       
-      // First try to load from storage
+      // Try to load from storage
       let storedToken = await storage.getItem(STORAGE_KEYS.TOKEN);
       let storedUser = await storage.getObject<User>(STORAGE_KEYS.USER);
       
@@ -253,7 +253,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const localToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
         if (localToken) {
           storedToken = localToken;
-          // Ensure it's available in storage
           await storage.setItem(STORAGE_KEYS.TOKEN, localToken);
         }
         
@@ -262,21 +261,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           try {
             const localUser = JSON.parse(localUserJson);
             storedUser = localUser;
-            // Ensure it's available in storage
             await storage.setObject(STORAGE_KEYS.USER, localUser);
           } catch (parseError) {
-            errorService.handleError(parseError instanceof Error ? parseError : String(parseError), {
-              source: 'storage',
-              level: 'warning',
-              displayToUser: false,
-              context: { action: 'parseLocalStorageUser' }
-            });
+            console.error('Error parsing user from localStorage:', parseError);
           }
         }
       }
 
       if (storedToken && storedUser) {
-        // Also store display name for easy access if available
+        console.log('AuthContext: Found stored authentication');
+        
+        // Store display name for easy access if available
         if (storedUser.displayName) {
           await storage.setItem(STORAGE_KEYS.USER_NAME, storedUser.displayName);
         }
@@ -287,6 +282,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           payload: { user: storedUser, token: storedToken } 
         });
       } else {
+        console.log('AuthContext: No stored authentication found');
         // No stored auth data found
         dispatch({ 
           type: 'INITIALIZE_SUCCESS', 
@@ -294,11 +290,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
       }
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        displayToUser: false,
-        context: { action: 'loadAuthState' }
-      });
+      console.error('AuthContext: Error loading auth state', error);
       
       // Clear auth state on error and set to unauthenticated
       await clearAuthState();
@@ -318,6 +310,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!state.token) return false;
     
     try {
+      console.log('AuthContext: Refreshing authentication');
+      
       // Pass empty string to refreshToken if required
       const response = await api.auth.refreshToken('');
       
@@ -342,12 +336,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return false;
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'warning',
-        displayToUser: false,
-        context: { action: 'refreshAuth' }
-      });
+      console.error('AuthContext: Error refreshing authentication', error);
       
       // On refresh error, clear auth state
       await clearAuthState();
@@ -365,6 +354,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const clearAuthState = async () => {
     try {
+      console.log('AuthContext: Clearing auth state');
+      
       // Clear tokens using utility
       await clearAuthTokens();
       
@@ -376,15 +367,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.USER);
         localStorage.removeItem(STORAGE_KEYS.USER_NAME);
-        console.log('Web localStorage cleared');
+        console.log('AuthContext: Web localStorage cleared');
       }
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        displayToUser: false,
-        context: { action: 'clearAuthState' }
-      });
-      // Error is already logged, but we don't throw here to allow logout process to continue
+      console.error('AuthContext: Error clearing auth state', error);
     }
   };
 
@@ -399,6 +385,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!success || !token || !user || !user.id) {
         throw new Error('Invalid authentication response');
       }
+      
+      console.log('AuthContext: Processing auth response');
       
       // Store tokens and user data
       await storeAuthTokens(token, expiresIn, refreshToken);
@@ -426,11 +414,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return { user, token };
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'error',
-        context: { action: 'processAuthResponse' }
-      });
+      console.error('AuthContext: Error processing auth response', error);
       throw error;
     }
   };
@@ -443,6 +427,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'LOGIN_START' });
       setIsLoading(true);
       
+      console.log('AuthContext: Attempting login');
       const response = await api.auth.login(email, password);
       
       // Process the response
@@ -453,12 +438,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         type: 'LOGIN_SUCCESS', 
         payload: { user, token } 
       });
+      
+      console.log('AuthContext: Login successful');
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'error',
-        context: { action: 'login', email }
-      });
+      console.error('AuthContext: Login error', error);
       
       // Update state to reflect error
       dispatch({ 
@@ -482,6 +465,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'REGISTER_START' });
       setIsLoading(true);
       
+      console.log('AuthContext: Attempting registration');
       const response = await api.auth.register(userData);
       
       if (response?.success) {
@@ -494,6 +478,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             payload: { user, token } 
           });
           
+          console.log('AuthContext: Registration successful with token');
           return response;
         } else {
           // Registration successful but no token received
@@ -507,16 +492,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
               token: '' 
             } 
           });
+          
+          console.log('AuthContext: Registration successful, pending approval');
         }
       }
       
       return response;
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'error',
-        context: { action: 'register', email: userData.email }
-      });
+      console.error('AuthContext: Registration error', error);
       
       // Update state to reflect error
       dispatch({ 
@@ -540,18 +523,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'LOGOUT_START' });
       setIsLoading(true);
       
+      console.log('AuthContext: Attempting logout');
+      
       // Attempt to notify server about logout if we have a token
       if (state.token) {
         try {
           await api.auth.logout();
         } catch (error) {
           // Don't let server errors prevent client-side logout
-          errorService.handleError(error instanceof Error ? error : String(error), {
-            source: 'auth',
-            level: 'warning',
-            displayToUser: false,
-            context: { action: 'serverLogout' }
-          });
+          console.warn('AuthContext: Server logout error', error);
         }
       }
       
@@ -561,13 +541,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Update state to reflect logout
       dispatch({ type: 'LOGOUT_SUCCESS' });
       
-      // Let the router in ProtectedLayout handle the navigation
+      console.log('AuthContext: Logout successful');
     } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'auth',
-        level: 'error',
-        context: { action: 'logout' }
-      });
+      console.error('AuthContext: Logout error', error);
       
       // Update state to reflect error, but still consider user logged out
       dispatch({ 
