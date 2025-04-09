@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
@@ -12,6 +12,9 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
   const { isAuthenticated, isLoading, authState } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  
+  // Add state to track navigation actions to prevent duplicates
+  const [isNavigating, setIsNavigating] = useState(false);
   
   // Define routes that don't require authentication
   const publicRoutes = [
@@ -27,36 +30,67 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
     console.log('RouteGuard: Current segments:', segments);
     console.log('RouteGuard: Is public route:', isPublicRoute);
     console.log('RouteGuard: Auth state:', authState);
-  }, [segments, isPublicRoute, authState]);
+    console.log('RouteGuard: Is navigating:', isNavigating);
+  }, [segments, isPublicRoute, authState, isNavigating]);
   
   // Handle navigation and protection
   useEffect(() => {
+    // Don't do anything if already navigating to prevent race conditions
+    if (isNavigating) {
+      return;
+    }
+    
+    // Don't navigate while loading auth state
     if (isLoading) {
-      return; // Don't navigate while loading
+      return;
     }
     
     // If the route requires authentication and user is not authenticated, redirect to login
     if (!isPublicRoute && !isAuthenticated) {
       console.log('RouteGuard: Redirecting to login screen');
+      
+      // Set navigating state to prevent duplicate navigation
+      setIsNavigating(true);
+      
       // Use a small delay to avoid navigation race conditions
       const timer = setTimeout(() => {
         router.replace('/screens/auth/login');
+        
+        // Reset navigating state after a delay to allow for new navigation events
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 500);
       }, 300);
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        setIsNavigating(false);
+      };
     }
     
     // If user is authenticated and on login screen, redirect to home
     if (isAuthenticated && segments.includes('login')) {
       console.log('RouteGuard: Redirecting to home screen');
+      
+      // Set navigating state to prevent duplicate navigation
+      setIsNavigating(true);
+      
       // Use a small delay to avoid navigation race conditions
       const timer = setTimeout(() => {
         router.replace('/(tabs)');
+        
+        // Reset navigating state after a delay to allow for new navigation events
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 500);
       }, 300);
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        setIsNavigating(false);
+      };
     }
-  }, [isAuthenticated, isLoading, segments, isPublicRoute, router]);
+  }, [isAuthenticated, isLoading, segments, isPublicRoute, router, isNavigating]);
   
   // Show loading screen while authentication state is being determined
   if (isLoading) {
@@ -75,6 +109,16 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
         <Text style={styles.loadingText}>Please wait...</Text>
         <Text style={styles.subText}>Redirecting to login...</Text>
+      </View>
+    );
+  }
+  
+  // If navigating, show loading screen to prevent flicker
+  if (isNavigating) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+        <Text style={styles.loadingText}>Navigating...</Text>
       </View>
     );
   }
