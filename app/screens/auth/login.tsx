@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 
 // Import themed components
@@ -37,19 +37,26 @@ export default function LoginScreen() {
     console.log('LoginScreen: Auth state:', authState, 'isAuthenticated:', isAuthenticated);
   }, [authState, isAuthenticated]);
 
-  // If already authenticated, redirect to home
-  if (isAuthenticated && !isLoading) {
-    console.log('LoginScreen: User is authenticated, redirecting to tabs...');
-    return <Redirect href="/(tabs)" />;
-  }
-
-  // If pending approval, redirect to approval modal
+  // Handle redirection based on authentication state changes
   useEffect(() => {
-    if (isPendingApproval && !isLoading) {
-      console.log('LoginScreen: User account is pending approval, redirecting...');
-      router.replace('/screens/modals/approval-pending-modal');
+    if (isLoading) return;
+
+    try {
+      if (isAuthenticated) {
+        console.log('LoginScreen: User is authenticated, navigating to tabs...');
+        // Let ProtectedLayout handle navigation to avoid race conditions
+      } else if (isPendingApproval) {
+        console.log('LoginScreen: User account is pending approval, navigating...');
+        // Let ProtectedLayout handle navigation to avoid race conditions
+      }
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        source: 'navigation',
+        level: 'warning',
+        context: { component: 'LoginScreen', action: 'navigationEffect' }
+      });
     }
-  }, [isPendingApproval, isLoading]);
+  }, [isAuthenticated, isPendingApproval, isLoading]);
 
   /**
    * Validate form inputs
@@ -109,7 +116,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await login(email, password);
-      // Navigation is handled in AuthContext
+      // Navigation is handled by AuthContext state changes
     } catch (error) {
       // Error is already handled by AuthContext
       console.error('Login error:', error);
@@ -135,8 +142,7 @@ export default function LoginScreen() {
         displayName: username
       });
       
-      // If we get here without error, registration was successful
-      // Navigation is handled by AuthContext based on response
+      // Navigation is handled by AuthContext state changes
       setIsSignUp(false);
     } catch (error) {
       // Error is already logged and displayed by AuthContext
@@ -274,20 +280,6 @@ export default function LoginScreen() {
               </>
             )}
           </Card>
-          
-          {/* Terms of Service and Privacy Policy - Commented out for now */}
-          {/* <View style={styles.privacyContainer}>
-            <Text style={styles.privacyText}>
-              By using this app, you agree to our{' '}
-              <Text style={styles.privacyLink} onPress={() => console.log('Show terms')}>
-                Terms of Service
-              </Text>{' '}
-              and{' '}
-              <Text style={styles.privacyLink} onPress={() => console.log('Show privacy')}>
-                Privacy Policy
-              </Text>
-            </Text>
-          </View> */}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
