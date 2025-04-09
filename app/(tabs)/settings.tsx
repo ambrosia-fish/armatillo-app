@@ -26,26 +26,50 @@ export default function SettingsScreen() {
   // Feature flags - all disabled except sign out
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, authState } = useAuth();
+
+  // Log auth state for debugging
+  React.useEffect(() => {
+    console.log('SettingsScreen: Auth state:', authState);
+  }, [authState]);
 
   /**
    * Handle logout with confirmation dialog
    */
   const handleLogout = () => {
     try {
+      if (isLoading) {
+        return; // Prevent multiple logout attempts
+      }
+      
+      const confirmLogout = (confirmed: boolean) => {
+        if (confirmed) {
+          console.log('SettingsScreen: Initiating logout...');
+          
+          // Attempt to logout with error handling
+          logout().catch(error => {
+            console.error('Logout error:', error);
+            // Error is already handled by AuthContext
+          });
+        }
+      };
+      
       if (Platform.OS === 'web') {
         // For web, use a simpler approach that doesn't rely on Alert
-        if (window.confirm('Are you sure you want to sign out?')) {
-          logout();
-        }
+        const confirmed = window.confirm('Are you sure you want to sign out?');
+        confirmLogout(confirmed);
       } else {
-        // For native platforms, use Alert as before
+        // For native platforms, use Alert
         Alert.alert(
           'Sign Out',
           'Are you sure you want to sign out?',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign Out', style: 'destructive', onPress: logout },
+            { 
+              text: 'Sign Out', 
+              style: 'destructive', 
+              onPress: () => confirmLogout(true) 
+            },
           ],
           { cancelable: true }
         );
@@ -54,15 +78,10 @@ export default function SettingsScreen() {
       errorService.handleError(err instanceof Error ? err : String(err), {
         level: 'error',
         source: 'ui',
-        context: { action: 'logout_confirmation' }
+        context: { action: 'logout_confirmation', component: 'SettingsScreen' }
       });
       
-      // If there's an error in the confirmation dialog, try to log out anyway
-      try {
-        logout();
-      } catch (logoutErr) {
-        // Ignore any errors from the fallback logout
-      }
+      // Don't attempt to logout if there was an error in the confirmation dialog
     }
   };
 
@@ -84,7 +103,7 @@ export default function SettingsScreen() {
       errorService.handleError(err instanceof Error ? err : String(err), {
         level: 'error',
         source: 'ui',
-        context: { action: 'feature_disabled' }
+        context: { action: 'feature_disabled', component: 'SettingsScreen' }
       });
     }
   };
@@ -93,143 +112,89 @@ export default function SettingsScreen() {
     <View style={styles.outerContainer}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
       <SafeAreaView style={styles.container}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          testID="settings-screen-scroll"
+          accessibilityLabel="Settings screen"
+        >
           {/* Profile Section */}
-          <View style={styles.profileHeader}>
-            <View style={styles.avatar}>
+          <View 
+            style={styles.profileHeader}
+            testID="profile-header"
+            accessibilityLabel="User profile information"
+          >
+            <View 
+              style={styles.avatar}
+              accessibilityLabel={`Avatar for ${user?.displayName || 'User'}`}
+            >
               <Text style={styles.avatarText}>
                 {user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'A'}
               </Text>
             </View>
             <Text style={styles.userName}>{user?.displayName || 'User'}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text 
+              style={styles.userEmail}
+              accessibilityLabel={`Email: ${user?.email || 'No email available'}`}
+            >
+              {user?.email}
+            </Text>
           </View>
 
           {/* Settings Content */}
-          <View style={styles.content}>
+          <View 
+            style={styles.content}
+            testID="settings-content"
+            accessibilityLabel="Settings options"
+          >
             <Text style={styles.title}>Account & Settings</Text>
 
-            {/* General Section */}
-            <View style={styles.section}>
-              {/* <Text style={styles.sectionTitle}>General</Text> */}
-              
-
-              {/* <View style={styles.card}>
-                <TouchableOpacity 
-                  style={styles.settingRow}
-                  onPress={handleFeatureDisabled}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="notifications-outline" size={20} color={theme.colors.text.tertiary} />
-                  </View>
-                  <Text style={styles.settingText}>Notifications</Text>
-                  <Switch
-                    value={notificationsEnabled}
-                    onValueChange={handleFeatureDisabled}
-                    disabled={true}
-                    trackColor={{ 
-                      false: 'rgba(120, 120, 128, 0.16)', 
-                      true: theme.colors.primary.light 
-                    }}
-                    thumbColor={theme.colors.neutral.white}
-                  />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.settingRow}
-                  onPress={handleFeatureDisabled}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="moon-outline" size={20} color={theme.colors.text.tertiary} />
-                  </View>
-                  <Text style={styles.settingText}>Dark Mode</Text>
-                  <Switch
-                    value={darkModeEnabled}
-                    onValueChange={handleFeatureDisabled}
-                    disabled={true}
-                    trackColor={{ 
-                      false: 'rgba(120, 120, 128, 0.16)', 
-                      true: theme.colors.primary.light 
-                    }}
-                    thumbColor={theme.colors.neutral.white}
-                  />
-                </TouchableOpacity>
-              </View> */}
-            </View>
-
             {/* Account Section */}
-            <View style={styles.section}>
+            <View 
+              style={styles.section}
+              testID="account-section"
+              accessibilityLabel="Account settings section"
+            >
               <Text style={styles.sectionTitle}>Account</Text>
               
               <View style={styles.card}>
-                {/* Profile */}
-                {/* <TouchableOpacity 
-                  style={styles.settingRow}
-                  onPress={handleFeatureDisabled}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="person-outline" size={20} color={theme.colors.text.tertiary} />
-                  </View>
-                  <Text style={styles.settingText}>Profile</Text>
-                  <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-                </TouchableOpacity> */}
-                
                 {/* Sign Out */}
                 <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleLogout}
                   disabled={isLoading}
                   activeOpacity={0.7}
+                  testID="logout-button"
+                  accessibilityLabel="Sign out button"
+                  accessibilityRole="button"
+                  accessibilityHint="Double tap to sign out of your account"
+                  accessibilityState={{ disabled: isLoading }}
                 >
                   <View style={[styles.iconContainer, styles.logoutIcon]}>
-                    <Ionicons name="log-out-outline" size={20} color={theme.colors.utility.error} />
+                    <Ionicons 
+                      name="log-out-outline" 
+                      size={20} 
+                      color={theme.colors.utility.error} 
+                    />
                   </View>
-                  <Text style={styles.logoutText}>
+                  <Text 
+                    style={styles.logoutText}
+                    accessibilityLabel={isLoading ? "Signing out in progress" : "Sign out"}
+                  >
                     {isLoading ? 'Signing Out...' : 'Sign Out'}
                   </Text>
                   {isLoading ? (
-                    <ActivityIndicator size="small" color={theme.colors.utility.error} />
+                    <ActivityIndicator 
+                      size="small" 
+                      color={theme.colors.utility.error}
+                      accessibilityLabel="Loading indicator" 
+                    />
                   ) : (
                     <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                   )}
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* About Section */}
-            
-            {/* <View style={styles.section}>
-              <Text style={styles.sectionTitle}>About</Text>
-              
-              <View style={styles.card}>
-                <TouchableOpacity 
-                  style={styles.settingRow}
-                  onPress={handleFeatureDisabled}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="information-circle-outline" size={20} color={theme.colors.text.tertiary} />
-                  </View>
-                  <Text style={styles.settingText}>About Armatillo</Text>
-                  <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.settingRow}
-                  onPress={handleFeatureDisabled}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.iconContainer}>
-                    <Ionicons name="document-text-outline" size={20} color={theme.colors.text.tertiary} />
-                  </View>
-                  <Text style={styles.settingText}>Privacy Policy</Text>
-                  <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
-                </TouchableOpacity>
-              </View>
-            </View> */}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -246,6 +211,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
+  } as ViewStyle,
+  
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: theme.spacing.xxxl,
   } as ViewStyle,
   
   profileHeader: {
