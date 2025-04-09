@@ -1,95 +1,151 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { STORAGE_KEYS } from '../utils/storage';
+import storage, { STORAGE_KEYS } from '../utils/storage';
 import { ensureValidToken } from '../utils/tokenRefresher';
+import { getAuthToken } from '../utils/tokenUtils';
 import config from '../constants/config';
 import { errorService } from './ErrorService';
 
 export const API_URL = config.apiUrl;
 const API_BASE_PATH = config.apiBasePath;
 
-const getAuthToken = async (): Promise<string | null> => {
+// Maximum retries for failed requests
+const MAX_RETRIES = 2;
+
+// Default request timeout in milliseconds
+const DEFAULT_TIMEOUT_MS = 15000;
+
+/**
+ * Fetch with timeout
+ * 
+ * @param url - The URL to fetch
+ * @param options - Fetch options
+ * @param timeoutMs - Timeout in milliseconds
+ * @returns Promise that resolves to fetch response or rejects on timeout
+ */
+const fetchWithTimeout = async (
+  url: string, 
+  options: RequestInit = {}, 
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
+): Promise<Response> => {
+  const controller = new AbortController();
+  const { signal } = controller;
+  
+  // Create a timeout promise
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+  
+  // Create fetch promise with abort signal
+  const fetchPromise = fetch(url, {
+    ...options,
+    signal
+  });
+  
+  // Race between fetch and timeout
+  return Promise.race([fetchPromise, timeoutPromise]) as Promise<Response>;
+};
+
+/**
+ * Makes an API request with retry capability and token refreshing
+ * 
+ * @param endpoint - API endpoint (without base URL and path)
+ * @param options - Fetch options
+ * @param retryCount - Current retry count (for internal use)
+ * @returns Promise that resolves to API response
+ */
+const apiRequest = async (
+  endpoint: string, 
+  options: RequestInit = {}, 
+  retryCount: number = 0
+): Promise<any> => {
   try {
-    // First try AsyncStorage
-    let token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-    
-    // If on web and token not found in AsyncStorage, check localStorage directly
-    if (!token && Platform.OS === 'web') {
-      token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      
-      // If found in localStorage but not in AsyncStorage, sync them
-      if (token) {
-        await AsyncStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    // Ensure we have a valid token before making the request
+    if (endpoint !== '/auth/login' && endpoint !== '/auth/register') {
+      const tokenValid = await ensureValidToken();
+      if (!tokenValid && !endpoint.startsWith('/auth/refresh')) {
+        throw new Error('No valid auth token available');
       }
     }
     
-    return token;
-  } catch (error) {
-    errorService.handleError(error instanceof Error ? error : String(error), {
-      source: 'storage',
-      displayToUser: false,
-      context: { action: 'getAuthToken' }
-    });
-    return null;
-  }
-};
-
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  try {
-    await ensureValidToken();
-    
+    // Get the latest token
     const token = await getAuthToken();
     
+    // Prepare headers with content type and auth token
     const headers = {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     } as Record<string, string>;
     
+    // Add authorization header if token is available
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
+    // Build full URL
     const url = `${API_URL}${API_BASE_PATH}${endpoint}`;
     
-    const response = await fetch(url, {
+    console.log(`API Request: ${options.method || 'GET'} ${endpoint}`);
+    
+    // Make the request with timeout
+    const response = await fetchWithTimeout(url, {
       ...options,
       headers,
     });
     
-    if (response.status === 401) {
+    // Handle 401 Unauthorized - token might be invalid or expired
+    if (response.status === 401 && retryCount < MAX_RETRIES) {
       errorService.handleError('Authentication failed (401)', {
         level: 'warning',
         source: 'auth',
-        context: { endpoint }
+        displayToUser: false,
+        context: { endpoint, retryCount }
       });
+      
+      // Try to refresh token and retry the request
+      if (await ensureValidToken()) {
+        console.log(`Retrying request after token refresh: ${endpoint}`);
+        return apiRequest(endpoint, options, retryCount + 1);
+      } else {
+        throw new Error('Authentication failed and token refresh was unsuccessful');
+      }
     }
     
+    // Parse response based on content type
     const contentType = response.headers.get('content-type');
     
     if (contentType && contentType.includes('application/json')) {
       const responseText = await response.text();
       
+      // Try to parse JSON response
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
         errorService.handleError(parseError instanceof Error ? parseError : String(parseError), {
           source: 'api',
+          level: 'error',
           context: {
             endpoint,
-            responseText: responseText.substring(0, 100)
+            responseText: responseText.substring(0, 100),
+            status: response.status
           }
         });
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
       
+      // Handle non-success response with JSON data
       if (!response.ok) {
         const errorMessage = data.message || data.error || 'API error occurred';
         errorService.handleError(errorMessage, {
           source: 'api',
+          level: 'error',
           context: {
             endpoint,
-            statusCode: response.status
+            statusCode: response.status,
+            data: JSON.stringify(data).substring(0, 200)
           }
         });
         throw new Error(errorMessage);
@@ -97,15 +153,19 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       
       return data;
     } else {
+      // Handle non-JSON response
       const responseText = await response.text();
       
+      // Handle non-success response without JSON data
       if (!response.ok) {
         errorService.handleError(`Network response was not ok: ${response.status} ${response.statusText}`, {
           source: 'network',
+          level: 'error',
           context: {
             endpoint,
             statusCode: response.status,
-            statusText: response.statusText
+            statusText: response.statusText,
+            responseText: responseText.substring(0, 100)
           }
         });
         throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
@@ -114,23 +174,55 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       return responseText;
     }
   } catch (error) {
+    // Special handling for aborted requests (timeouts)
+    if (error instanceof Error && error.name === 'AbortError') {
+      errorService.handleError('Request timed out', {
+        source: 'network',
+        level: 'warning',
+        context: { endpoint, method: options.method }
+      });
+      throw new Error(`Request timed out: ${endpoint}`);
+    }
+    
+    // Handle retry for network errors
+    if (error instanceof Error && 
+        (error.message.includes('Network request failed') || error.message.includes('network error')) && 
+        retryCount < MAX_RETRIES) {
+      console.log(`Retrying due to network error: ${endpoint}`);
+      return apiRequest(endpoint, options, retryCount + 1);
+    }
+    
+    // Log error and rethrow
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'api',
-      context: { endpoint, method: options.method }
+      level: 'error',
+      context: { endpoint, method: options.method, retryCount }
     });
     throw error;
   }
 };
 
+/**
+ * API functions for instances
+ */
 export const instancesApi = {
+  /**
+   * Get all instances
+   */
   getInstances: async () => {
     return apiRequest('/instances', { method: 'GET' });
   },
   
+  /**
+   * Get instance by ID
+   */
   getInstance: async (id: string) => {
     return apiRequest(`/instances/${id}`, { method: 'GET' });
   },
   
+  /**
+   * Create a new instance
+   */
   createInstance: async (data: any) => {
     return apiRequest('/instances', {
       method: 'POST',
@@ -138,6 +230,9 @@ export const instancesApi = {
     });
   },
   
+  /**
+   * Update an instance
+   */
   updateInstance: async (id: string, data: any) => {
     return apiRequest(`/instances/${id}`, {
       method: 'PUT',
@@ -145,12 +240,21 @@ export const instancesApi = {
     });
   },
   
+  /**
+   * Delete an instance
+   */
   deleteInstance: async (id: string) => {
     return apiRequest(`/instances/${id}`, { method: 'DELETE' });
   },
 };
 
+/**
+ * API functions for authentication
+ */
 export const authApi = {
+  /**
+   * Login with email and password
+   */
   login: async (email: string, password: string) => {
     return apiRequest('/auth/login', {
       method: 'POST',
@@ -158,6 +262,9 @@ export const authApi = {
     });
   },
   
+  /**
+   * Register a new user
+   */
   register: async (userData: any) => {
     return apiRequest('/auth/register', {
       method: 'POST',
@@ -165,10 +272,16 @@ export const authApi = {
     });
   },
   
+  /**
+   * Get current user info
+   */
   getUserInfo: async () => {
     return apiRequest('/auth/me', { method: 'GET' });
   },
   
+  /**
+   * Refresh authentication token
+   */
   refreshToken: async (refreshToken: string = '') => {
     return apiRequest('/auth/refresh', {
       method: 'POST',
@@ -176,6 +289,9 @@ export const authApi = {
     });
   },
   
+  /**
+   * Logout user
+   */
   logout: async () => {
     return apiRequest('/auth/logout', { method: 'POST' });
   },
