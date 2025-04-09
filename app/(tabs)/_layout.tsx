@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { StyleSheet, Platform } from 'react-native';
 import theme from '@/app/constants/theme';
 
@@ -9,9 +9,21 @@ import theme from '@/app/constants/theme';
  * Authentication is handled at the root level
  */
 export default function TabLayout() {
+  const router = useRouter();
+  
+  // When the tab layout mounts, navigate to the index tab
+  useEffect(() => {
+    // Short delay to ensure tabs are fully mounted
+    const timer = setTimeout(() => {
+      console.log('TabLayout: Navigating to home tab');
+      router.replace('/(tabs)/index');
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [router]);
+  
   return (
     <Tabs
-      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary.main,
         tabBarInactiveTintColor: theme.colors.text.tertiary,
@@ -20,22 +32,7 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
-      {/* Home tab - MUST BE FIRST for it to be the default */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => 
-            <Ionicons 
-              name={focused ? 'home' : 'home-outline'} 
-              size={24} 
-              color={color} 
-              accessibilityLabel="Home tab"
-            />,
-        }}
-      />
-      
-      {/* Progress tab */}
+      {/* Progress tab (left position) */}
       <Tabs.Screen
         name="progress"
         options={{
@@ -50,7 +47,22 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Settings tab */}
+      {/* Home tab (middle position) */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'home' : 'home-outline'} 
+              size={24} 
+              color={color} 
+              accessibilityLabel="Home tab"
+            />,
+        }}
+      />
+      
+      {/* Settings tab (right position) */}
       <Tabs.Screen
         name="settings"
         options={{
