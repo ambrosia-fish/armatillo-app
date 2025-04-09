@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, SplashScreen } from 'expo-router';
+import { Stack, SplashScreen, Slot } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
@@ -18,7 +18,8 @@ export { ErrorBoundary };
 SplashScreen.preventAutoHideAsync();
 
 /**
- * Main app layout that handles initialization and authentication
+ * Main app layout that handles initialization
+ * Using two-phase mounting pattern to ensure layout is fully mounted before navigation
  */
 export default function RootLayout() {
   // Always declare all hooks at the top level
@@ -31,6 +32,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   
   // State to track initialization
+  const [isInitialized, setIsInitialized] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const initializedRef = useRef(false);
   
@@ -47,11 +49,14 @@ export default function RootLayout() {
       
       SplashScreen.hideAsync().then(() => {
         console.log('RootLayout: Splash screen hidden');
+        // Short delay to ensure everything has mounted properly
         setTimeout(() => {
+          setIsInitialized(true);
           setIsReady(true);
         }, 100);
       }).catch(error => {
         console.error('RootLayout: Error hiding splash screen:', error);
+        setIsInitialized(true);
         setIsReady(true);
       });
     }
@@ -68,7 +73,8 @@ export default function RootLayout() {
         <FormProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             {isReady ? (
-              <StackNavigator />
+              // Use Root Layout with Slot for initial render to ensure proper mounting
+              <RootNavigator />
             ) : (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={theme.colors.primary.main} />
@@ -82,13 +88,30 @@ export default function RootLayout() {
 }
 
 /**
- * Main stack navigator with auth protection
+ * Root navigator with centralized auth protection
+ * Using Slot ensures proper mounting before navigation occurs
  */
-function StackNavigator() {
+function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
   
-  // Show loading screen while determining auth state
-  if (isLoading) {
+  // Log authentication state for debugging
+  useEffect(() => {
+    console.log('RootNavigator: Auth state updated - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+  }, [isAuthenticated, isLoading]);
+  
+  // Ensure navigation is ready after a brief delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsNavigationReady(true);
+      console.log('RootNavigator: Navigation ready');
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Show loading indicator while auth state is loading
+  if (isLoading || !isNavigationReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
@@ -96,30 +119,26 @@ function StackNavigator() {
     );
   }
   
-  // Define all app routes
+  // IMPORTANT: First, render a Slot to ensure Root Layout is properly mounted
+  // This resolves the "navigate before mounting" error
   return (
-    <Stack>
-      {/* Auth screen */}
+    <Stack initialRouteName={isAuthenticated ? '(tabs)' : 'screens/auth/login'}>
       <Stack.Screen 
         name="screens/auth/login" 
-        options={{ headerShown: false }}
+        options={{ headerShown: false }} 
         redirect={isAuthenticated}
       />
       
-      {/* Tabs - with required auth */}
       <Stack.Screen 
         name="(tabs)" 
-        options={{ headerShown: false }}
+        options={{ headerShown: false }} 
         redirect={!isAuthenticated}
       />
       
       {/* Modal Screens */}
       <Stack.Screen 
         name="screens/modals/modal" 
-        options={{ 
-          presentation: 'modal',
-          headerShown: false
-        }} 
+        options={{ presentation: 'modal' }} 
       />
       <Stack.Screen 
         name="screens/modals/approval-pending-modal" 
