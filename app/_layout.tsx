@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, SplashScreen, useRouter, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
 
@@ -18,15 +18,22 @@ export { ErrorBoundary };
 SplashScreen.preventAutoHideAsync();
 
 /**
- * Root layout component that handles app initialization and auth flow
+ * Root layout component that handles app initialization
  */
 export default function RootLayout() {
-  // Load fonts
+  // All hooks need to be called in the same order every time
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-
+  
+  // Always initialize these hooks, even if we don't use them in some cases
+  const colorScheme = useColorScheme();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const initializedRef = useRef(false);
+  
   // Handle font loading errors
   useEffect(() => {
     if (fontError) throw fontError;
@@ -34,8 +41,19 @@ export default function RootLayout() {
 
   // Hide splash screen once fonts are loaded
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
+    if (fontsLoaded && !initializedRef.current) {
+      initializedRef.current = true;
+      SplashScreen.hideAsync().then(() => {
+        // Short delay to ensure everything has mounted
+        setTimeout(() => {
+          setIsInitialized(true);
+          setIsReady(true);
+        }, 100);
+      }).catch(error => {
+        console.error('Error hiding splash screen:', error);
+        setIsInitialized(true);
+        setIsReady(true);
+      });
     }
   }, [fontsLoaded]);
 
@@ -48,8 +66,12 @@ export default function RootLayout() {
     <ErrorBoundary>
       <AuthProvider>
         <FormProvider>
-          <ThemeProvider value={useColorScheme() === 'dark' ? DarkTheme : DefaultTheme}>
-            <RootNavigator />
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            {isReady ? <RootNavigator /> : (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary.main} />
+              </View>
+            )}
           </ThemeProvider>
         </FormProvider>
       </AuthProvider>
@@ -65,37 +87,54 @@ function RootNavigator() {
   const segments = useSegments();
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const navigationCountRef = useRef(0);
 
   // Handle authentication-based navigation
   useEffect(() => {
     // Skip navigation during loading or when already navigating
-    if (isLoading || isNavigating) return;
+    if (isLoading || isNavigating) {
+      return;
+    }
 
+    // Check if we're in an auth screen
     const inAuthGroup = segments[0] === 'screens' && segments[1] === 'auth';
     
-    setIsNavigating(true);
+    // Prevent too many navigation attempts in a single session
+    if (navigationCountRef.current > 2) {
+      console.log('Navigation: Too many navigation attempts, resetting counter');
+      navigationCountRef.current = 0;
+      return;
+    }
     
-    if (!isAuthenticated && !inAuthGroup) {
-      // If not authenticated and not on auth screens, go to login
-      console.log('Navigation: Redirecting to login');
-      setTimeout(() => {
-        router.replace('/screens/auth/login');
+    setIsNavigating(true);
+    navigationCountRef.current += 1;
+    
+    try {
+      if (!isAuthenticated && !inAuthGroup) {
+        // If not authenticated and not on auth screens, go to login
+        console.log('Navigation: Redirecting to login');
+        setTimeout(() => {
+          router.replace('/screens/auth/login');
+          setIsNavigating(false);
+        }, 100);
+      } else if (isAuthenticated && inAuthGroup) {
+        // If authenticated and on auth screens, go to home
+        console.log('Navigation: Redirecting to home');
+        setTimeout(() => {
+          router.replace('/(tabs)');
+          setIsNavigating(false);
+        }, 100);
+      } else {
+        // Otherwise just clear the navigating flag
         setIsNavigating(false);
-      }, 100);
-    } else if (isAuthenticated && inAuthGroup) {
-      // If authenticated and on auth screens, go to home
-      console.log('Navigation: Redirecting to home');
-      setTimeout(() => {
-        router.replace('/(tabs)');
-        setIsNavigating(false);
-      }, 100);
-    } else {
-      // Otherwise just clear the navigating flag
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
       setIsNavigating(false);
     }
   }, [isAuthenticated, isLoading, segments, router, isNavigating]);
 
-  // Show loading indicator during auth check
+  // Show loading indicator during auth check or navigation
   if (isLoading || isNavigating) {
     return (
       <View style={styles.loadingContainer}>
