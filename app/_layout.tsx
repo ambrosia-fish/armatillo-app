@@ -13,7 +13,7 @@ import { FormProvider } from './context/FormContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
-import { FA5Style } from '@expo/vector-icons/build/FontAwesome5';
+import { errorService } from './services/ErrorService';
 
 export { ErrorBoundary };
 
@@ -24,11 +24,12 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-// Auth protected layout
+/**
+ * Protected layout for authenticated routes
+ */
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, authState } = useAuth();
   const pathname = usePathname();
-  const [redirected, setRedirected] = useState(false);
   
   // Non-protected routes - these don't require authentication
   const publicRoutes = [
@@ -40,25 +41,52 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   // Check if current route needs protection
   const needsAuth = !publicRoutes.some(route => pathname.includes(route));
   
+  // Log route information for debugging
   useEffect(() => {
-    // If path needs auth and user is not authenticated, redirect
-    if (!isLoading && needsAuth && !isAuthenticated && !redirected) {
-      setRedirected(true);
-      if (Platform.OS === 'web') {
-        // For more reliable web navigation
-        window.location.href = '/';
-      } else {
-        // For native navigation
-        window.setTimeout(() => {
+    console.log(`ProtectedLayout: Path '${pathname}', needsAuth: ${needsAuth}, authState: ${authState}`);
+  }, [pathname, needsAuth, authState]);
+
+  // Handle navigation based on auth state and route
+  useEffect(() => {
+    // Skip during loading phase
+    if (isLoading) return;
+    
+    try {
+      // If path needs auth and user is not authenticated, handle navigation
+      // This is a fallback - the AuthContext should handle most navigation based on auth state
+      if (needsAuth && !isAuthenticated) {
+        console.log('ProtectedLayout: Path requires auth but user is not authenticated');
+        
+        // Use a small timeout to prevent navigation race conditions
+        const timer = setTimeout(() => {
           try {
-            window.location.replace('/');
-          } catch (e) {
-            console.error("Native navigation error:", e);
+            // Navigate to login
+            if (Platform.OS === 'web') {
+              // For web, avoid expo-router sometimes
+              window.location.href = '/';
+            } else {
+              // For native, use router
+              window.location.replace('/');
+            }
+          } catch (error) {
+            errorService.handleError(error instanceof Error ? error : String(error), {
+              source: 'navigation',
+              level: 'warning',
+              context: { component: 'ProtectedLayout', action: 'redirect' }
+            });
           }
-        }, 100);
+        }, 150);
+        
+        // Cleanup timer on unmount
+        return () => clearTimeout(timer);
       }
+    } catch (error) {
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'navigation',
+        context: { component: 'ProtectedLayout', action: 'checkAuth' }
+      });
     }
-  }, [isLoading, isAuthenticated, pathname, needsAuth, redirected]);
+  }, [isLoading, isAuthenticated, pathname, needsAuth]);
   
   // If loading, show loading indicator
   if (isLoading) {
@@ -75,7 +103,8 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
-        <Text style={styles.loadingText}>Redirecting to login...</Text>
+        <Text style={styles.loadingText}>Please wait...</Text>
+        <Text style={styles.subText}>Redirecting to login...</Text>
       </View>
     );
   }
@@ -84,6 +113,9 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
 
+/**
+ * Root layout component
+ */
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -111,6 +143,9 @@ export default function RootLayout() {
   );
 }
 
+/**
+ * Root navigation layout
+ */
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
@@ -130,7 +165,7 @@ function RootLayoutNav() {
     headerBackTitle: 'Back',
   };
 
-  // Fix progress parameter type issue
+  // Fixed screen options
   const screenOptions = {
     presentation: 'card' as const,
     animation: 'slide_from_bottom' as const,
@@ -153,10 +188,13 @@ function RootLayoutNav() {
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <ProtectedLayout>
             <Stack>
+              {/* Tab Screens */}
               <Stack.Screen 
                 name="(tabs)" 
                 options={{ headerShown: false }} 
               />
+              
+              {/* Modal Screen */}
               <Stack.Screen 
                 name="screens/modals/modal" 
                 options={{ presentation: 'modal' }} 
@@ -239,10 +277,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.colors.background.primary,
+    padding: 20,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  subText: {
+    marginTop: 8,
+    fontSize: 14,
     color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
 });
