@@ -119,11 +119,10 @@ function RootNavigator() {
     );
   }
   
-  // IMPORTANT: First, render a Stack to ensure Root Layout is properly mounted
+  // IMPORTANT: First, render a Slot to ensure Root Layout is properly mounted
   // This resolves the "navigate before mounting" error
-  // We do NOT use initialRouteName here since the tabs component will handle navigation to the Home tab
   return (
-    <Stack>
+    <Stack initialRouteName={isAuthenticated ? '(tabs)' : 'screens/auth/login'}>
       <Stack.Screen 
         name="screens/auth/login" 
         options={{ headerShown: false }} 
