@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { StyleSheet, Platform } from 'react-native';
 import theme from '@/app/constants/theme';
 
@@ -9,21 +9,9 @@ import theme from '@/app/constants/theme';
  * Authentication is handled at the root level
  */
 export default function TabLayout() {
-  const router = useRouter();
-  
-  // When the tab layout mounts, navigate to the index tab
-  useEffect(() => {
-    // Short delay to ensure tabs are fully mounted
-    const timer = setTimeout(() => {
-      console.log('TabLayout: Navigating to home tab');
-      router.replace('/(tabs)/index');
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [router]);
-  
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary.main,
         tabBarInactiveTintColor: theme.colors.text.tertiary,
@@ -32,22 +20,7 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
-      {/* Progress tab (left position) */}
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Progress',
-          tabBarIcon: ({ color, focused }) => 
-            <Ionicons 
-              name={focused ? 'time' : 'time-outline'} 
-              size={24} 
-              color={color} 
-              accessibilityLabel="Progress tab"
-            />,
-        }}
-      />
-      
-      {/* Home tab (middle position) */}
+      {/* Home tab - MUST BE FIRST for it to be the default */}
       <Tabs.Screen
         name="index"
         options={{
@@ -62,7 +35,22 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Settings tab (right position) */}
+      {/* Progress tab */}
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progress',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'time' : 'time-outline'} 
+              size={24} 
+              color={color} 
+              accessibilityLabel="Progress tab"
+            />,
+        }}
+      />
+      
+      {/* Settings tab */}
       <Tabs.Screen
         name="settings"
         options={{
