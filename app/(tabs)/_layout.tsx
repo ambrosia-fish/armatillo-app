@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import theme from '@/app/constants/theme';
 import { useAuth } from '@/app/context/AuthContext';
 import RouteGuard from '@/app/components/RouteGuard';
@@ -16,7 +16,8 @@ export default function TabLayout() {
   // Log for debugging
   useEffect(() => {
     console.log('TabLayout mounted, auth state:', authState);
-  }, [authState]);
+    console.log('TabLayout isAuthenticated:', isAuthenticated);
+  }, [authState, isAuthenticated]);
 
   return (
     <RouteGuard>
@@ -29,6 +30,8 @@ export default function TabLayout() {
           tabBarStyle: styles.tabBar,
           tabBarLabelStyle: styles.tabLabel,
           tabBarItemStyle: styles.tabItem,
+          // Disable swipe navigation to prevent gesture and programmatic navigation conflicts
+          animationEnabled: Platform.OS !== 'web',
         }}>
         <Tabs.Screen
           name="progress"
@@ -78,14 +81,23 @@ const styles = StyleSheet.create({
   tabBar: {
     borderTopColor: theme.colors.border.light,
     backgroundColor: theme.colors.background.primary,
+    // Add elevation for Android
+    elevation: 8,
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   tabLabel: {
     fontSize: 12,
+    marginBottom: Platform.OS === 'ios' ? 0 : 4,
   },
   tabItem: {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 6,
   }
 });
