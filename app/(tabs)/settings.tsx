@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   TouchableOpacity, 
-  Switch, 
   ScrollView, 
   Alert, 
   ActivityIndicator, 
@@ -16,95 +15,66 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/app/context/AuthContext';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
-import { errorService } from '@/app/services/ErrorService';
 
 /**
  * Settings Screen Component
  * Displays user profile and application settings
  */
 export default function SettingsScreen() {
-  // Feature flags - all disabled except sign out
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
   const { user, logout, isLoading, authState } = useAuth();
+  const [logoutRequested, setLogoutRequested] = useState(false);
 
   // Log auth state for debugging
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('SettingsScreen: Auth state:', authState);
-  }, [authState]);
+    console.log('SettingsScreen: User:', user?.displayName, user?.email);
+  }, [authState, user]);
 
   /**
    * Handle logout with confirmation dialog
    */
   const handleLogout = () => {
-    try {
-      if (isLoading) {
-        return; // Prevent multiple logout attempts
-      }
-      
-      const confirmLogout = (confirmed: boolean) => {
-        if (confirmed) {
-          console.log('SettingsScreen: Initiating logout...');
-          
-          // Attempt to logout with error handling
-          logout().catch(error => {
-            console.error('Logout error:', error);
-            // Error is already handled by AuthContext
-          });
-        }
-      };
-      
-      if (Platform.OS === 'web') {
-        // For web, use a simpler approach that doesn't rely on Alert
-        const confirmed = window.confirm('Are you sure you want to sign out?');
-        confirmLogout(confirmed);
-      } else {
-        // For native platforms, use Alert
-        Alert.alert(
-          'Sign Out',
-          'Are you sure you want to sign out?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Sign Out', 
-              style: 'destructive', 
-              onPress: () => confirmLogout(true) 
-            },
-          ],
-          { cancelable: true }
-        );
-      }
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { action: 'logout_confirmation', component: 'SettingsScreen' }
-      });
-      
-      // Don't attempt to logout if there was an error in the confirmation dialog
+    if (isLoading || logoutRequested) {
+      return; // Prevent multiple logout attempts
     }
-  };
-
-  /**
-   * Handle feature disabled alert
-   */
-  const handleFeatureDisabled = () => {
-    try {
-      if (Platform.OS === 'web') {
-        window.alert('This feature is currently disabled.');
-      } else {
-        Alert.alert(
-          'Feature Unavailable',
-          'This feature is currently disabled.',
-          [{ text: 'OK' }]
-        );
+    
+    const confirmLogout = (confirmed: boolean) => {
+      if (confirmed) {
+        console.log('SettingsScreen: Initiating logout...');
+        setLogoutRequested(true);
+        
+        // Attempt to logout
+        logout()
+          .then(() => {
+            console.log('SettingsScreen: Logout successful');
+            // Navigation is handled at the root level
+          })
+          .catch(error => {
+            console.error('SettingsScreen: Logout error:', error);
+            setLogoutRequested(false);
+          });
       }
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { action: 'feature_disabled', component: 'SettingsScreen' }
-      });
+    };
+    
+    if (Platform.OS === 'web') {
+      // For web, use a simpler approach that doesn't rely on Alert
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      confirmLogout(confirmed);
+    } else {
+      // For native platforms, use Alert
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Sign Out', 
+            style: 'destructive', 
+            onPress: () => confirmLogout(true) 
+          },
+        ],
+        { cancelable: true }
+      );
     }
   };
 
@@ -129,7 +99,8 @@ export default function SettingsScreen() {
               accessibilityLabel={`Avatar for ${user?.displayName || 'User'}`}
             >
               <Text style={styles.avatarText}>
-                {user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'A'}
+                {user?.displayName?.charAt(0)?.toUpperCase() || 
+                 user?.email?.charAt(0)?.toUpperCase() || 'A'}
               </Text>
             </View>
             <Text style={styles.userName}>{user?.displayName || 'User'}</Text>
@@ -162,13 +133,13 @@ export default function SettingsScreen() {
                 <TouchableOpacity 
                   style={styles.settingRow}
                   onPress={handleLogout}
-                  disabled={isLoading}
+                  disabled={isLoading || logoutRequested}
                   activeOpacity={0.7}
                   testID="logout-button"
                   accessibilityLabel="Sign out button"
                   accessibilityRole="button"
                   accessibilityHint="Double tap to sign out of your account"
-                  accessibilityState={{ disabled: isLoading }}
+                  accessibilityState={{ disabled: isLoading || logoutRequested }}
                 >
                   <View style={[styles.iconContainer, styles.logoutIcon]}>
                     <Ionicons 
@@ -179,11 +150,11 @@ export default function SettingsScreen() {
                   </View>
                   <Text 
                     style={styles.logoutText}
-                    accessibilityLabel={isLoading ? "Signing out in progress" : "Sign out"}
+                    accessibilityLabel={isLoading || logoutRequested ? "Signing out in progress" : "Sign out"}
                   >
-                    {isLoading ? 'Signing Out...' : 'Sign Out'}
+                    {isLoading || logoutRequested ? 'Signing Out...' : 'Sign Out'}
                   </Text>
-                  {isLoading ? (
+                  {isLoading || logoutRequested ? (
                     <ActivityIndicator 
                       size="small" 
                       color={theme.colors.utility.error}
@@ -193,6 +164,13 @@ export default function SettingsScreen() {
                     <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
                   )}
                 </TouchableOpacity>
+              </View>
+              
+              {/* Version Info */}
+              <View style={styles.versionContainer}>
+                <Text style={styles.versionText}>
+                  Armatillo v0.1.0 (Beta)
+                </Text>
               </View>
             </View>
           </View>
@@ -315,15 +293,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(214, 106, 106, 0.1)',
   } as ViewStyle,
   
-  settingText: {
-    flex: 1,
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
-  } as TextStyle,
-  
   logoutText: {
     flex: 1,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.utility.error,
+  } as TextStyle,
+  
+  versionContainer: {
+    alignItems: 'center',
+    marginTop: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
+  } as ViewStyle,
+  
+  versionText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
   } as TextStyle,
 });
