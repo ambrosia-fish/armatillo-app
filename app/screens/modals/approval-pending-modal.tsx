@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Linking } from 'react-native';
-import { useRouter, router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,7 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function ApprovalPendingModal() {
   const insets = useSafeAreaInsets();
-  const { clearApprovalStatus } = useAuth();
+  const { logout } = useAuth();
+  const router = useRouter();
 
   const handleContactRequest = () => {
     Linking.openURL('mailto:josef@feztech.io?subject=Armatillo%20App%20Access%20Request');
@@ -18,12 +19,12 @@ export default function ApprovalPendingModal() {
 
   const handleGoBack = async () => {
     try {
-      // Use the new method from AuthContext that ensures state and storage are in sync
-      await clearApprovalStatus();
-      
-      // Use direct navigation with global router
+      // Just logout to clear the pending state
+      await logout();
+      // Navigate back to login
       router.replace('/screens/auth/login');
     } catch (error) {
+      console.error('ApprovalPendingModal: Error going back', error);
       // Fallback navigation as a last resort
       router.replace('/screens/auth/login');
     }

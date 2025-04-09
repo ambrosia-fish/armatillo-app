@@ -1,14 +1,14 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, SplashScreen, Slot } from 'expo-router';
+import { Stack, SplashScreen, Slot, useRouter } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, AuthState } from './context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
 
@@ -92,13 +92,14 @@ export default function RootLayout() {
  * Using Slot ensures proper mounting before navigation occurs
  */
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, authState } = useAuth();
   const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const router = useRouter();
   
   // Log authentication state for debugging
   useEffect(() => {
-    console.log('RootNavigator: Auth state updated - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
-  }, [isAuthenticated, isLoading]);
+    console.log('RootNavigator: Auth state updated - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'authState:', authState);
+  }, [isAuthenticated, isLoading, authState]);
   
   // Ensure navigation is ready after a brief delay
   useEffect(() => {
@@ -109,6 +110,14 @@ function RootNavigator() {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  // Handle routing for pending approval state
+  useEffect(() => {
+    if (isNavigationReady && !isLoading && authState === AuthState.PENDING_APPROVAL) {
+      console.log('RootNavigator: User pending approval, navigating to approval modal');
+      router.replace('/screens/modals/approval-pending-modal');
+    }
+  }, [isNavigationReady, isLoading, authState, router]);
   
   // Show loading indicator while auth state is loading
   if (isLoading || !isNavigationReady) {
@@ -126,20 +135,16 @@ function RootNavigator() {
       <Stack.Screen 
         name="screens/auth/login" 
         options={{ headerShown: false }} 
-        redirect={isAuthenticated}
+        redirect={isAuthenticated && authState !== AuthState.PENDING_APPROVAL}
       />
       
       <Stack.Screen 
         name="(tabs)" 
         options={{ headerShown: false }} 
-        redirect={!isAuthenticated}
+        redirect={!isAuthenticated || authState === AuthState.PENDING_APPROVAL}
       />
       
       {/* Modal Screens */}
-      <Stack.Screen 
-        name="screens/modals/modal" 
-        options={{ presentation: 'modal' }} 
-      />
       <Stack.Screen 
         name="screens/modals/approval-pending-modal" 
         options={{ 
@@ -147,19 +152,12 @@ function RootNavigator() {
           headerShown: false,
           gestureEnabled: false,
         }} 
+        redirect={authState !== AuthState.PENDING_APPROVAL}
       />
       
       {/* Tracking Screens */}
       <Stack.Screen name="screens/tracking/new-options-screen" options={{ headerShown: false }} />
       <Stack.Screen name="screens/tracking/new-entry-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/time-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/urge-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/environment-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/mental-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/thoughts-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/physical-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/sensory-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/tracking/submit-screen" options={{ headerShown: false }} />
       <Stack.Screen name="screens/modals/detail-screen" options={{ headerShown: false }} />
     </Stack>
   );

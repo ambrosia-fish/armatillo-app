@@ -428,30 +428,62 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       
       console.log('AuthContext: Attempting login');
-      const response = await api.auth.login(email, password);
-      
-      // Process the response
-      const { user, token } = await processAuthResponse(response);
-      
-      // Update auth state
-      dispatch({ 
-        type: 'LOGIN_SUCCESS', 
-        payload: { user, token } 
-      });
-      
-      console.log('AuthContext: Login successful');
+      try {
+        const response = await api.auth.login(email, password);
+        
+        // Process the response
+        const { user, token } = await processAuthResponse(response);
+        
+        // Update auth state
+        dispatch({ 
+          type: 'LOGIN_SUCCESS', 
+          payload: { user, token } 
+        });
+        
+        console.log('AuthContext: Login successful');
+      } catch (error) {
+        // Check if this is the pre-alpha access message
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes("pre-alpha") || 
+            errorMessage.includes("testing is only available") || 
+            errorMessage.includes("Thank You for your interest")) {
+          console.log('AuthContext: User pending approval');
+          // Create a mock user with isPendingApproval flag
+          const pendingUser = {
+            id: 'pending',
+            email: email,
+            displayName: email.split('@')[0],
+            isPendingApproval: true
+          };
+          
+          // Update state to PENDING_APPROVAL
+          dispatch({ 
+            type: 'LOGIN_SUCCESS', 
+            payload: { 
+              user: pendingUser, 
+              token: 'pending' // Use a dummy token
+            } 
+          });
+        } else {
+          console.error('AuthContext: Login error', error);
+          
+          // Update state to reflect error
+          dispatch({ 
+            type: 'LOGIN_ERROR', 
+            payload: { error: error instanceof Error ? error : new Error(String(error)) } 
+          });
+          
+          // Show user-friendly error message
+          Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+          throw error;
+        }
+      }
     } catch (error) {
-      console.error('AuthContext: Login error', error);
-      
-      // Update state to reflect error
-      dispatch({ 
-        type: 'LOGIN_ERROR', 
-        payload: { error: error instanceof Error ? error : new Error(String(error)) } 
-      });
-      
-      // Show user-friendly error message
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
-      throw error;
+      if (!(error instanceof Error && error.message.includes("pre-alpha"))) {
+        console.error('AuthContext: Login error', error);
+        // Show user-friendly error message
+        Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
