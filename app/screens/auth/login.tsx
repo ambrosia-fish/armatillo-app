@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   Image, 
@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 
 // Import themed components
@@ -22,8 +21,7 @@ import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const { login, register, isAuthenticated, isLoading, isPendingApproval, authState } = useAuth();
+  const { login, register, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,60 +29,42 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  
-  // Log auth state for debugging
-  useEffect(() => {
-    console.log('LoginScreen: Auth state:', authState, 'isAuthenticated:', isAuthenticated);
-    console.log('LoginScreen: Loading state:', isLoading, 'Component loading:', loading);
-  }, [authState, isAuthenticated, isLoading, loading]);
-  
-  // Since navigation is now handled by RouteGuard, no need for redirect logic here
-  
+
   /**
    * Validate form inputs
-   * @returns {boolean} True if form is valid, false otherwise
    */
   const validateForm = () => {
-    try {
-      const newErrors: {[key: string]: string} = {};
-      
-      // Email validation
-      if (!email) {
-        newErrors.email = 'Email is required';
-      } else if (!/\S+@\S+\.\S+/.test(email)) {
-        newErrors.email = 'Please enter a valid email';
-      }
-      
-      // Password validation
-      if (!password) {
-        newErrors.password = 'Password is required';
-      } else if (password.length < 6) {
-        newErrors.password = 'Password must be at least 6 characters';
-      }
-      
-      // Sign up specific validations
-      if (isSignUp) {
-        if (!username) {
-          newErrors.username = 'Username is required';
-        } else if (username.length < 3) {
-          newErrors.username = 'Username must be at least 3 characters';
-        }
-        
-        if (password !== confirmPassword) {
-          newErrors.confirmPassword = 'Passwords do not match';
-        }
-      }
-      
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        source: 'ui',
-        level: 'warning',
-        context: { component: 'LoginScreen', action: 'validateForm' }
-      });
-      return false;
+    const newErrors: {[key: string]: string} = {};
+    
+    // Email validation
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email';
     }
+    
+    // Password validation
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    // Sign up specific validations
+    if (isSignUp) {
+      if (!username) {
+        newErrors.username = 'Username is required';
+      } else if (username.length < 3) {
+        newErrors.username = 'Username must be at least 3 characters';
+      }
+      
+      if (password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   /**
@@ -96,14 +76,14 @@ export default function LoginScreen() {
     }
 
     try {
-      console.log('LoginScreen: Starting login process');
       setLoading(true);
+      console.log('LoginScreen: Attempting login');
       await login(email, password);
-      console.log('LoginScreen: Login completed');
-      // Navigation will be handled by RouteGuard which watches for auth state changes
+      console.log('LoginScreen: Login successful');
+      // Navigation is handled by root layout
     } catch (error) {
-      // Error handling is already done in AuthContext
-      console.error('LoginScreen: Login error:', error);
+      console.error('Login error:', error);
+      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -118,22 +98,21 @@ export default function LoginScreen() {
     }
 
     try {
-      console.log('LoginScreen: Starting registration process');
       setLoading(true);
+      console.log('LoginScreen: Attempting registration');
       await register({
         username,
         email,
         password,
         displayName: username
       });
+      console.log('LoginScreen: Registration successful');
       
-      console.log('LoginScreen: Registration completed');
-      // Switch back to login form after successful registration
+      // Navigation is handled by root layout
       setIsSignUp(false);
-      // Navigation will be handled by RouteGuard
     } catch (error) {
-      // Error handling is already done in AuthContext
-      console.error('LoginScreen: Registration error:', error);
+      console.error('Registration error:', error);
+      Alert.alert('Registration Failed', 'Could not create account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -143,23 +122,15 @@ export default function LoginScreen() {
    * Toggle between login and signup forms
    */
   const toggleSignUp = () => {
-    try {
-      setIsSignUp(!isSignUp);
-      // Clear fields when switching modes
-      setPassword('');
-      setConfirmPassword('');
-      setErrors({});
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        source: 'ui',
-        level: 'warning',
-        context: { component: 'LoginScreen', action: 'toggleSignUp' }
-      });
-    }
+    setIsSignUp(!isSignUp);
+    // Clear fields when switching modes
+    setPassword('');
+    setConfirmPassword('');
+    setErrors({});
   };
 
   // Determine if loading indicator should be shown
-  const showLoading = isLoading || loading;
+  const showLoading = authLoading || loading;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -213,7 +184,6 @@ export default function LoginScreen() {
                     error={errors.username}
                     testID="username-input"
                     accessibilityLabel="Username input"
-                    accessibilityHint="Enter your username, minimum 3 characters"
                   />
                 )}
 
@@ -227,7 +197,6 @@ export default function LoginScreen() {
                   error={errors.email}
                   testID="email-input"
                   accessibilityLabel="Email input"
-                  accessibilityHint="Enter your email address"
                 />
 
                 <Input 
@@ -239,7 +208,6 @@ export default function LoginScreen() {
                   error={errors.password}
                   testID="password-input"
                   accessibilityLabel="Password input"
-                  accessibilityHint="Enter your password, minimum 6 characters"
                 />
 
                 {isSignUp && (
@@ -252,7 +220,6 @@ export default function LoginScreen() {
                     error={errors.confirmPassword}
                     testID="confirm-password-input"
                     accessibilityLabel="Confirm password input"
-                    accessibilityHint="Enter your password again to confirm"
                   />
                 )}
 
@@ -260,7 +227,6 @@ export default function LoginScreen() {
                   title={isSignUp ? 'Sign Up' : 'Login'}
                   onPress={isSignUp ? handleSignUp : handleLogin}
                   size="large"
-                  loading={loading}
                   style={styles.actionButton}
                   testID={isSignUp ? "signup-button" : "login-button"}
                   accessibilityLabel={isSignUp ? "Sign up button" : "Login button"}
