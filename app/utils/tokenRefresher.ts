@@ -1,10 +1,15 @@
 import { Platform } from 'react-native';
 import { STORAGE_KEYS } from './storage';
-import { isTokenExpired, getRefreshToken, storeAuthTokens } from './tokenUtils';
+import { isTokenExpired, getRefreshToken, storeAuthTokens, getAuthToken } from './tokenUtils';
 import config from '../constants/config';
 import { errorService } from '../services/ErrorService';
 
+// Global refresh promise to prevent multiple refreshes
 let refreshPromise: Promise<boolean> | null = null;
+
+// Debounce period to prevent excessive refresh attempts
+const REFRESH_DEBOUNCE_MS = 1000;
+let lastRefreshAttempt = 0;
 
 /**
  * Check if token needs refresh and perform refresh if needed
@@ -12,6 +17,12 @@ let refreshPromise: Promise<boolean> | null = null;
  */
 export async function ensureValidToken(): Promise<boolean> {
   try {
+    // Check if token exists
+    const token = await getAuthToken();
+    if (!token) {
+      return false;
+    }
+    
     // If a refresh is already in progress, wait for it
     if (refreshPromise) {
       return await refreshPromise;
@@ -22,6 +33,17 @@ export async function ensureValidToken(): Promise<boolean> {
     if (!expired) {
       return true; // Token is still valid
     }
+
+    // Debounce refresh attempts
+    const now = Date.now();
+    if (now - lastRefreshAttempt < REFRESH_DEBOUNCE_MS) {
+      console.log('Refresh attempt debounced, using existing refresh promise or creating new one');
+      if (refreshPromise) {
+        return await refreshPromise;
+      }
+    }
+    
+    lastRefreshAttempt = now;
 
     // Get refresh token
     const refreshToken = await getRefreshToken();
@@ -36,11 +58,14 @@ export async function ensureValidToken(): Promise<boolean> {
     }
 
     // Create a single refresh promise to prevent multiple refreshes
+    console.log('Starting token refresh process');
     refreshPromise = refreshTokenFlow(refreshToken);
+    
+    // Wait for result and clear promise
     const result = await refreshPromise;
     refreshPromise = null;
+    
     return result;
-
   } catch (error) {
     errorService.handleError(error instanceof Error ? error : String(error), {
       source: 'auth',
@@ -48,6 +73,8 @@ export async function ensureValidToken(): Promise<boolean> {
       displayToUser: false,
       context: { action: 'ensureValidToken' }
     });
+    
+    // Clear refresh promise to allow future attempts
     refreshPromise = null;
     return false;
   }
@@ -62,6 +89,9 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
   try {
     const url = `${config.apiUrl}${config.apiBasePath}/auth/refresh`;
     
+    console.log('Refreshing token at:', url);
+    
+    // Make refresh token request
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -70,33 +100,39 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
       body: JSON.stringify({ refreshToken }),
     });
 
+    // Handle non-success response
     if (!response.ok) {
-      throw new Error(`Refresh failed: ${response.status}`);
+      const statusText = response.statusText || `Status code: ${response.status}`;
+      console.error('Refresh token request failed:', statusText);
+      
+      // Log more details for debugging
+      try {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+      } catch (e) {
+        // Ignore error reading response
+      }
+      
+      throw new Error(`Refresh failed: ${statusText}`);
     }
 
+    // Parse response
     const data = await response.json();
     
+    // Validate response
     if (!data.success || !data.token) {
+      console.error('Invalid refresh response:', JSON.stringify(data).substring(0, 200));
       throw new Error('Invalid refresh response');
     }
 
+    console.log('Token refresh successful');
+    
     // Store new tokens
     await storeAuthTokens(
       data.token,
-      data.expiresIn,
-      data.refreshToken // May be the same or a new refresh token
+      data.expiresIn || config.authConfig.tokenExpiration / 1000,
+      data.refreshToken || refreshToken // Use new refresh token if provided, otherwise reuse existing
     );
-    
-    // For web platform, ensure token is immediately available in localStorage
-    if (Platform.OS === 'web') {
-      const expiryTime = Date.now() + (data.expiresIn || config.authConfig.tokenExpiration / 1000) * 1000;
-      localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
-      localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString());
-      
-      if (data.refreshToken) {
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
-      }
-    }
     
     return true;
   } catch (error) {
@@ -110,4 +146,12 @@ async function refreshTokenFlow(refreshToken: string): Promise<boolean> {
   }
 }
 
-export default { ensureValidToken };
+/**
+ * Reset the refresh state - useful after logout or for testing
+ */
+export function resetRefreshState(): void {
+  refreshPromise = null;
+  lastRefreshAttempt = 0;
+}
+
+export default { ensureValidToken, resetRefreshState };
