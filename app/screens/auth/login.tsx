@@ -19,10 +19,11 @@ import { useAuth } from '@/app/context/AuthContext';
 // Import themed components
 import { View, Text, Button, Input, Card } from '@/app/components';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, register, isAuthenticated, isLoading, isPendingApproval } = useAuth();
+  const { login, register, isAuthenticated, isLoading, isPendingApproval, authState } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,48 +32,75 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
+  // Log auth state for debugging
+  useEffect(() => {
+    console.log('LoginScreen: Auth state:', authState, 'isAuthenticated:', isAuthenticated);
+  }, [authState, isAuthenticated]);
+
   // If already authenticated, redirect to home
   if (isAuthenticated && !isLoading) {
+    console.log('LoginScreen: User is authenticated, redirecting to tabs...');
     return <Redirect href="/(tabs)" />;
   }
 
-  // If pending approval, show the modal
+  // If pending approval, redirect to approval modal
   useEffect(() => {
     if (isPendingApproval && !isLoading) {
-      router.push('/screens/modals/approval-pending-modal');
+      console.log('LoginScreen: User account is pending approval, redirecting...');
+      router.replace('/screens/modals/approval-pending-modal');
     }
   }, [isPendingApproval, isLoading]);
 
-  // Validate form inputs
+  /**
+   * Validate form inputs
+   * @returns {boolean} True if form is valid, false otherwise
+   */
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-    
-    if (!email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    
-    if (isSignUp) {
-      if (!username) {
-        newErrors.username = 'Username is required';
+    try {
+      const newErrors: {[key: string]: string} = {};
+      
+      // Email validation
+      if (!email) {
+        newErrors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(email)) {
+        newErrors.email = 'Please enter a valid email';
       }
       
-      if (password !== confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
+      // Password validation
+      if (!password) {
+        newErrors.password = 'Password is required';
+      } else if (password.length < 6) {
+        newErrors.password = 'Password must be at least 6 characters';
       }
+      
+      // Sign up specific validations
+      if (isSignUp) {
+        if (!username) {
+          newErrors.username = 'Username is required';
+        } else if (username.length < 3) {
+          newErrors.username = 'Username must be at least 3 characters';
+        }
+        
+        if (password !== confirmPassword) {
+          newErrors.confirmPassword = 'Passwords do not match';
+        }
+      }
+      
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        source: 'ui',
+        level: 'warning',
+        context: { component: 'LoginScreen', action: 'validateForm' }
+      });
+      return false;
     }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handle login form submission
+   */
   const handleLogin = async () => {
     if (!validateForm()) {
       return;
@@ -81,14 +109,18 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await login(email, password);
+      // Navigation is handled in AuthContext
     } catch (error) {
+      // Error is already handled by AuthContext
       console.error('Login error:', error);
-      // Error is already handled in AuthContext
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Handle sign up form submission
+   */
   const handleSignUp = async () => {
     if (!validateForm()) {
       return;
@@ -103,23 +135,34 @@ export default function LoginScreen() {
         displayName: username
       });
       
-      // Don't show success alert as AuthContext will handle it
-      // and show the modal if needed
+      // If we get here without error, registration was successful
+      // Navigation is handled by AuthContext based on response
       setIsSignUp(false);
     } catch (error) {
+      // Error is already logged and displayed by AuthContext
       console.error('Registration error:', error);
-      // Error is already handled in AuthContext
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Toggle between login and signup forms
+   */
   const toggleSignUp = () => {
-    setIsSignUp(!isSignUp);
-    // Clear fields when switching modes
-    setPassword('');
-    setConfirmPassword('');
-    setErrors({});
+    try {
+      setIsSignUp(!isSignUp);
+      // Clear fields when switching modes
+      setPassword('');
+      setConfirmPassword('');
+      setErrors({});
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        source: 'ui',
+        level: 'warning',
+        context: { component: 'LoginScreen', action: 'toggleSignUp' }
+      });
+    }
   };
 
   return (
@@ -136,6 +179,7 @@ export default function LoginScreen() {
             <Image 
               source={require('../../../assets/images/armatillo-placeholder-logo.png')}
               style={styles.logo}
+              accessibilityLabel="Armatillo logo"
             />
             <Text style={styles.appName}>Armatillo</Text>
             <Text style={styles.tagline}>Track your BFRB habits</Text>
@@ -148,7 +192,12 @@ export default function LoginScreen() {
             </Text>
             
             {isLoading || loading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary.main} style={styles.loading} />
+              <ActivityIndicator 
+                size="large" 
+                color={theme.colors.primary.main} 
+                style={styles.loading}
+                accessibilityLabel={isSignUp ? "Creating account" : "Signing in"}
+              />
             ) : (
               <>
                 {isSignUp && (
@@ -159,6 +208,9 @@ export default function LoginScreen() {
                     onChangeText={setUsername}
                     autoCapitalize="none"
                     error={errors.username}
+                    testID="username-input"
+                    accessibilityLabel="Username input"
+                    accessibilityHint="Enter your username, minimum 3 characters"
                   />
                 )}
 
@@ -170,6 +222,9 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   error={errors.email}
+                  testID="email-input"
+                  accessibilityLabel="Email input"
+                  accessibilityHint="Enter your email address"
                 />
 
                 <Input 
@@ -179,6 +234,9 @@ export default function LoginScreen() {
                   onChangeText={setPassword}
                   secureTextEntry
                   error={errors.password}
+                  testID="password-input"
+                  accessibilityLabel="Password input"
+                  accessibilityHint="Enter your password, minimum 6 characters"
                 />
 
                 {isSignUp && (
@@ -189,6 +247,9 @@ export default function LoginScreen() {
                     onChangeText={setConfirmPassword}
                     secureTextEntry
                     error={errors.confirmPassword}
+                    testID="confirm-password-input"
+                    accessibilityLabel="Confirm password input"
+                    accessibilityHint="Enter your password again to confirm"
                   />
                 )}
 
@@ -198,6 +259,8 @@ export default function LoginScreen() {
                   size="large"
                   loading={loading}
                   style={styles.actionButton}
+                  testID={isSignUp ? "signup-button" : "login-button"}
+                  accessibilityLabel={isSignUp ? "Sign up button" : "Login button"}
                 />
 
                 <Button 
@@ -205,11 +268,14 @@ export default function LoginScreen() {
                   onPress={toggleSignUp}
                   variant="text"
                   size="medium"
+                  testID="toggle-auth-mode-button"
+                  accessibilityLabel={isSignUp ? "Switch to login" : "Switch to sign up"}
                 />
               </>
             )}
           </Card>
           
+          {/* Terms of Service and Privacy Policy - Commented out for now */}
           {/* <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>
               By using this app, you agree to our{' '}
