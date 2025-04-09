@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, View, ActivityIndicator } from 'react-native';
 import theme from '@/app/constants/theme';
 import { useAuth } from '@/app/context/AuthContext';
 import RouteGuard from '@/app/components/RouteGuard';
@@ -12,12 +12,31 @@ import RouteGuard from '@/app/components/RouteGuard';
  */
 export default function TabLayout() {
   const { isAuthenticated, authState } = useAuth();
+  const [ready, setReady] = useState(false);
+  
+  // Delay rendering slightly to avoid race conditions
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setReady(true);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Log for debugging
   useEffect(() => {
     console.log('TabLayout mounted, auth state:', authState);
     console.log('TabLayout isAuthenticated:', isAuthenticated);
   }, [authState, isAuthenticated]);
+
+  // Show loading while preparing tabs
+  if (!ready) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+      </View>
+    );
+  }
 
   return (
     <RouteGuard>
@@ -30,8 +49,10 @@ export default function TabLayout() {
           tabBarStyle: styles.tabBar,
           tabBarLabelStyle: styles.tabLabel,
           tabBarItemStyle: styles.tabItem,
-          // Disable swipe navigation to prevent gesture and programmatic navigation conflicts
+          // Disable animations on web to prevent navigation issues
           animationEnabled: Platform.OS !== 'web',
+          // Prevent gesture navigation to avoid conflicts with programmatic navigation
+          gestureEnabled: false,
         }}>
         <Tabs.Screen
           name="progress"
@@ -78,6 +99,12 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background.primary,
+  },
   tabBar: {
     borderTopColor: theme.colors.border.light,
     backgroundColor: theme.colors.background.primary,
