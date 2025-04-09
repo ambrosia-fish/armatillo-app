@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Slot, Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import { Redirect, Slot, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, View, Text, ActivityIndicator } from 'react-native';
@@ -31,7 +31,6 @@ SplashScreen.preventAutoHideAsync();
 function ProtectedLayout() {
   const { isAuthenticated, isLoading, authState } = useAuth();
   const segments = useSegments();
-  const router = useRouter();
   
   // Non-protected routes - these don't require authentication
   const publicRoutes = [
@@ -49,44 +48,7 @@ function ProtectedLayout() {
     console.log(`ProtectedLayout: Segments ${segments.join('/')}, needsAuth: ${needsAuth}, authState: ${authState}`);
   }, [segments, needsAuth, authState]);
 
-  // Handle navigation based on auth state and route
-  useEffect(() => {
-    // Skip during loading phase
-    if (isLoading) return;
-    
-    try {
-      // If path needs auth and user is not authenticated, handle navigation
-      if (needsAuth && !isAuthenticated) {
-        console.log('ProtectedLayout: Path requires auth but user is not authenticated');
-        
-        // Use a small timeout to prevent navigation race conditions
-        const timer = setTimeout(() => {
-          try {
-            // Navigate to login
-            if (router) {
-              router.replace('/screens/auth/login');
-            }
-          } catch (error) {
-            errorService.handleError(error instanceof Error ? error : String(error), {
-              source: 'navigation',
-              level: 'warning',
-              context: { component: 'ProtectedLayout', action: 'redirect' }
-            });
-          }
-        }, 250);
-        
-        // Cleanup timer on unmount
-        return () => clearTimeout(timer);
-      }
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'navigation',
-        context: { component: 'ProtectedLayout', action: 'checkAuth' }
-      });
-    }
-  }, [isLoading, isAuthenticated, segments, needsAuth, router]);
-  
-  // If loading, show loading indicator
+  // If loading, show a loading spinner
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -96,15 +58,21 @@ function ProtectedLayout() {
     );
   }
   
-  // If needs auth but not authenticated, show loading while redirecting
+  // Instead of using imperative navigation, use declarative Redirect
   if (needsAuth && !isAuthenticated) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
         <Text style={styles.loadingText}>Please wait...</Text>
         <Text style={styles.subText}>Redirecting to login...</Text>
+        <Redirect href="/screens/auth/login" />
       </View>
     );
+  }
+  
+  // If authenticated but on login screen, redirect to home
+  if (isAuthenticated && segments.includes('login')) {
+    return <Redirect href="/(tabs)" />;
   }
   
   // Otherwise render slot for children
