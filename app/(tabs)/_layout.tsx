@@ -11,6 +11,7 @@ import theme from '@/app/constants/theme';
 export default function TabLayout() {
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary.main,
         tabBarInactiveTintColor: theme.colors.text.tertiary,
@@ -19,19 +20,7 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Progress',
-          tabBarIcon: ({ color, focused }) => 
-            <Ionicons 
-              name={focused ? 'time' : 'time-outline'} 
-              size={24} 
-              color={color} 
-              accessibilityLabel="Progress tab"
-            />,
-        }}
-      />
+      {/* Home tab - MUST BE FIRST for it to be the default */}
       <Tabs.Screen
         name="index"
         options={{
@@ -45,6 +34,23 @@ export default function TabLayout() {
             />,
         }}
       />
+      
+      {/* Progress tab */}
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progress',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'time' : 'time-outline'} 
+              size={24} 
+              color={color} 
+              accessibilityLabel="Progress tab"
+            />,
+        }}
+      />
+      
+      {/* Settings tab */}
       <Tabs.Screen
         name="settings"
         options={{
