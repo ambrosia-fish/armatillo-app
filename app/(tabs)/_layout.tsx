@@ -20,22 +20,7 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
-      {/* Progress tab (left position) */}
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Progress',
-          tabBarIcon: ({ color, focused }) => 
-            <Ionicons 
-              name={focused ? 'time' : 'time-outline'} 
-              size={24} 
-              color={color} 
-              accessibilityLabel="Progress tab"
-            />,
-        }}
-      />
-      
-      {/* Home tab (middle position) */}
+      {/* Home tab - MUST BE FIRST for it to be the default */}
       <Tabs.Screen
         name="index"
         options={{
@@ -50,7 +35,22 @@ export default function TabLayout() {
         }}
       />
       
-      {/* Settings tab (right position) */}
+      {/* Progress tab */}
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progress',
+          tabBarIcon: ({ color, focused }) => 
+            <Ionicons 
+              name={focused ? 'time' : 'time-outline'} 
+              size={24} 
+              color={color} 
+              accessibilityLabel="Progress tab"
+            />,
+        }}
+      />
+      
+      {/* Settings tab */}
       <Tabs.Screen
         name="settings"
         options={{
@@ -67,3 +67,28 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    borderTopColor: theme.colors.border.light,
+    backgroundColor: theme.colors.background.primary,
+    // Add elevation for Android
+    elevation: 4,
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  tabLabel: {
+    fontSize: 12,
+    marginBottom: Platform.OS === 'ios' ? 0 : 4,
+  },
+  tabItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 6,
+  }
+});
