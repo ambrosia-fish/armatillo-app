@@ -37,27 +37,6 @@ export default function LoginScreen() {
     console.log('LoginScreen: Auth state:', authState, 'isAuthenticated:', isAuthenticated);
   }, [authState, isAuthenticated]);
 
-  // Handle redirection based on authentication state changes
-  useEffect(() => {
-    if (isLoading) return;
-
-    try {
-      if (isAuthenticated) {
-        console.log('LoginScreen: User is authenticated, navigating to tabs...');
-        // Let ProtectedLayout handle navigation to avoid race conditions
-      } else if (isPendingApproval) {
-        console.log('LoginScreen: User account is pending approval, navigating...');
-        // Let ProtectedLayout handle navigation to avoid race conditions
-      }
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        source: 'navigation',
-        level: 'warning',
-        context: { component: 'LoginScreen', action: 'navigationEffect' }
-      });
-    }
-  }, [isAuthenticated, isPendingApproval, isLoading]);
-
   /**
    * Validate form inputs
    * @returns {boolean} True if form is valid, false otherwise
@@ -116,7 +95,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await login(email, password);
-      // Navigation is handled by AuthContext state changes
+      // Navigation is handled by RouteGuard
     } catch (error) {
       // Error is already handled by AuthContext
       console.error('Login error:', error);
@@ -142,7 +121,7 @@ export default function LoginScreen() {
         displayName: username
       });
       
-      // Navigation is handled by AuthContext state changes
+      // Navigation is handled by RouteGuard
       setIsSignUp(false);
     } catch (error) {
       // Error is already logged and displayed by AuthContext
