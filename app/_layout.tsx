@@ -1,81 +1,55 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Slot, Stack, SplashScreen } from 'expo-router';
-import { useCallback, useEffect, useState, useRef } from 'react';
-import { Platform, View, Text, ActivityIndicator } from 'react-native';
-import 'react-native-reanimated';
+import { Stack, SplashScreen, useRouter, useSegments } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
 
 export { ErrorBoundary };
 
-export const unstable_settings = {
-  initialRouteName: '(tabs)',
-};
-
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 /**
- * Root layout component
+ * Root layout component that handles app initialization and auth flow
  */
 export default function RootLayout() {
-  // Always declare all hooks at the top level
-  const [loaded, error] = useFonts({
+  // Load fonts
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-  
-  // Add colorScheme here so it's consistent in all renders
-  const colorScheme = useColorScheme();
-  
-  // State to track initialization
-  const [layoutReady, setLayoutReady] = useState(false);
-  
-  // Use ref to track if we've already hidden the splash screen
-  const splashHiddenRef = useRef(false);
-  
-  // Handle error state
+
+  // Handle font loading errors
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-  
-  // Hide splash screen when fonts are loaded
-  const onLayoutRootView = useCallback(async () => {
-    if (loaded && !splashHiddenRef.current) {
-      try {
-        splashHiddenRef.current = true;
-        await SplashScreen.hideAsync();
-        console.log('Splash screen hidden');
-        
-        // Set layout ready after splash screen is hidden
-        setTimeout(() => {
-          setLayoutReady(true);
-        }, 100);
-      } catch (e) {
-        console.error('Error hiding splash screen:', e);
-      }
+    if (fontError) throw fontError;
+  }, [fontError]);
+
+  // Hide splash screen once fonts are loaded
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
     }
-  }, [loaded]);
-  
-  // Always return null for the same condition
-  if (!loaded) {
+  }, [fontsLoaded]);
+
+  // Don't render the app until fonts are loaded
+  if (!fontsLoaded) {
     return null;
   }
-  
-  // Return the root stack navigator
+
   return (
     <ErrorBoundary>
       <AuthProvider>
         <FormProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <RootNavigator onLayout={onLayoutRootView} />
+          <ThemeProvider value={useColorScheme() === 'dark' ? DarkTheme : DefaultTheme}>
+            <RootNavigator />
           </ThemeProvider>
         </FormProvider>
       </AuthProvider>
@@ -83,97 +57,96 @@ export default function RootLayout() {
   );
 }
 
-interface RootNavigatorProps {
-  onLayout: () => Promise<void>;
-}
-
 /**
- * Root navigator component with stack navigation
+ * Main navigator with central route protection
  */
-function RootNavigator({ onLayout }: RootNavigatorProps) {
+function RootNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Handle authentication-based navigation
+  useEffect(() => {
+    // Skip navigation during loading or when already navigating
+    if (isLoading || isNavigating) return;
+
+    const inAuthGroup = segments[0] === 'screens' && segments[1] === 'auth';
+    
+    setIsNavigating(true);
+    
+    if (!isAuthenticated && !inAuthGroup) {
+      // If not authenticated and not on auth screens, go to login
+      console.log('Navigation: Redirecting to login');
+      setTimeout(() => {
+        router.replace('/screens/auth/login');
+        setIsNavigating(false);
+      }, 100);
+    } else if (isAuthenticated && inAuthGroup) {
+      // If authenticated and on auth screens, go to home
+      console.log('Navigation: Redirecting to home');
+      setTimeout(() => {
+        router.replace('/(tabs)');
+        setIsNavigating(false);
+      }, 100);
+    } else {
+      // Otherwise just clear the navigating flag
+      setIsNavigating(false);
+    }
+  }, [isAuthenticated, isLoading, segments, router, isNavigating]);
+
+  // Show loading indicator during auth check
+  if (isLoading || isNavigating) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+      </View>
+    );
+  }
+
+  // Define all app routes without any conditional logic
   return (
-    <View style={{ flex: 1 }} onLayout={onLayout}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: Platform.OS === 'web' ? 'none' : 'default',
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Auth screens */}
+      <Stack.Screen name="screens/auth/login" />
+      
+      {/* Main app */}
+      <Stack.Screen name="(tabs)" />
+      
+      {/* Modal Screens */}
+      <Stack.Screen 
+        name="screens/modals/modal" 
+        options={{ presentation: 'modal' }} 
+      />
+      <Stack.Screen 
+        name="screens/modals/approval-pending-modal" 
+        options={{ 
+          presentation: 'modal',
           gestureEnabled: false,
-        }}>
-        {/* Authentication Screens */}
-        <Stack.Screen
-          name="screens/auth/login"
-          options={{ headerShown: false }}
-        />
-        
-        {/* Main App Screens */}
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ headerShown: false }} 
-        />
-        
-        {/* Modal Screens */}
-        <Stack.Screen 
-          name="screens/modals/modal" 
-          options={{ 
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-          }} 
-        />
-        <Stack.Screen 
-          name="screens/modals/approval-pending-modal" 
-          options={{ 
-            presentation: 'modal',
-            headerShown: false,
-            gestureEnabled: false,
-          }} 
-        />
-        
-        {/* Tracking Screens */}
-        <Stack.Screen 
-          name="screens/tracking/new-options-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/new-entry-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/time-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/urge-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/environment-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/mental-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/thoughts-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/physical-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/sensory-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/tracking/submit-screen" 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="screens/modals/detail-screen" 
-          options={{ headerShown: false }} 
-        />
-      </Stack>
-    </View>
+        }} 
+      />
+      
+      {/* Tracking Screens */}
+      <Stack.Screen name="screens/tracking/new-options-screen" />
+      <Stack.Screen name="screens/tracking/new-entry-screen" />
+      <Stack.Screen name="screens/tracking/time-screen" />
+      <Stack.Screen name="screens/tracking/urge-screen" />
+      <Stack.Screen name="screens/tracking/environment-screen" />
+      <Stack.Screen name="screens/tracking/mental-screen" />
+      <Stack.Screen name="screens/tracking/thoughts-screen" />
+      <Stack.Screen name="screens/tracking/physical-screen" />
+      <Stack.Screen name="screens/tracking/sensory-screen" />
+      <Stack.Screen name="screens/tracking/submit-screen" />
+      <Stack.Screen name="screens/modals/detail-screen" />
+    </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background.primary,
+  },
+});
