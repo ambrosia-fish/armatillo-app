@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle, Animated } from 'react-native';
+import { 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
+  ViewStyle, 
+  TextStyle, 
+  ImageStyle, 
+  Animated 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,22 +21,22 @@ import { useAuth } from '@/app/context/AuthContext';
  */
 export default function HomeScreen() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   
   // Animation value for button press effect
   const [buttonScale] = useState(new Animated.Value(1));
   
-  // Log for debugging
+  // Log component mounting for debugging
   useEffect(() => {
-    console.log('HomeScreen: Mounted, auth status:', isAuthenticated);
-  }, [isAuthenticated]);
+    console.log('HomeScreen mounted, user:', user?.displayName || 'No user');
+  }, [user]);
   
   /**
    * Navigate to the new options screen to begin the tracking flow
    */
   const addNewEntry = () => {
     try {
-      console.log('HomeScreen: Starting new entry');
+      console.log('HomeScreen: Starting new entry flow');
       
       // Animate button press
       Animated.sequence([
