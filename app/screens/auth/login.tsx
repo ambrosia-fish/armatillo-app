@@ -31,12 +31,15 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-
+  
   // Log auth state for debugging
   useEffect(() => {
     console.log('LoginScreen: Auth state:', authState, 'isAuthenticated:', isAuthenticated);
-  }, [authState, isAuthenticated]);
-
+    console.log('LoginScreen: Loading state:', isLoading, 'Component loading:', loading);
+  }, [authState, isAuthenticated, isLoading, loading]);
+  
+  // Since navigation is now handled by RouteGuard, no need for redirect logic here
+  
   /**
    * Validate form inputs
    * @returns {boolean} True if form is valid, false otherwise
@@ -93,12 +96,14 @@ export default function LoginScreen() {
     }
 
     try {
+      console.log('LoginScreen: Starting login process');
       setLoading(true);
       await login(email, password);
-      // Navigation is handled by RouteGuard
+      console.log('LoginScreen: Login completed');
+      // Navigation will be handled by RouteGuard which watches for auth state changes
     } catch (error) {
-      // Error is already handled by AuthContext
-      console.error('Login error:', error);
+      // Error handling is already done in AuthContext
+      console.error('LoginScreen: Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -113,6 +118,7 @@ export default function LoginScreen() {
     }
 
     try {
+      console.log('LoginScreen: Starting registration process');
       setLoading(true);
       await register({
         username,
@@ -121,11 +127,13 @@ export default function LoginScreen() {
         displayName: username
       });
       
-      // Navigation is handled by RouteGuard
+      console.log('LoginScreen: Registration completed');
+      // Switch back to login form after successful registration
       setIsSignUp(false);
+      // Navigation will be handled by RouteGuard
     } catch (error) {
-      // Error is already logged and displayed by AuthContext
-      console.error('Registration error:', error);
+      // Error handling is already done in AuthContext
+      console.error('LoginScreen: Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -150,6 +158,9 @@ export default function LoginScreen() {
     }
   };
 
+  // Determine if loading indicator should be shown
+  const showLoading = isLoading || loading;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
@@ -158,7 +169,10 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Logo and app name */}
           <View style={styles.logoContainer}>
             <Image 
@@ -176,13 +190,17 @@ export default function LoginScreen() {
               {isSignUp ? 'Create an Account' : 'Sign in to continue'}
             </Text>
             
-            {isLoading || loading ? (
-              <ActivityIndicator 
-                size="large" 
-                color={theme.colors.primary.main} 
-                style={styles.loading}
-                accessibilityLabel={isSignUp ? "Creating account" : "Signing in"}
-              />
+            {showLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator 
+                  size="large" 
+                  color={theme.colors.primary.main} 
+                  accessibilityLabel={isSignUp ? "Creating account" : "Signing in"}
+                />
+                <Text style={styles.loadingText}>
+                  {isSignUp ? 'Creating your account...' : 'Signing you in...'}
+                </Text>
+              </View>
             ) : (
               <>
                 {isSignUp && (
@@ -315,20 +333,14 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.md,
   } as ViewStyle,
-  privacyContainer: {
-    marginTop: 'auto',
-    marginBottom: theme.spacing.md,
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
   } as ViewStyle,
-  privacyText: {
-    fontSize: theme.typography.fontSize.sm,
+  loadingText: {
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    textAlign: 'center',
   } as TextStyle,
-  privacyLink: {
-    color: theme.colors.primary.main,
-    fontWeight: theme.typography.fontWeight.medium as '500',
-  } as TextStyle,
-  loading: {
-    marginVertical: theme.spacing.xl,
-  } as ViewStyle,
 });
