@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import theme from '@/app/constants/theme';
@@ -15,6 +15,10 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
   
   // Add state to track navigation actions to prevent duplicates
   const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Use ref to track previous segments to prevent redundant navigation
+  const prevSegmentsRef = useRef<string[]>([]);
+  const navigationAttemptRef = useRef(0);
   
   // Define routes that don't require authentication
   const publicRoutes = [
@@ -33,6 +37,18 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
     console.log('RouteGuard: Is navigating:', isNavigating);
   }, [segments, isPublicRoute, authState, isNavigating]);
   
+  // Reset navigation attempt counter when segments change
+  useEffect(() => {
+    const segmentsString = segments.join('/');
+    const prevSegmentsString = prevSegmentsRef.current.join('/');
+    
+    if (segmentsString !== prevSegmentsString) {
+      console.log('RouteGuard: Segments changed from', prevSegmentsString, 'to', segmentsString);
+      navigationAttemptRef.current = 0;
+      prevSegmentsRef.current = segments;
+    }
+  }, [segments]);
+  
   // Handle navigation and protection
   useEffect(() => {
     // Don't do anything if already navigating to prevent race conditions
@@ -45,50 +61,82 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
       return;
     }
     
-    // If the route requires authentication and user is not authenticated, redirect to login
+    // If on a protected route without authentication, redirect to login
     if (!isPublicRoute && !isAuthenticated) {
+      // Prevent excessive navigation attempts
+      if (navigationAttemptRef.current >= 2) {
+        console.log('RouteGuard: Too many navigation attempts, aborting');
+        return;
+      }
+      
       console.log('RouteGuard: Redirecting to login screen');
+      navigationAttemptRef.current += 1;
       
       // Set navigating state to prevent duplicate navigation
       setIsNavigating(true);
       
-      // Use a small delay to avoid navigation race conditions
-      const timer = setTimeout(() => {
-        router.replace('/screens/auth/login');
+      // Use different navigation approaches based on platform
+      if (Platform.OS === 'web') {
+        window.location.href = '/screens/auth/login';
+      } else {
+        // Use a small delay to avoid navigation race conditions
+        const timer = setTimeout(() => {
+          try {
+            router.replace('/screens/auth/login');
+          } catch (e) {
+            console.error('RouteGuard navigation error:', e);
+          }
+          
+          // Reset navigating state after a delay
+          setTimeout(() => {
+            setIsNavigating(false);
+          }, 500);
+        }, 300);
         
-        // Reset navigating state after a delay to allow for new navigation events
-        setTimeout(() => {
+        return () => {
+          clearTimeout(timer);
           setIsNavigating(false);
-        }, 500);
-      }, 300);
-      
-      return () => {
-        clearTimeout(timer);
-        setIsNavigating(false);
-      };
+        };
+      }
     }
     
-    // If user is authenticated and on login screen, redirect to home
+    // If authenticated but on login screen, redirect to home
     if (isAuthenticated && segments.includes('login')) {
+      // Prevent excessive navigation attempts
+      if (navigationAttemptRef.current >= 2) {
+        console.log('RouteGuard: Too many navigation attempts, aborting');
+        return;
+      }
+      
       console.log('RouteGuard: Redirecting to home screen');
+      navigationAttemptRef.current += 1;
       
       // Set navigating state to prevent duplicate navigation
       setIsNavigating(true);
       
-      // Use a small delay to avoid navigation race conditions
-      const timer = setTimeout(() => {
-        router.replace('/(tabs)');
+      // Use different navigation approaches based on platform
+      if (Platform.OS === 'web') {
+        window.location.href = '/(tabs)';
+      } else {
+        // Use a small delay to avoid navigation race conditions
+        const timer = setTimeout(() => {
+          try {
+            router.replace('/(tabs)');
+          } catch (e) {
+            console.error('RouteGuard navigation error:', e);
+          }
+          
+          // Reset navigating state after a delay
+          setTimeout(() => {
+            setIsNavigating(false);
+          }, 500);
+        }, 300);
         
-        // Reset navigating state after a delay to allow for new navigation events
-        setTimeout(() => {
+        return () => {
+          clearTimeout(timer);
           setIsNavigating(false);
-        }, 500);
-      }, 300);
-      
-      return () => {
-        clearTimeout(timer);
-        setIsNavigating(false);
-      };
+        };
+      }
     }
   }, [isAuthenticated, isLoading, segments, isPublicRoute, router, isNavigating]);
   
@@ -103,7 +151,7 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
   }
   
   // If on a protected route without authentication, show loading screen while redirecting
-  if (!isPublicRoute && !isAuthenticated) {
+  if (!isPublicRoute && !isAuthenticated && isNavigating) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
@@ -113,12 +161,13 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
     );
   }
   
-  // If navigating, show loading screen to prevent flicker
-  if (isNavigating) {
+  // If authenticated and on login page, show loading while redirecting
+  if (isAuthenticated && segments.includes('login') && isNavigating) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
-        <Text style={styles.loadingText}>Navigating...</Text>
+        <Text style={styles.loadingText}>Please wait...</Text>
+        <Text style={styles.subText}>Redirecting to home...</Text>
       </View>
     );
   }
