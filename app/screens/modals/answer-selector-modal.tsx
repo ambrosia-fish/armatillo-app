@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { OptionItem } from '@/app/constants/optionDictionaries';
 import theme from '@/app/constants/theme';
-import EmojiPill from './EmojiPill';
+import EmojiPill from '../../components/EmojiPill';
 import { errorService } from '@/app/services/ErrorService';
 import ModalComponent from '@/app/screens/modals/modal';
 
