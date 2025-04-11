@@ -10,3 +10,4 @@
 export { default as Modal } from './modal';
 export { default as TimePickerModal } from './time-picker-modal';
 export { default as DurationPickerModal } from './duration-picker-modal';
+export default {};

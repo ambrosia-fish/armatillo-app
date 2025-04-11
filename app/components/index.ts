@@ -24,3 +24,4 @@ export { default as AnswerSelectorModal } from './AnswerSelectorModal';
 
 // Existing components
 export { default as InstanceDetailsModal } from './InstanceDetailsModal';
+export default {};

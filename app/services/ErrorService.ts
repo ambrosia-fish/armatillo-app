@@ -111,3 +111,4 @@ class ErrorService {
 }
 
 export const errorService = new ErrorService();
+export default {};

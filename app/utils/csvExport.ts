@@ -200,3 +200,4 @@ export const exportInstancesAsCSV = async (instances: Instance[]) => {
     return false;
   }
 };
+export default {};

@@ -76,3 +76,4 @@ export const prepareInstanceForApi = (instance: Partial<Instance>) => {
 };
 
 export default Instance;
+export default {};
