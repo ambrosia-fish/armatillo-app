@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, SplashScreen, Slot, useRouter } from 'expo-router';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
 
@@ -32,8 +32,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   
   // State to track initialization
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [appReady, setAppReady] = useState(false);
   const initializedRef = useRef(false);
   
   // Handle font loading errors
@@ -41,26 +40,29 @@ export default function RootLayout() {
     if (fontError) throw fontError;
   }, [fontError]);
 
-  // Hide splash screen when fonts are loaded
-  useEffect(() => {
+  // Handle app initialization when fonts are loaded
+  const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded && !initializedRef.current) {
       initializedRef.current = true;
       console.log('RootLayout: Fonts loaded, hiding splash screen');
       
-      SplashScreen.hideAsync().then(() => {
+      try {
+        await SplashScreen.hideAsync();
         console.log('RootLayout: Splash screen hidden');
-        // Short delay to ensure everything has mounted properly
-        setTimeout(() => {
-          setIsInitialized(true);
-          setIsReady(true);
-        }, 100);
-      }).catch(error => {
+        setAppReady(true);
+      } catch (error) {
         console.error('RootLayout: Error hiding splash screen:', error);
-        setIsInitialized(true);
-        setIsReady(true);
-      });
+        setAppReady(true);
+      }
     }
   }, [fontsLoaded]);
+
+  // Call onLayoutRootView when fonts are loaded
+  useEffect(() => {
+    if (fontsLoaded) {
+      onLayoutRootView();
+    }
+  }, [fontsLoaded, onLayoutRootView]);
 
   // Don't render anything until fonts are loaded
   if (!fontsLoaded) {
@@ -72,8 +74,7 @@ export default function RootLayout() {
       <AuthProvider>
         <FormProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            {isReady ? (
-              // Use Root Layout with Slot for initial render to ensure proper mounting
+            {appReady ? (
               <RootNavigator />
             ) : (
               <View style={styles.loadingContainer}>
@@ -93,34 +94,33 @@ export default function RootLayout() {
  */
 function RootNavigator() {
   const { isAuthenticated, isLoading, authState } = useAuth();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
   const router = useRouter();
   
-  // Log authentication state for debugging
+  // Unified effect for auth-based navigation
   useEffect(() => {
+    // Log authentication state for debugging
     console.log('RootNavigator: Auth state updated - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'authState:', authState);
-  }, [isAuthenticated, isLoading, authState]);
-  
-  // Ensure navigation is ready after a brief delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsNavigationReady(true);
-      console.log('RootNavigator: Navigation ready');
-    }, 300);
     
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // Handle routing for pending approval state
-  useEffect(() => {
-    if (isNavigationReady && !isLoading && authState === AuthState.PENDING_APPROVAL) {
-      console.log('RootNavigator: User pending approval, navigating to approval modal');
-      router.replace('/screens/modals/approval-pending-modal');
+    // Only handle navigation when auth loading is complete
+    if (!isLoading) {
+      // Priority 1: Handle pending approval state (highest priority)
+      if (authState === AuthState.PENDING_APPROVAL) {
+        console.log('RootNavigator: User pending approval, navigating to approval modal');
+        router.replace('/screens/modals/approval-pending-modal');
+      } 
+      // Priority 2: Navigate based on authentication status
+      else if (isAuthenticated) {
+        console.log('RootNavigator: User authenticated, navigating to tabs');
+        router.replace('/(tabs)');
+      } else {
+        console.log('RootNavigator: User not authenticated, navigating to login');
+        router.replace('/screens/auth/login');
+      }
     }
-  }, [isNavigationReady, isLoading, authState, router]);
+  }, [isLoading, isAuthenticated, authState, router]);
   
   // Show loading indicator while auth state is loading
-  if (isLoading || !isNavigationReady) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary.main} />
@@ -128,10 +128,10 @@ function RootNavigator() {
     );
   }
   
-  // IMPORTANT: First, render a Slot to ensure Root Layout is properly mounted
-  // This resolves the "navigate before mounting" error
+  // Define the navigation structure
+  // Redirect properties are used as a fallback to the primary navigation logic above
   return (
-    <Stack initialRouteName={isAuthenticated ? '(tabs)' : 'screens/auth/login'}>
+    <Stack>
       <Stack.Screen 
         name="screens/auth/login" 
         options={{ headerShown: false }} 
