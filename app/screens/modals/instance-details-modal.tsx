@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Modal,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
   TextStyle,
   ViewStyle,
   Animated,
-  View as RNView
+  View as RNView,
+  TouchableOpacity,
+  Platform,
+  SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/app/services/api';
@@ -17,7 +21,7 @@ import { View, Text } from '@/app/components/Themed';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
 import { Instance } from '@/app/types/Instance';
-import ModalComponent from './modal';
+import { StatusBar } from 'expo-status-bar';
 
 // Type for Ionicons names
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -471,19 +475,90 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   };
 
   return (
-    <ModalComponent
+    <Modal
       visible={isModalVisible}
-      title="Instance Details"
-      onClose={onClose}
-      contentStyle={styles.modalContent}
-      dismissable={!loading} // Prevent dismissing during loading
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
-      {renderContent()}
-    </ModalComponent>
+      <SafeAreaView style={styles.overlay}>
+        <View style={styles.modalContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={onClose}
+              style={styles.closeButton}
+              accessibilityLabel="Close modal"
+              accessibilityRole="button"
+            >
+              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Instance Details</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+
+          {/* Content area */}
+          <View style={styles.contentWrapper}>
+            {renderContent()}
+          </View>
+        </View>
+        <StatusBar style="dark" />
+      </SafeAreaView>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  } as ViewStyle,
+  
+  modalContainer: {
+    width: '95%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: theme.colors.neutral.dark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  } as ViewStyle,
+  
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  } as ViewStyle,
+  
+  headerSpacer: {
+    width: 24,
+  } as ViewStyle,
+  
+  closeButton: {
+    padding: 4,
+  } as ViewStyle,
+  
+  title: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold as '700',
+    color: theme.colors.text.primary,
+  } as TextStyle,
+  
+  contentWrapper: {
+    flex: 1,
+  } as ViewStyle,
+  
   modalContent: {
     padding: 0,
     maxHeight: '100%',
