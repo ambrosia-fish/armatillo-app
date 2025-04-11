@@ -158,7 +158,6 @@ function RootNavigator() {
       {/* Tracking Screens */}
       <Stack.Screen name="screens/tracking/new-options-screen" options={{ headerShown: false }} />
       <Stack.Screen name="screens/tracking/new-entry-screen" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/modals/detail-screen" options={{ headerShown: false }} />
     </Stack>
   );
 }
