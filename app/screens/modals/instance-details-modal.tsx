@@ -23,7 +23,8 @@ import ModalComponent from './modal';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface InstanceDetailsModalProps {
-  visible: boolean;
+  visible?: boolean;
+  isVisible?: boolean; // For backward compatibility
   instanceId: string | null;
   onClose: () => void;
 }
@@ -36,9 +37,13 @@ interface InstanceDetailsModalProps {
  */
 const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   visible,
+  isVisible, // For backward compatibility
   instanceId,
   onClose
 }) => {
+  // Support both isVisible (old) and visible (new) props
+  const isModalVisible = visible !== undefined ? visible : isVisible || false;
+  
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,11 +104,15 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
 
   // Fetch instance details when modal becomes visible
   useEffect(() => {
-    if (visible && instanceId) {
+    if (isModalVisible && instanceId) {
       fadeAnim.setValue(0);
       fetchInstance();
+    } else if (!isModalVisible) {
+      // Reset state when modal is closed
+      setInstance(null);
+      setError(null);
     }
-  }, [visible, instanceId]);
+  }, [isModalVisible, instanceId]);
 
   /**
    * Format date to human-readable string (e.g., Monday, April 7)
@@ -449,7 +458,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
 
   return (
     <ModalComponent
-      visible={visible}
+      visible={isModalVisible}
       title="Instance Details"
       onClose={onClose}
       contentStyle={styles.modalContent}
