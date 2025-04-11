@@ -28,7 +28,9 @@ const isApprovalRelatedMessage = (message: string): boolean => {
     'Thank You for your interest',
     'pending approval',
     'contact josef@feztech.io',
-    'No refresh token available'
+    'No refresh token available',
+    'Authentication failed', 
+    'Invalid email or password'
   ];
   
   return approvalPhrases.some(phrase => message.includes(phrase));

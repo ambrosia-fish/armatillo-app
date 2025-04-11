@@ -419,9 +419,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  /**
-   * Login user with email and password
-   */
   const login = async (email: string, password: string) => {
     try {
       dispatch({ type: 'LOGIN_START' });
@@ -465,7 +462,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             } 
           });
         } else {
-          console.error('AuthContext: Login error', error);
+          // Only log this as debug, not error, to avoid red console messages
+          console.debug('AuthContext: Login failed', error);
           
           // Update state to reflect error
           dispatch({ 
@@ -473,17 +471,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
             payload: { error: error instanceof Error ? error : new Error(String(error)) } 
           });
           
-          // Show user-friendly error message
+          // Show user-friendly error message - SINGLE NOTIFICATION
           Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
-          throw error;
         }
       }
     } catch (error) {
-      if (!(error instanceof Error && error.message.includes("pre-alpha"))) {
-        console.error('AuthContext: Login error', error);
-        // Show user-friendly error message
-        Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
-      }
+      // We've already shown an alert in the inner catch block
+      // Don't log this as an error to avoid duplicate console messages
+      console.debug('AuthContext: Outer login error handler', error);
+      
+      // Make sure we set the state to unauthenticated
+      dispatch({ 
+        type: 'LOGIN_ERROR', 
+        payload: { error: error instanceof Error ? error : new Error(String(error)) } 
+      });
     } finally {
       setIsLoading(false);
     }
