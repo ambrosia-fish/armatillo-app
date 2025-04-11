@@ -59,8 +59,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       setLoading(true);
       setError(null);
       
+      console.log('InstanceDetailsModal: Fetching instance', instanceId);
+      
       await ensureValidToken();
       const data = await api.instances.getInstance(instanceId);
+      
+      console.log('InstanceDetailsModal: Received data', data ? 'success' : 'empty');
       
       // Normalize instance data to standardized format
       const normalizedData: Instance = {
@@ -86,6 +90,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       
     } catch (err) {
       const errorMessage = 'Failed to load instance details';
+      console.error('InstanceDetailsModal: Error in fetchInstance', err);
       setError(errorMessage);
       
       errorService.handleError(err instanceof Error ? err : String(err), {
@@ -104,6 +109,9 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
 
   // Fetch instance details when modal becomes visible
   useEffect(() => {
+    console.log('InstanceDetailsModal: Modal visibility changed', isModalVisible);
+    console.log('InstanceDetailsModal: Instance ID', instanceId);
+    
     if (isModalVisible && instanceId) {
       fadeAnim.setValue(0);
       fetchInstance();
@@ -432,28 +440,34 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       </>
     );
   };
-  
-  // Determine what content to show in the modal
-  const modalContent = () => {
+
+  // Determine the content to display in the modal body
+  const renderContent = () => {
+    console.log('InstanceDetailsModal: Rendering content, loading:', loading, 'error:', !!error, 'instance:', !!instance);
+    
     if (loading) {
       return renderLoadingState();
-    } else if (error) {
+    } 
+    
+    if (error) {
       return renderErrorState();
-    } else if (!instance) {
-      return renderEmptyState();
-    } else {
-      return (
-        <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={true}
-          >
-            {renderInstanceContent()}
-          </ScrollView>
-        </Animated.View>
-      );
     }
+    
+    if (!instance) {
+      return renderEmptyState();
+    }
+    
+    return (
+      <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={true}
+        >
+          {renderInstanceContent()}
+        </ScrollView>
+      </Animated.View>
+    );
   };
 
   return (
@@ -464,7 +478,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       contentStyle={styles.modalContent}
       dismissable={!loading} // Prevent dismissing during loading
     >
-      {modalContent()}
+      {renderContent()}
     </ModalComponent>
   );
 };
@@ -486,6 +500,7 @@ const styles = StyleSheet.create({
   
   animatedContainer: {
     flex: 1,
+    minHeight: 400, // Ensure there's always some content visible
   } as ViewStyle,
   
   // Date header
