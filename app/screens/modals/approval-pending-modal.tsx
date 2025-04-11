@@ -22,16 +22,13 @@ export default function ApprovalPendingModal() {
       // Skip server logout and just clear tokens locally
       await clearAuthTokens();
       
-      // Wait a moment before navigating
-      setTimeout(() => {
-        router.replace('/screens/auth/login');
-      }, 300);
+      // Navigate immediately after clearing tokens
+      router.replace('/screens/auth/login');
     } catch (error) {
       console.error('ApprovalPendingModal: Error going back', error);
+      
       // Fallback navigation as a last resort
-      setTimeout(() => {
-        router.replace('/screens/auth/login');
-      }, 300);
+      router.replace('/screens/auth/login');
     }
   };
 
