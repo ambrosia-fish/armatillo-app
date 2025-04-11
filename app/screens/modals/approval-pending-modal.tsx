@@ -2,14 +2,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, TouchableOpacity, ViewStyle, TextStyle, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text, View, Button } from '../../components';
 import theme from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import { clearAuthTokens } from '../../utils/tokenUtils';
 
 export default function ApprovalPendingModal() {
-  const insets = useSafeAreaInsets();
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -19,25 +19,26 @@ export default function ApprovalPendingModal() {
 
   const handleGoBack = async () => {
     try {
-      // Just logout to clear the pending state
-      await logout();
-      // Navigate back to login
-      router.replace('/screens/auth/login');
+      // Skip server logout and just clear tokens locally
+      await clearAuthTokens();
+      
+      // Wait a moment before navigating
+      setTimeout(() => {
+        router.replace('/screens/auth/login');
+      }, 300);
     } catch (error) {
       console.error('ApprovalPendingModal: Error going back', error);
       // Fallback navigation as a last resort
-      router.replace('/screens/auth/login');
+      setTimeout(() => {
+        router.replace('/screens/auth/login');
+      }, 300);
     }
   };
 
   return (
-    <View style={[
-      styles.container,
-      { 
-        // paddingTop: insets.top,
-        paddingBottom: Math.max(insets.bottom, theme.spacing.md) 
-      }
-    ]}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
+      
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={theme.colors.text.primary} />
@@ -79,10 +80,7 @@ export default function ApprovalPendingModal() {
           style={styles.backButton}
         />
       </View>
-
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-    </View>
+    </SafeAreaView>
   );
 }
 
