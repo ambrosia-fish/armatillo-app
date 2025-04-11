@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { 
   StyleSheet, 
+  Modal, 
   View, 
   Text, 
   TouchableOpacity, 
-  TextInput,
   ScrollView,
-  ViewStyle,
-  TextStyle
+  TouchableWithoutFeedback,
+  SafeAreaView,
+  TextInput,
+  FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { OptionItem } from '@/app/constants/optionDictionaries';
 import theme from '@/app/constants/theme';
 import EmojiPill from './EmojiPill';
 import { errorService } from '@/app/services/ErrorService';
-import ModalComponent from '@/app/screens/modals/modal';
 
 interface AnswerSelectorModalProps {
   visible: boolean;
@@ -105,6 +106,24 @@ export default function AnswerSelectorModal({
   };
 
   /**
+   * Cancel selection and close the modal
+   */
+  const handleCancel = () => {
+    try {
+      onClose();
+    } catch (err) {
+      errorService.handleError(err instanceof Error ? err : String(err), {
+        level: 'error',
+        source: 'ui',
+        context: { 
+          component: 'AnswerSelectorModal', 
+          action: 'cancelSelection',
+        }
+      });
+    }
+  };
+
+  /**
    * Add a custom option
    */
   const handleAddCustom = () => {
@@ -160,162 +179,184 @@ export default function AnswerSelectorModal({
   const filteredOptions = options.filter(option => 
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
-  // Modal footer with action buttons
-  const modalFooter = (
-    <View style={styles.actionContainer}>
-      <TouchableOpacity
-        style={[styles.actionButton, styles.cancelButton]}
-        onPress={onClose}
-        accessibilityLabel="Cancel"
-        accessibilityRole="button"
-      >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.actionButton, styles.applyButton]}
-        onPress={handleApply}
-        accessibilityLabel="Apply"
-        accessibilityRole="button"
-      >
-        <Text style={styles.applyButtonText}>Apply</Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   return (
-    <ModalComponent
+    <Modal
       visible={visible}
-      title={title}
-      onClose={onClose}
-      footer={modalFooter}
-      contentStyle={styles.modalContent}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={handleCancel}
     >
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <Ionicons 
-          name="search" 
-          size={20} 
-          color={theme.colors.text.tertiary} 
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search options..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={theme.colors.text.tertiary}
-          returnKeyType="search"
-          accessibilityLabel="Search options"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity 
-            onPress={() => setSearchQuery('')}
-            style={styles.clearButton}
-            accessibilityLabel="Clear search"
-          >
-            <Ionicons 
-              name="close-circle" 
-              size={18} 
-              color={theme.colors.text.tertiary} 
-            />
-          </TouchableOpacity>
-        )}
-      </View>
+      <TouchableWithoutFeedback onPress={handleCancel}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <SafeAreaView style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{title}</Text>
+                <TouchableOpacity onPress={handleCancel}>
+                  <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+                </TouchableOpacity>
+              </View>
 
-      {/* Custom Option Input */}
-      {allowCustom && (
-        <View style={styles.customContainer}>
-          <TextInput
-            style={styles.customInput}
-            placeholder="Add a custom option..."
-            value={customOption}
-            onChangeText={setCustomOption}
-            placeholderTextColor={theme.colors.text.tertiary}
-            returnKeyType="done"
-            onSubmitEditing={handleAddCustom}
-            accessibilityLabel="Add custom option"
-          />
-          <TouchableOpacity 
-            onPress={handleAddCustom}
-            style={styles.addButton}
-            disabled={!customOption.trim()}
-            accessibilityLabel="Add custom option button"
-          >
-            <Ionicons 
-              name="add-circle" 
-              size={24} 
-              color={
-                customOption.trim() 
-                  ? theme.colors.primary.main 
-                  : theme.colors.utility.disabled
-              } 
-            />
-          </TouchableOpacity>
+              {/* Search Input */}
+              <View style={styles.searchContainer}>
+                <Ionicons 
+                  name="search" 
+                  size={20} 
+                  color={theme.colors.text.tertiary} 
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search options..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholderTextColor={theme.colors.text.tertiary}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setSearchQuery('')}
+                    style={styles.clearButton}
+                  >
+                    <Ionicons 
+                      name="close-circle" 
+                      size={18} 
+                      color={theme.colors.text.tertiary} 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Custom Option Input */}
+              {allowCustom && (
+                <View style={styles.customContainer}>
+                  <TextInput
+                    style={styles.customInput}
+                    placeholder="Add a custom option..."
+                    value={customOption}
+                    onChangeText={setCustomOption}
+                    placeholderTextColor={theme.colors.text.tertiary}
+                    returnKeyType="done"
+                    onSubmitEditing={handleAddCustom}
+                  />
+                  <TouchableOpacity 
+                    onPress={handleAddCustom}
+                    style={styles.addButton}
+                    disabled={!customOption.trim()}
+                  >
+                    <Ionicons 
+                      name="add-circle" 
+                      size={24} 
+                      color={
+                        customOption.trim() 
+                          ? theme.colors.primary.main 
+                          : theme.colors.utility.disabled
+                      } 
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Options List */}
+              <ScrollView style={styles.optionsContainer}>
+                <View style={styles.optionsGrid}>
+                  {filteredOptions.map((option) => (
+                    <EmojiPill
+                      key={option.id}
+                      id={option.id}
+                      label={option.label}
+                      emoji={option.emoji}
+                      selected={localSelectedIds.includes(option.id)}
+                      onToggle={handleToggle}
+                    />
+                  ))}
+                </View>
+
+                {filteredOptions.length === 0 && (
+                  <View style={styles.emptyStateContainer}>
+                    <Ionicons 
+                      name="search-outline" 
+                      size={48} 
+                      color={theme.colors.text.tertiary} 
+                    />
+                    <Text style={styles.emptyStateText}>
+                      No matching options found
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Action Buttons */}
+              <View style={styles.actionContainer}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.cancelButton]}
+                  onPress={handleCancel}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.applyButton]}
+                  onPress={handleApply}
+                >
+                  <Text style={styles.applyButtonText}>Apply</Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </TouchableWithoutFeedback>
         </View>
-      )}
-
-      {/* Options List */}
-      <ScrollView style={styles.optionsContainer}>
-        <View style={styles.optionsGrid}>
-          {filteredOptions.map((option) => (
-            <EmojiPill
-              key={option.id}
-              id={option.id}
-              label={option.label}
-              emoji={option.emoji}
-              selected={localSelectedIds.includes(option.id)}
-              onToggle={handleToggle}
-            />
-          ))}
-        </View>
-
-        {filteredOptions.length === 0 && (
-          <View style={styles.emptyStateContainer}>
-            <Ionicons 
-              name="search-outline" 
-              size={48} 
-              color={theme.colors.text.tertiary} 
-            />
-            <Text style={styles.emptyStateText}>
-              No matching options found
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-    </ModalComponent>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalContent: {
-    padding: 0,
-  } as ViewStyle,
-  
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: theme.colors.background.primary,
+    borderTopLeftRadius: theme.borderRadius.lg,
+    borderTopRightRadius: theme.borderRadius.lg,
+    paddingBottom: theme.spacing.xl,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  },
+  modalTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.primary,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.neutral.lighter,
     borderRadius: theme.borderRadius.md,
-    margin: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
-  } as ViewStyle,
-  
+  },
   searchIcon: {
     marginRight: theme.spacing.sm,
-  } as ViewStyle,
-  
+  },
   searchInput: {
     flex: 1,
     paddingVertical: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
-  } as TextStyle,
-  
+  },
   clearButton: {
     padding: theme.spacing.xs,
-  } as ViewStyle,
-  
+  },
   customContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -324,75 +365,65 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
-  } as ViewStyle,
-  
+  },
   customInput: {
     flex: 1,
     paddingVertical: theme.spacing.md,
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
-  } as TextStyle,
-  
+  },
   addButton: {
     padding: theme.spacing.xs,
-  } as ViewStyle,
-  
+  },
   optionsContainer: {
     marginHorizontal: theme.spacing.lg,
-    maxHeight: 300,
-  } as ViewStyle,
-  
+    maxHeight: 400,
+  },
   optionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingBottom: theme.spacing.lg,
-  } as ViewStyle,
-  
+  },
   emptyStateContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: theme.spacing.huge,
-  } as ViewStyle,
-  
+  },
   emptyStateText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.tertiary,
     marginTop: theme.spacing.md,
-  } as TextStyle,
-  
+  },
   actionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-  } as ViewStyle,
-  
+    padding: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border.light,
+  },
   actionButton: {
-    flex: 1,
+    borderRadius: theme.borderRadius.sm,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: theme.borderRadius.sm,
-    marginHorizontal: theme.spacing.xs,
-  } as ViewStyle,
-  
+  },
   cancelButton: {
     backgroundColor: theme.colors.neutral.lighter,
-  } as ViewStyle,
-  
+    marginRight: theme.spacing.md,
+  },
   cancelButtonText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium as '500',
+    fontWeight: theme.typography.fontWeight.medium,
     color: theme.colors.text.primary,
-  } as TextStyle,
-  
+  },
   applyButton: {
     backgroundColor: theme.colors.primary.main,
-  } as ViewStyle,
-  
+  },
   applyButtonText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semiBold as '600',
+    fontWeight: theme.typography.fontWeight.semiBold,
     color: theme.colors.primary.contrast,
-  } as TextStyle,
+  },
 });
