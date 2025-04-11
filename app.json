@@ -49,6 +49,15 @@
     "experiments": {
       "typedRoutes": true
     },
+    "excludedRoutes": [
+      "components/index",
+      "hooks/useColorScheme",
+      "screens/modals/index",
+      "services/ErrorService",
+      "types/Instance",
+      "utils/csvExport",
+      "constants/config"
+    ],
     "extra": {
       "router": {
         "origin": false
