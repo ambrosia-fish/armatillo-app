@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   TextStyle,
   ViewStyle,
   Animated,
-  Dimensions
+  View as RNView
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/app/services/api';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
@@ -20,14 +17,13 @@ import { View, Text } from '@/app/components/Themed';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
 import { Instance } from '@/app/types/Instance';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import ModalComponent from './modal';
 
 // Type for Ionicons names
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface InstanceDetailsModalProps {
-  isVisible: boolean;
+  visible: boolean;
   instanceId: string | null;
   onClose: () => void;
 }
@@ -39,7 +35,7 @@ interface InstanceDetailsModalProps {
  * @returns Rendered modal with instance details
  */
 const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
-  isVisible,
+  visible,
   instanceId,
   onClose
 }) => {
@@ -47,21 +43,6 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
-
-  /**
-   * Handle modal close with error handling
-   */
-  const handleClose = () => {
-    try {
-      onClose();
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { component: 'InstanceDetailsModal', action: 'close' }
-      });
-    }
-  };
 
   /**
    * Fetch instance details from API
@@ -118,11 +99,11 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
 
   // Fetch instance details when modal becomes visible
   useEffect(() => {
-    if (isVisible && instanceId) {
+    if (visible && instanceId) {
       fadeAnim.setValue(0);
       fetchInstance();
     }
-  }, [isVisible, instanceId]);
+  }, [visible, instanceId]);
 
   /**
    * Format date to human-readable string (e.g., Monday, April 7)
@@ -278,11 +259,6 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
             <View style={[styles.urgeMarker, { left: '100%' }]}>
               <Text style={styles.urgeMarkerText}>5</Text>
             </View>
-            
-            {/* Current value marker */}
-            {/* <View style={[styles.currentUrgeMarker, { left: `${fillPercent}%` }]}>
-              <Text style={styles.currentUrgeText}>{strength}</Text>
-            </View> */}
           </View>
         </View>
       </View>
@@ -447,106 +423,60 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
       </>
     );
   };
+  
+  // Determine what content to show in the modal
+  const modalContent = () => {
+    if (loading) {
+      return renderLoadingState();
+    } else if (error) {
+      return renderErrorState();
+    } else if (!instance) {
+      return renderEmptyState();
+    } else {
+      return (
+        <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={true}
+          >
+            {renderInstanceContent()}
+          </ScrollView>
+        </Animated.View>
+      );
+    }
+  };
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={isVisible}
-      onRequestClose={handleClose}
-      accessibilityLabel="Instance details modal"
-      statusBarTranslucent={true}
+    <ModalComponent
+      visible={visible}
+      title="Instance Details"
+      onClose={onClose}
+      contentStyle={styles.modalContent}
+      dismissable={!loading} // Prevent dismissing during loading
     >
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity 
-              onPress={handleClose}
-              style={styles.closeButton}
-              accessibilityLabel="Close modal"
-              accessibilityRole="button"
-            >
-              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Instance Details</Text>
-            <View style={styles.headerSpacer} />
-          </View>
-
-          {/* Main content */}
-          <View style={styles.contentWrapper}>
-            {loading ? renderLoadingState() : 
-            error ? renderErrorState() : 
-            !instance ? renderEmptyState() : (
-              <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
-                <ScrollView 
-                  style={styles.scrollView}
-                  contentContainerStyle={styles.contentContainer}
-                  showsVerticalScrollIndicator={true}
-                >
-                  {renderInstanceContent()}
-                </ScrollView>
-              </Animated.View>
-            )}
-          </View>
-        </View>
-      </View>
-      <StatusBar style="dark" />
-    </Modal>
+      {modalContent()}
+    </ModalComponent>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  modalContent: {
+    padding: 0,
+    maxHeight: '100%',
   } as ViewStyle,
-  modalContainer: {
-    width: SCREEN_WIDTH * 0.95,
-    height: SCREEN_HEIGHT * 0.8,
-    backgroundColor: theme.colors.background.primary,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: theme.colors.neutral.dark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  } as ViewStyle,
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-  } as ViewStyle,
-  headerSpacer: {
-    width: 24,
-  } as ViewStyle,
-  closeButton: {
-    padding: 4,
-  } as ViewStyle,
-  title: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-    color: theme.colors.text.primary,
-  } as TextStyle,
-  contentWrapper: {
-    flex: 1,
-  } as ViewStyle,
-  animatedContainer: {
-    flex: 1,
-  } as ViewStyle,
+  
   scrollView: {
     flex: 1,
   } as ViewStyle,
+  
   contentContainer: {
     padding: 16,
     paddingBottom: 32,
+  } as ViewStyle,
+  
+  animatedContainer: {
+    flex: 1,
   } as ViewStyle,
   
   // Date header
@@ -558,6 +488,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.light,
   } as ViewStyle,
+  
   dateHeaderText: {
     fontSize: 16,
     fontWeight: '600' as '600',
@@ -571,14 +502,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   } as ViewStyle,
+  
   timeInfoItem: {
     flexDirection: 'row',
     alignItems: 'center',
   } as ViewStyle,
+  
   timeInfoText: {
     fontSize: 14,
     color: theme.colors.text.secondary,
   } as TextStyle,
+  
   inlineIcon: {
     marginRight: 6,
   } as ViewStyle,
@@ -590,10 +524,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.light,
   } as ViewStyle,
+  
   urgeContainer: {
     paddingVertical: 16,
     paddingHorizontal: 8,
   } as ViewStyle,
+  
   horizontalUrgeBar: {
     height: 24,
     width: '100%',
@@ -604,6 +540,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border.light,
   } as ViewStyle,
+  
   horizontalUrgeFill: {
     position: 'absolute',
     top: 0,
@@ -613,6 +550,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,
   } as ViewStyle,
+  
   urgeMarker: {
     position: 'absolute',
     top: 28,
@@ -620,10 +558,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     transform: [{ translateX: -6 }],
   } as ViewStyle,
+  
   urgeMarkerText: {
     fontSize: 12,
     color: theme.colors.text.secondary,
   } as TextStyle,
+  
   currentUrgeMarker: {
     position: 'absolute',
     top: -12,
@@ -635,6 +575,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     transform: [{ translateX: -12 }],
   } as ViewStyle,
+  
   currentUrgeText: {
     fontSize: 12,
     fontWeight: 'bold' as 'bold',
@@ -646,10 +587,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
   } as ViewStyle,
+  
   gridColumn: {
     flex: 1,
     paddingHorizontal: 4,
   } as ViewStyle,
+  
   gridItem: {
     marginBottom: 16,
   } as ViewStyle,
@@ -660,9 +603,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   } as ViewStyle,
+  
   categoryIcon: {
     marginRight: 8,
   } as ViewStyle,
+  
   categoryTitle: {
     fontSize: 15,
     fontWeight: '600' as '600',
@@ -673,6 +618,7 @@ const styles = StyleSheet.create({
   awarenessPillContainer: {
     alignItems: 'flex-start',
   } as ViewStyle,
+  
   awarenessPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -683,6 +629,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
   } as ViewStyle,
+  
   pillIcon: {
     marginRight: 4,
   } as ViewStyle,
@@ -692,6 +639,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
   } as ViewStyle,
+  
   pill: {
     backgroundColor: theme.colors.primary.light + '40',
     borderRadius: 16,
@@ -702,11 +650,13 @@ const styles = StyleSheet.create({
     margin: 2,
     marginBottom: 6,
   } as ViewStyle,
+  
   pillText: {
     fontSize: 14,
     color: theme.colors.primary.main,
     fontWeight: '500' as '500',
   } as TextStyle,
+  
   noneText: {
     fontSize: 14,
     color: theme.colors.text.tertiary,
@@ -718,11 +668,13 @@ const styles = StyleSheet.create({
   notesSection: {
     marginTop: 16,
   } as ViewStyle,
+  
   notesTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   } as ViewStyle,
+  
   notesContainer: {
     padding: 12,
     borderRadius: 8,
@@ -731,6 +683,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240, 242, 245, 0.6)',
     minHeight: 60,
   } as ViewStyle,
+  
   notesText: {
     fontSize: 14,
     color: theme.colors.text.primary,
@@ -739,11 +692,12 @@ const styles = StyleSheet.create({
   
   // Empty, Loading, and Error states
   centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 24,
+    minHeight: 300,
   } as ViewStyle,
+  
   iconContainer: {
     width: 56,
     height: 56,
@@ -753,35 +707,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   } as ViewStyle,
+  
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: 'bold' as 'bold',
     color: theme.colors.text.primary,
     marginBottom: 8,
   } as TextStyle,
+  
   emptyStateText: {
     fontSize: 14,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   } as TextStyle,
+  
   loadingText: {
     marginTop: 16,
     fontSize: 14,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   } as TextStyle,
+  
   errorContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    minHeight: 300,
   } as ViewStyle,
+  
   errorText: {
     color: theme.colors.utility.error,
     marginVertical: 12,
     textAlign: 'center',
     fontSize: 14,
   } as TextStyle,
+  
   retryButton: {
     marginTop: 8,
   } as ViewStyle,
