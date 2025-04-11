@@ -516,7 +516,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } else {
           // Registration successful but no token received
           // This likely means manual approval is required
-          Alert.alert('Success', 'Account created successfully! Please log in once approved.');
+          // Alert.alert('Success', 'Account created successfully! Please log in once approved.');
           
           dispatch({ 
             type: 'REGISTER_SUCCESS', 
