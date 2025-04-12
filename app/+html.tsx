@@ -10,7 +10,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
         <meta name="description" content="Track habits during habit reversal training for BFRBs" />
         
         {/* PWA meta tags for iOS */}
@@ -52,29 +52,11 @@ export default function Root({ children }: { children: React.ReactNode }) {
 const responsiveBackground = `
 body {
   background-color: #fff;
-  min-height: 100vh;
-  /* Critical fix for mobile browsers */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #000;
   }
-}
-
-/* Safe area and mobile browser fix */
-html {
-  height: -webkit-fill-available;
-}
-
-body {
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-}
-
-/* Prevent pull-to-refresh behavior which can interfere with our app */
-html, body {
-  overscroll-behavior-y: none;
 }
 
 /* Add PWA standalone styles */
@@ -84,6 +66,18 @@ html, body {
   width: 100vw;
   overflow: hidden;
   position: fixed;
+}
+
+/* Fix for mobile browser navigation bars */
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+  
+  /* Adjust for bottom tabs */
+  .expo-tabs-navigation-container {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
 }
 `;
 
@@ -97,11 +91,13 @@ if (typeof window !== 'undefined') {
       document.body.classList.add('pwa-standalone');
     }
     
-    // Mobile browser detection - add special class to help with CSS targeting
-    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-      document.documentElement.classList.add('mobile-browser');
-      document.body.classList.add('mobile-browser');
-    }
+    // Add class to tabs navigation for CSS targeting
+    setTimeout(function() {
+      const tabsNavigation = document.querySelector('.r-backgroundColor-14sbq61');
+      if (tabsNavigation) {
+        tabsNavigation.classList.add('expo-tabs-navigation-container');
+      }
+    }, 500);
     
     // Register service worker
     if ('serviceWorker' in navigator) {
