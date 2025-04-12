@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { handleFormSubmission } from '../utils/formUtils';
+import { errorService, ErrorMessages } from '../services/ErrorService';
 
 // Add specific typing for tracking screen selections
 interface BFRBFormData {
@@ -44,10 +46,29 @@ interface BFRBFormData {
   userName?: string;
 }
 
+/**
+ * Interface for form submission options
+ */
+interface FormSubmissionOptions {
+  successMessage?: string;
+  errorMessage?: string;
+  navigationPath?: string;
+  context?: Record<string, any>;
+  resetOnSuccess?: boolean;
+}
+
 interface FormContextType {
   formData: BFRBFormData;
   updateFormData: (newData: Partial<BFRBFormData>) => void;
   resetFormData: () => void;
+  submitForm: <T>(
+    submitAction: () => Promise<T>,
+    options?: FormSubmissionOptions
+  ) => Promise<T | null>;
+  isSubmitting: boolean;
+  submissionError: Error | null;
+  validateForm: (validationRules?: Record<string, (value: any) => string | null>) => boolean;
+  formErrors: Record<string, string>;
 }
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
@@ -58,22 +79,131 @@ interface FormProviderProps {
 
 export function FormProvider({ children }: FormProviderProps) {
   const [formData, setFormData] = useState<BFRBFormData>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<Error | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
+  /**
+   * Update form data with new values
+   */
   const updateFormData = (newData: Partial<BFRBFormData>) => {
     setFormData(prevData => ({
       ...prevData,
       ...newData
     }));
+    
+    // Clear errors for fields that have been updated
+    if (Object.keys(formErrors).length > 0) {
+      const updatedErrors = { ...formErrors };
+      Object.keys(newData).forEach(key => {
+        if (updatedErrors[key]) {
+          delete updatedErrors[key];
+        }
+      });
+      setFormErrors(updatedErrors);
+    }
   };
   
+  /**
+   * Reset form data to empty state
+   */
   const resetFormData = () => {
     setFormData({});
+    setFormErrors({});
   };
   
+  /**
+   * Validate form data against provided rules
+   */
+  const validateForm = (validationRules: Record<string, (value: any) => string | null> = {}) => {
+    const errors: Record<string, string> = {};
+    
+    // Apply each validation rule to the corresponding form field
+    Object.entries(validationRules).forEach(([field, validator]) => {
+      const value = formData[field as keyof BFRBFormData];
+      const errorMessage = validator(value);
+      
+      if (errorMessage) {
+        errors[field] = errorMessage;
+      }
+    });
+    
+    // Update form errors state
+    setFormErrors(errors);
+    
+    // Return true if no errors were found
+    return Object.keys(errors).length === 0;
+  };
+  
+  /**
+   * Submit form with standardized handling
+   */
+  const submitForm = async <T,>(
+    submitAction: () => Promise<T>,
+    options: FormSubmissionOptions = {}
+  ): Promise<T | null> => {
+    // Set default options
+    const {
+      successMessage = 'Form submitted successfully',
+      errorMessage = ErrorMessages.FORM.SUBMISSION_FAILED,
+      navigationPath,
+      context = {},
+      resetOnSuccess = true
+    } = options;
+    
+    // Mark form as submitting
+    setIsSubmitting(true);
+    setSubmissionError(null);
+    
+    try {
+      // Handle form submission with standardized error handling
+      const result = await handleFormSubmission({
+        submitAction,
+        successMessage,
+        errorMessage,
+        navigationPath,
+        context: { 
+          ...context, 
+          formData: JSON.stringify(formData).substring(0, 500) // Truncate for log readability
+        },
+      });
+      
+      // Reset form data on successful submission if requested
+      if (resetOnSuccess) {
+        resetFormData();
+      }
+      
+      return result;
+    } catch (error) {
+      // Save the error for reference
+      setSubmissionError(error instanceof Error ? error : new Error(String(error)));
+      
+      // Log with error service
+      errorService.handleFormError(error instanceof Error ? error : String(error), {
+        context: { 
+          action: 'form_submission',
+          formContext: true,
+          ...context,
+        }
+      });
+      
+      return null;
+    } finally {
+      // Mark form as no longer submitting
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Provide context value to consumers
   const value = {
     formData,
     updateFormData,
-    resetFormData
+    resetFormData,
+    submitForm,
+    isSubmitting,
+    submissionError,
+    validateForm,
+    formErrors
   };
   
   return (
