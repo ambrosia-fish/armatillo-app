@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, View } from 'react-native';
 import theme from '@/app/constants/theme';
 
 /**
@@ -9,6 +9,38 @@ import theme from '@/app/constants/theme';
  * Authentication is handled at the root level
  */
 export default function TabLayout() {
+  // Apply specific fix for web platform to ensure tabs render correctly with mobile browser bars
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // Fix for mobile browser navigation bars
+      const injectCSS = () => {
+        const style = document.createElement('style');
+        style.textContent = `
+          /* Fix for mobile browser navigation bars */
+          @supports (padding: env(safe-area-inset-bottom)) {
+            .r-bottom-1nlznpj {
+              bottom: env(safe-area-inset-bottom) !important;
+            }
+            
+            nav {
+              padding-bottom: env(safe-area-inset-bottom);
+            }
+            
+            /* Add margin to the main content area */
+            #root > div > div {
+              margin-bottom: 60px;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      };
+      
+      // Run immediately and also after a short delay to ensure DOM is fully loaded
+      injectCSS();
+      setTimeout(injectCSS, 1000);
+    }
+  }, []);
+
   return (
     <Tabs
       initialRouteName="index"
@@ -20,7 +52,6 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
-      
       
       <Tabs.Screen
         name="progress"
@@ -79,17 +110,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    // Safe area handling - use different padding calculations based on platform
-    ...(Platform.OS === 'web'
-      ? {
-          // In web, we handle this via CSS in +html.tsx
-          // The height should account for the tab items with appropriate spacing
-          height: 56,
-        }
-      : {
-          // On native platforms, we use the Platform API
-          paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-        }),
+    // Ensure tab bar works correctly on all platforms
+    height: Platform.OS === 'web' ? 60 : undefined,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
   },
   tabLabel: {
     fontSize: 12,
