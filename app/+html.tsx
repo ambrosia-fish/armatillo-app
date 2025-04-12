@@ -67,18 +67,6 @@ body {
   overflow: hidden;
   position: fixed;
 }
-
-/* Fix for mobile browser navigation bars */
-@supports (padding: max(0px)) {
-  body {
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
-  }
-  
-  /* Adjust for bottom tabs */
-  .expo-tabs-navigation-container {
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
-  }
-}
 `;
 
 const pwaDetectionScript = `
@@ -90,14 +78,6 @@ if (typeof window !== 'undefined') {
       document.documentElement.classList.add('pwa-standalone');
       document.body.classList.add('pwa-standalone');
     }
-    
-    // Add class to tabs navigation for CSS targeting
-    setTimeout(function() {
-      const tabsNavigation = document.querySelector('.r-backgroundColor-14sbq61');
-      if (tabsNavigation) {
-        tabsNavigation.classList.add('expo-tabs-navigation-container');
-      }
-    }, 500);
     
     // Register service worker
     if ('serviceWorker' in navigator) {
