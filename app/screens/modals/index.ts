@@ -7,7 +7,7 @@
  * import { TimePickerModal, DurationPickerModal } from '@/app/screens/modals';
  */
 
-export { default as Modal } from './modal';
-export { default as DetailScreen } from './detail-screen';
 export { default as TimePickerModal } from './time-picker-modal';
 export { default as DurationPickerModal } from './duration-picker-modal';
+export { default as InstanceDetailsModal } from './instance-details-modal';
+export { default as AnswerSelectorModal } from './answer-selector-modal';

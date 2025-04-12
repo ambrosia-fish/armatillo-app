@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   StyleSheet, 
   FlatList, 
@@ -21,7 +21,6 @@ import { exportInstancesAsCSV } from '@/app/utils/csvExport';
 import { Instance, normalizeInstance } from '@/app/types/Instance';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
-import { errorService } from '@/app/services/ErrorService';
 
 /**
  * Progress screen showing all tracked BFRB instances with a modern UI
@@ -39,7 +38,15 @@ export default function ProgressScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  
+  // Log auth state for debugging
+  useEffect(() => {
+    console.log('ProgressScreen: Auth status:', isAuthenticated);
+    if (user) {
+      console.log('ProgressScreen: User:', user.displayName, user.email);
+    }
+  }, [isAuthenticated, user]);
 
   /**
    * Fetch instances from the API
@@ -50,10 +57,13 @@ export default function ProgressScreen() {
       setLoading(true);
       
       if (!isAuthenticated) {
+        console.log('ProgressScreen: Not authenticated, skipping fetch');
         setLoading(false);
         setRefreshing(false);
         return;
       }
+      
+      console.log('ProgressScreen: Fetching instances...');
       
       // Make sure token is valid before making the request
       await ensureValidToken();
@@ -64,14 +74,12 @@ export default function ProgressScreen() {
       // Check if response is an array
       if (!Array.isArray(response)) {
         const errorMessage = 'Received invalid response format from server';
-        errorService.handleError(errorMessage, {
-          level: 'error',
-          source: 'api',
-          context: { method: 'getInstances', response }
-        });
+        console.error('ProgressScreen: Invalid response format:', response);
         setError(errorMessage);
         return;
       }
+      
+      console.log(`ProgressScreen: Fetched ${response.length} instances`);
       
       // Normalize and sort instances by time (newest first)
       const normalizedInstances = response.map(normalizeInstance);
@@ -81,12 +89,7 @@ export default function ProgressScreen() {
       
       setInstances(sortedInstances);
     } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'api',
-        displayToUser: false,
-        context: { method: 'fetchInstances' }
-      });
+      console.error('ProgressScreen: Error fetching instances:', err);
       
       let errorMessage = 'Failed to load your progress data. Please try again.';
       if (err instanceof Error) {
@@ -107,13 +110,11 @@ export default function ProgressScreen() {
   const handleExportCSV = async () => {
     setExportLoading(true);
     try {
+      console.log('ProgressScreen: Exporting instances to CSV...');
       await exportInstancesAsCSV(instances);
+      console.log('ProgressScreen: CSV export completed');
     } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { action: 'exportCSV', instanceCount: instances.length }
-      });
+      console.error('ProgressScreen: Error exporting to CSV:', err);
     } finally {
       setExportLoading(false);
     }
@@ -122,15 +123,19 @@ export default function ProgressScreen() {
   // Load instances when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      console.log('ProgressScreen: Screen focused, refreshing data');
       if (isAuthenticated) {
         fetchInstances();
       }
-      return () => {}; // Cleanup function
+      return () => {
+        console.log('ProgressScreen: Screen unfocused');
+      };
     }, [isAuthenticated])
   );
 
   // Handle pull-to-refresh
   const onRefresh = async () => {
+    console.log('ProgressScreen: Pull-to-refresh triggered');
     setRefreshing(true);
     await fetchInstances();
   };
@@ -154,14 +159,11 @@ export default function ProgressScreen() {
    */
   const viewInstanceDetails = (instance: Instance) => {
     try {
+      console.log('ProgressScreen: Opening details for instance:', instance._id);
       setSelectedInstanceId(instance._id);
       setModalVisible(true);
     } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { action: 'viewInstanceDetails', instanceId: instance._id }
-      });
+      console.error('ProgressScreen: Error viewing details:', err);
     }
   };
 
@@ -169,6 +171,7 @@ export default function ProgressScreen() {
    * Close the modal
    */
   const closeModal = () => {
+    console.log('ProgressScreen: Closing details modal');
     setModalVisible(false);
     setSelectedInstanceId(null);
   };
@@ -181,6 +184,8 @@ export default function ProgressScreen() {
       style={styles.instanceCard}
       onPress={() => viewInstanceDetails(item)}
       activeOpacity={0.7}
+      accessibilityLabel={`Entry from ${formatDate(item.time)}`}
+      accessibilityHint="Double tap to view details"
     >
       <View style={styles.cardHeader}>
         <View style={styles.dateContainer}>
@@ -260,6 +265,8 @@ export default function ProgressScreen() {
       <TouchableOpacity 
         style={styles.retryButton}
         onPress={fetchInstances}
+        accessibilityLabel="Try again button"
+        accessibilityHint="Double tap to try loading data again"
       >
         <Text style={styles.retryButtonText}>Try Again</Text>
       </TouchableOpacity>
@@ -320,6 +327,8 @@ export default function ProgressScreen() {
                 onPress={handleExportCSV}
                 disabled={loading || refreshing || exportLoading || instances.length === 0}
                 activeOpacity={0.8}
+                accessibilityLabel="Export to CSV button"
+                accessibilityHint="Double tap to export data to CSV file"
               >
                 {exportLoading ? (
                   <ActivityIndicator size="small" color={theme.colors.primary.contrast} />

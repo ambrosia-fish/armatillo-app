@@ -8,14 +8,16 @@ import {
   TextStyle,
   ViewStyle,
   Animated,
-  Dimensions
+  Dimensions,
+  View as RNView
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/app/services/api';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 import { ensureValidToken } from '@/app/utils/tokenRefresher';
-import { Button, View, Text } from '@/app/components';
+import Button from '@/app/components/Button';
+import { View, Text } from '@/app/components/Themed';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
 import { Instance } from '@/app/types/Instance';
@@ -26,7 +28,8 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 interface InstanceDetailsModalProps {
-  isVisible: boolean;
+  visible?: boolean;
+  isVisible?: boolean; // For backward compatibility
   instanceId: string | null;
   onClose: () => void;
 }
@@ -38,10 +41,14 @@ interface InstanceDetailsModalProps {
  * @returns Rendered modal with instance details
  */
 const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
-  isVisible,
+  visible,
+  isVisible, // For backward compatibility
   instanceId,
   onClose
 }) => {
+  // Support both isVisible (old) and visible (new) props
+  const isModalVisible = visible !== undefined ? visible : isVisible || false;
+  
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,11 +124,11 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
 
   // Fetch instance details when modal becomes visible
   useEffect(() => {
-    if (isVisible && instanceId) {
+    if (isModalVisible && instanceId) {
       fadeAnim.setValue(0);
       fetchInstance();
     }
-  }, [isVisible, instanceId]);
+  }, [isModalVisible, instanceId]);
 
   /**
    * Format date to human-readable string (e.g., Monday, April 7)
@@ -451,12 +458,12 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
     <Modal
       animationType="slide"
       transparent={true}
-      visible={isVisible}
+      visible={isModalVisible}
       onRequestClose={handleClose}
       accessibilityLabel="Instance details modal"
       statusBarTranslucent={true}
     >
-      <View style={styles.overlay}>
+      <RNView style={styles.overlay}>
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
@@ -489,7 +496,7 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
             )}
           </View>
         </View>
-      </View>
+      </RNView>
       <StatusBar style="dark" />
     </Modal>
   );

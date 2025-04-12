@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   Switch,
   DateTimePickerAndroid,
+  ActivityIndicator,
   Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -29,12 +30,18 @@ import {
   DurationPickerModal
 } from '@/app/screens/modals';
 import { useFormContext } from '@/app/context/FormContext';
-import { errorService } from '@/app/services/ErrorService';
+import { errorService, ErrorMessages } from '@/app/services/ErrorService';
+import { navigateBack } from '@/app/utils/navigationUtils';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 
 export default function NewEntryScreen() {
   const router = useRouter();
-  const { formData, updateFormData } = useFormContext();
+  const { 
+    formData, 
+    updateFormData, 
+    submitForm, 
+    isSubmitting 
+  } = useFormContext();
   
   // Time state
   const [date, setDate] = useState(formData.time || new Date());
@@ -52,7 +59,7 @@ export default function NewEntryScreen() {
   );
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState(
-    parseInt(formData.duration || 5, 10)
+    parseInt(formData.duration || '5', 10)
   );
 
   // Selected category data
@@ -87,6 +94,52 @@ export default function NewEntryScreen() {
   const [modalOptions, setModalOptions] = useState([]);
   const [modalSelected, setModalSelected] = useState([]);
   const [currentModalType, setCurrentModalType] = useState('location');
+  
+  // Load form data from context when available
+  useEffect(() => {
+    if (formData.time) {
+      setDate(formData.time);
+      setSelectedHours(formData.time.getHours());
+      setSelectedMinutes(formData.time.getMinutes());
+    }
+    
+    if (formData.duration) {
+      setDuration(formData.duration.toString());
+      setSelectedDuration(parseInt(formData.duration.toString(), 10));
+    }
+    
+    if (formData.selectedLocations) {
+      setSelectedLocations(formData.selectedLocations);
+    }
+    
+    if (formData.selectedActivities) {
+      setSelectedActivities(formData.selectedActivities);
+    }
+    
+    if (formData.selectedEmotions) {
+      setSelectedEmotions(formData.selectedEmotions);
+    }
+    
+    if (formData.selectedThoughts) {
+      setSelectedThoughts(formData.selectedThoughts);
+    }
+    
+    if (formData.selectedSensations) {
+      setSelectedSensations(formData.selectedSensations);
+    }
+    
+    if (formData.awarenessType) {
+      setAwarenessType(formData.awarenessType);
+    }
+    
+    if (formData.urgeStrength) {
+      setUrgeStrength(formData.urgeStrength.toString());
+    }
+    
+    if (formData.notes) {
+      setNotes(formData.notes);
+    }
+  }, [formData]);
   
   /**
    * Open a specific category's selection modal
@@ -331,44 +384,44 @@ export default function NewEntryScreen() {
    * Handle saving the form and navigating home
    */
   const handleSubmit = async () => {
-    try {
-      // Update form data with all values
-      updateFormData({
-        // Time data
-        time: date,
-        duration: Number(duration) || 5,
-        
-        // Awareness and urge data
-        awarenessType,
-        urgeStrength,
-        
-        // Category data
-        selectedLocations,
-        selectedActivities,
-        selectedEmotions,
-        selectedThoughts,
-        selectedSensations,
-        
-        // Notes
-        notes,
-      });
+    // Update form data with all values
+    updateFormData({
+      // Time data
+      time: date,
+      duration: Number(duration) || 5,
       
-      // Prepare payload for API
-      const payload = {
-        time: date.toISOString(),
-        duration: Number(duration) || 5,
-        urgeStrength: Number(urgeStrength) || 3,
-        intentionType: awarenessType,
-        selectedEnvironments: selectedLocations || [],
-        selectedActivities: selectedActivities || [],
-        selectedEmotions: selectedEmotions || [],
-        selectedThoughts: selectedThoughts || [],
-        selectedSensations: selectedSensations || [],
-        notes: notes.trim() || undefined,
-      };
+      // Awareness and urge data
+      awarenessType,
+      urgeStrength,
       
-      // Submit to API
-      try {
+      // Category data
+      selectedLocations,
+      selectedActivities,
+      selectedEmotions,
+      selectedThoughts,
+      selectedSensations,
+      
+      // Notes
+      notes,
+    });
+    
+    // Prepare payload for API
+    const payload = {
+      time: date.toISOString(),
+      duration: Number(duration) || 5,
+      urgeStrength: Number(urgeStrength) || 3,
+      intentionType: awarenessType,
+      selectedEnvironments: selectedLocations || [],
+      selectedActivities: selectedActivities || [],
+      selectedEmotions: selectedEmotions || [],
+      selectedThoughts: selectedThoughts || [],
+      selectedSensations: selectedSensations || [],
+      notes: notes.trim() || undefined,
+    };
+    
+    // Submit to API with standardized handling
+    await submitForm(
+      async () => {
         // Store locally for sync later if needed
         const allData = JSON.stringify(payload);
         
@@ -382,79 +435,29 @@ export default function NewEntryScreen() {
         
         // Submit to API if authentication service is available
         if (typeof api !== 'undefined' && api.instances && api.instances.createInstance) {
-          await api.instances.createInstance(payload);
-          
-          // Show success message with platform-specific alert
-          if (Platform.OS === 'web') {
-            // For web: use window.alert
-            window.alert('Your BFRB instance has been recorded successfully.');
-            router.replace('/');
-          } else {
-            // For native: use React Native Alert
-            Alert.alert(
-              'Success',
-              'Your BFRB instance has been recorded successfully.',
-              [{ 
-                text: 'OK', 
-                onPress: () => {
-                  // Navigate to home screen after submitting
-                  router.replace('/');
-                }
-              }]
-            );
-          }
-        } else {
-          // Just navigate home if API isn't available
-          router.replace('/');
+          return api.instances.createInstance(payload);
         }
-      } catch (error) {
-        console.error('Error submitting BFRB instance:', error);
         
-        // Show error with platform-specific alert
-        if (Platform.OS === 'web') {
-          // For web: use window.alert
-          window.alert('There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.');
-          router.replace('/');
-        } else {
-          // For native: use React Native Alert
-          Alert.alert(
-            'Error',
-            'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
-            [{ 
-              text: 'OK', 
-              onPress: () => {
-                // Navigate to home screen after error
-                router.replace('/');
-              }
-            }]
-          );
+        return null;
+      },
+      {
+        successMessage: 'Your BFRB instance has been recorded successfully.',
+        errorMessage: 'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
+        navigationPath: '/',
+        context: { 
+          screen: 'new_entry',
+          payloadSize: JSON.stringify(payload).length 
         }
       }
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'submit_form' }
-      });
-      
-      // Navigate home even if there's an error
-      router.replace('/');
-    }
+    );
   };
 
   /**
    * Handle cancellation and return to previous screen
    */
   const handleCancel = () => {
-    try {
-      router.back();
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'cancel_entry' }
-      });
-    }
+    // Use the standardized navigation utility
+    navigateBack();
   };
 
   return (
@@ -818,18 +821,35 @@ export default function NewEntryScreen() {
       {/* Footer Buttons */}
       <View style={styles.footer}>
         <Button
-          title="Submit"
+          title={isSubmitting ? "Submitting..." : "Submit"}
           variant="primary"
           onPress={handleSubmit}
+          disabled={isSubmitting}
           style={styles.submitButton}
+          accessibilityLabel={isSubmitting ? "Submitting form" : "Submit form"}
+          accessibilityHint="Submits the form and saves the data"
         />
         
         <Button
           title="Cancel"
           variant="text"
           onPress={handleCancel}
+          disabled={isSubmitting}
           style={styles.cancelButton}
+          accessibilityLabel="Cancel form"
+          accessibilityHint="Cancels the form and returns to previous screen"
         />
+        
+        {/* Loading indicator */}
+        {isSubmitting && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator 
+              size="large" 
+              color={theme.colors.primary.main} 
+              style={styles.loadingIndicator}
+            />
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -1037,4 +1057,18 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   cancelButton: {},
+  // Loading overlay
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingIndicator: {
+    padding: theme.spacing.lg,
+  }
 });

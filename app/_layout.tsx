@@ -1,235 +1,162 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
-import { Platform, View, Text, ActivityIndicator } from 'react-native';
-import 'react-native-reanimated';
+import { Stack, SplashScreen, Slot, useRouter } from 'expo-router';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 import { useColorScheme } from './hooks/useColorScheme';
 import { FormProvider } from './context/FormContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, AuthState } from './context/AuthContext';
 import ErrorBoundary from './ErrorBoundary';
 import theme from './constants/theme';
-import { FA5Style } from '@expo/vector-icons/build/FontAwesome5';
 
 export { ErrorBoundary };
 
-export const unstable_settings = {
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+// Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-// Auth protected layout
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const pathname = usePathname();
-  const [redirected, setRedirected] = useState(false);
-  
-  // Non-protected routes - these don't require authentication
-  const publicRoutes = [
-    '/screens/auth/login',
-    '/+not-found',
-    '/'
-  ];
-  
-  // Check if current route needs protection
-  const needsAuth = !publicRoutes.some(route => pathname.includes(route));
-  
-  useEffect(() => {
-    // If path needs auth and user is not authenticated, redirect
-    if (!isLoading && needsAuth && !isAuthenticated && !redirected) {
-      setRedirected(true);
-      if (Platform.OS === 'web') {
-        // For more reliable web navigation
-        window.location.href = '/';
-      } else {
-        // For native navigation
-        window.setTimeout(() => {
-          try {
-            window.location.replace('/');
-          } catch (e) {
-            console.error("Native navigation error:", e);
-          }
-        }, 100);
-      }
-    }
-  }, [isLoading, isAuthenticated, pathname, needsAuth, redirected]);
-  
-  // If loading, show loading indicator
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary.main} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
-  
-  // If needs auth but not authenticated, show loading while redirecting
-  if (needsAuth && !isAuthenticated) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary.main} />
-        <Text style={styles.loadingText}>Redirecting to login...</Text>
-      </View>
-    );
-  }
-  
-  // Otherwise render children
-  return children;
-}
-
+/**
+ * Main app layout that handles initialization
+ * Using two-phase mounting pattern to ensure layout is fully mounted before navigation
+ */
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
+  // Always declare all hooks at the top level
+  const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-
+  
+  // Add colorScheme here so it's consistent in all renders
+  const colorScheme = useColorScheme();
+  
+  // State to track initialization
+  const [appReady, setAppReady] = useState(false);
+  const initializedRef = useRef(false);
+  
+  // Handle font loading errors
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+    if (fontError) throw fontError;
+  }, [fontError]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+  // Handle app initialization when fonts are loaded
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded && !initializedRef.current) {
+      initializedRef.current = true;
+      console.log('RootLayout: Fonts loaded, hiding splash screen');
+      
+      try {
+        await SplashScreen.hideAsync();
+        console.log('RootLayout: Splash screen hidden');
+        setAppReady(true);
+      } catch (error) {
+        console.error('RootLayout: Error hiding splash screen:', error);
+        setAppReady(true);
+      }
     }
-  }, [loaded]);
+  }, [fontsLoaded]);
 
-  if (!loaded) {
+  // Call onLayoutRootView when fonts are loaded
+  useEffect(() => {
+    if (fontsLoaded) {
+      onLayoutRootView();
+    }
+  }, [fontsLoaded, onLayoutRootView]);
+
+  // Don't render anything until fonts are loaded
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
     <ErrorBoundary>
-      <RootLayoutNav />
+      <AuthProvider>
+        <FormProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            {appReady ? (
+              <RootNavigator />
+            ) : (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary.main} />
+              </View>
+            )}
+          </ThemeProvider>
+        </FormProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  // Fix the typing issues by using plain objects instead of ViewStyle
-  const headerStyles = {
-    headerStyle: {
-      backgroundColor: theme.colors.background.primary,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border.light,
-    },
-    headerTitleStyle: {
-      fontSize: 18,
-      fontWeight: 'bold' as const,
-      color: theme.colors.text.primary,
-    },
-    headerTintColor: theme.colors.primary.main,
-    headerBackTitle: 'Back',
-  };
-
-  // Fix progress parameter type issue
-  const screenOptions = {
-    presentation: 'card' as const,
-    animation: 'slide_from_bottom' as const,
-    headerShown: false,
-    cardStyle: {
-      backgroundColor: theme.colors.background.primary,
-    },
-    cardOverlayEnabled: true,
-    cardStyleInterpolator: ({ current }: { current: { progress: number } }) => ({
-      cardStyle: {
-        opacity: current.progress,
-      },
-    }),
-    gestureEnabled: false,
-  };
-
+/**
+ * Root navigator with centralized auth protection using redirect props
+ */
+function RootNavigator() {
+  const { isAuthenticated, isLoading, authState } = useAuth();
+  
+  // Show loading indicator while auth state is loading
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary.main} />
+      </View>
+    );
+  }
+  
+  // Define helper functions for redirects to make the code more readable
+  const shouldRedirectFromLogin = isAuthenticated && authState !== AuthState.PENDING_APPROVAL;
+  const shouldRedirectFromTabs = !isAuthenticated || authState === AuthState.PENDING_APPROVAL;
+  const shouldRedirectFromApprovalModal = authState !== AuthState.PENDING_APPROVAL;
+  
+  // Log current auth state for debugging
+  console.log('RootNavigator: Rendering with auth state:', {
+    isAuthenticated,
+    authState,
+    shouldRedirectFromLogin,
+    shouldRedirectFromTabs,
+    shouldRedirectFromApprovalModal
+  });
+  
+  // Define the navigation structure using redirect props for auth protection
   return (
-    <AuthProvider>
-      <FormProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <ProtectedLayout>
-            <Stack>
-              <Stack.Screen 
-                name="(tabs)" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/modals/modal" 
-                options={{ presentation: 'modal' }} 
-              />
-              
-              {/* Modal Screens */}
-              <Stack.Screen 
-                name="screens/modals/approval-pending-modal" 
-                options={{ 
-                  presentation: 'modal',
-                  headerShown: false,
-                  gestureEnabled: false,
-                }} 
-              />
-              
-              {/* Authentication Screens */}
-              <Stack.Screen
-                name="screens/auth/login"
-                options={{ headerShown: false }}
-              />
-              
-              {/* New Tracking Screens */}
-              <Stack.Screen 
-                name="screens/tracking/new-options-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/new-entry-screen" 
-                options={{ headerShown: false }} 
-              />
-              
-              {/* Existing tracking screens we'll still need for the flow */}
-              <Stack.Screen 
-                name="screens/tracking/time-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/urge-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/environment-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/mental-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/thoughts-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/physical-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/sensory-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/tracking/submit-screen" 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="screens/modals/detail-screen" 
-                options={{ headerShown: false }} 
-              />
-            </Stack>
-          </ProtectedLayout>
-        </ThemeProvider>
-      </FormProvider>
-    </AuthProvider>
+    <Stack>
+      {/* Auth Screens */}
+      <Stack.Screen 
+        name="screens/auth/login" 
+        options={{ headerShown: false }} 
+        redirect={shouldRedirectFromLogin}
+      />
+      
+      {/* Main App Navigation */}
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{ headerShown: false }} 
+        redirect={shouldRedirectFromTabs}
+      />
+      
+      {/* Modal Screens */}
+      <Stack.Screen 
+        name="screens/modals/approval-pending-modal" 
+        options={{ 
+          presentation: 'modal',
+          headerShown: false,
+          gestureEnabled: false,
+        }} 
+        redirect={shouldRedirectFromApprovalModal}
+      />
+      
+      {/* Tracking Screens */}
+      <Stack.Screen 
+        name="screens/tracking/new-options-screen" 
+        options={{ headerShown: false }}
+        redirect={!isAuthenticated}
+      />
+      <Stack.Screen 
+        name="screens/tracking/new-entry-screen" 
+        options={{ headerShown: false }}
+        redirect={!isAuthenticated}
+      />
+    </Stack>
   );
 }
 
@@ -239,10 +166,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.colors.background.primary,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: theme.colors.text.secondary,
   },
 });

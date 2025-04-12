@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   StyleProp,
   ViewStyle,
-  TextStyle
+  TextStyle,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -27,10 +28,12 @@ interface HeaderProps {
   containerStyle?: StyleProp<ViewStyle>;
   titleStyle?: StyleProp<TextStyle>;
   showBackButton?: boolean;
+  simple?: boolean; // Flag to use simplified header style
 }
 
 /**
- * Reusable themed header component used across screens
+ * Unified header component that can be used across the app
+ * Supports both complex and simple styles with consistent API
  * 
  * @param props - Component properties
  * @returns Rendered header component with configurable buttons and title
@@ -46,6 +49,7 @@ const Header: React.FC<HeaderProps> = ({
   containerStyle,
   titleStyle,
   showBackButton = false,
+  simple = false,
 }) => {
   const router = useRouter();
   
@@ -113,37 +117,55 @@ const Header: React.FC<HeaderProps> = ({
       });
     }
   };
+
+  // For simple header, determine which icon to use for back button based on platform
+  const backIconName = Platform.OS === 'ios' ? 'chevron-back' : 'arrow-back';
+  
+  // Determine which styles to use based on the 'simple' flag
+  const containerStyles = [
+    styles.container, 
+    simple ? styles.simpleContainer : null, 
+    containerStyle
+  ];
   
   return (
-    <View style={[styles.container, containerStyle]} accessibilityRole="header">
+    <View style={containerStyles} accessibilityRole="header">
       {/* Left side */}
-      <View style={styles.leftContainer}>
+      <View style={simple ? styles.simpleLeftContainer : styles.leftContainer}>
         {showBackButton && (
           <TouchableOpacity 
             onPress={onLeftPress ? handleLeftPress : handleBackPress}
-            style={styles.iconButton}
+            style={simple ? styles.simpleIconButton : styles.iconButton}
             accessibilityRole="button"
             accessibilityLabel="Go back"
             accessibilityHint="Navigate to previous screen"
           >
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text.primary} />
+            <Ionicons 
+              name={simple ? backIconName : "arrow-back"} 
+              size={24} 
+              color={simple ? theme.colors.primary.main : theme.colors.text.primary} 
+            />
           </TouchableOpacity>
         )}
         
         {leftIcon && !showBackButton && (
           <TouchableOpacity 
             onPress={handleLeftPress}
-            style={styles.iconButton}
+            style={simple ? styles.simpleIconButton : styles.iconButton}
             disabled={!onLeftPress}
             accessibilityRole="button"
             accessibilityLabel={leftIcon.replace(/-/g, ' ')}
             accessibilityHint={onLeftPress ? "Activate left button function" : undefined}
           >
-            <Ionicons name={leftIcon} size={24} color={theme.colors.text.primary} />
+            <Ionicons 
+              name={leftIcon} 
+              size={24} 
+              color={simple ? theme.colors.primary.main : theme.colors.text.primary} 
+            />
           </TouchableOpacity>
         )}
         
-        {leftText && (
+        {leftText && !simple && (
           <TouchableOpacity 
             onPress={handleLeftPress}
             disabled={!onLeftPress}
@@ -158,7 +180,11 @@ const Header: React.FC<HeaderProps> = ({
       
       {/* Title */}
       <Text 
-        style={[styles.title, titleStyle]} 
+        style={[
+          styles.title, 
+          simple ? styles.simpleTitle : null,
+          titleStyle
+        ]} 
         numberOfLines={1}
         accessibilityRole="header"
       >
@@ -166,8 +192,8 @@ const Header: React.FC<HeaderProps> = ({
       </Text>
       
       {/* Right side */}
-      <View style={styles.rightContainer}>
-        {rightText && (
+      <View style={simple ? styles.simpleRightContainer : styles.rightContainer}>
+        {rightText && !simple && (
           <TouchableOpacity 
             onPress={handleRightPress}
             disabled={!onRightPress}
@@ -182,14 +208,23 @@ const Header: React.FC<HeaderProps> = ({
         {rightIcon && (
           <TouchableOpacity 
             onPress={handleRightPress}
-            style={styles.iconButton}
+            style={simple ? styles.simpleIconButton : styles.iconButton}
             disabled={!onRightPress}
             accessibilityRole="button"
             accessibilityLabel={rightIcon.replace(/-/g, ' ')}
             accessibilityHint={onRightPress ? "Activate right button function" : undefined}
           >
-            <Ionicons name={rightIcon} size={24} color={theme.colors.text.primary} />
+            <Ionicons 
+              name={rightIcon} 
+              size={24} 
+              color={simple ? theme.colors.primary.main : theme.colors.text.primary} 
+            />
           </TouchableOpacity>
+        )}
+        
+        {/* Empty spacer for the simple header to maintain balance */}
+        {simple && !rightIcon && (
+          <View style={styles.placeholderWidth} />
         )}
       </View>
     </View>
@@ -198,34 +233,62 @@ const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    ...theme.componentStyles.header.container,
-  } as ViewStyle,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+    backgroundColor: theme.colors.background.primary,
+  },
+  simpleContainer: {
+    // Any additional styles specific to simple mode
+  },
   leftContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-  } as ViewStyle,
+  },
+  simpleLeftContainer: {
+    width: 40,
+    alignItems: 'flex-start',
+  },
   rightContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-  } as ViewStyle,
+  },
+  simpleRightContainer: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
   title: {
-    ...theme.componentStyles.header.title,
     flex: 2,
     textAlign: 'center',
+    fontSize: theme.typography.fontSize.lg,
     fontWeight: theme.typography.fontWeight.bold as '700',
-  } as TextStyle,
+    color: theme.colors.text.primary,
+  },
+  simpleTitle: {
+    flex: 1,
+  },
   iconButton: {
-    ...theme.componentStyles.header.icon,
-  } as ViewStyle,
+    padding: 4,
+  },
+  simpleIconButton: {
+    padding: 4,
+  },
   actionText: {
     fontSize: theme.typography.fontSize.md,
     fontWeight: theme.typography.fontWeight.medium as '500',
     color: theme.colors.primary.main,
-  } as TextStyle,
+  },
+  placeholderWidth: {
+    width: 24,
+  },
 });
 
 export default Header;

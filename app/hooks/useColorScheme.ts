@@ -41,3 +41,5 @@ export function useColorScheme(): 'light' | 'dark' {
   
   return colorScheme;
 }
+
+export default {};

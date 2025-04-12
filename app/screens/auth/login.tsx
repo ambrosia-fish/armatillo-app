@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   Image, 
@@ -13,16 +13,15 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 
 // Import themed components
 import { View, Text, Button, Input, Card } from '@/app/components';
 import theme from '@/app/constants/theme';
+import { errorService } from '@/app/services/ErrorService';
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const { login, register, isAuthenticated, isLoading, isPendingApproval } = useAuth();
+  const { login, register, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -31,37 +30,32 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  // If already authenticated, redirect to home
-  if (isAuthenticated && !isLoading) {
-    return <Redirect href="/(tabs)" />;
-  }
-
-  // If pending approval, show the modal
-  useEffect(() => {
-    if (isPendingApproval && !isLoading) {
-      router.push('/screens/modals/approval-pending-modal');
-    }
-  }, [isPendingApproval, isLoading]);
-
-  // Validate form inputs
+  /**
+   * Validate form inputs
+   */
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
+    // Email validation
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email';
     }
     
+    // Password validation
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
     
+    // Sign up specific validations
     if (isSignUp) {
       if (!username) {
         newErrors.username = 'Username is required';
+      } else if (username.length < 3) {
+        newErrors.username = 'Username must be at least 3 characters';
       }
       
       if (password !== confirmPassword) {
@@ -73,6 +67,9 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handle login form submission
+   */
   const handleLogin = async () => {
     if (!validateForm()) {
       return;
@@ -80,15 +77,21 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
+      console.log('LoginScreen: Attempting login');
       await login(email, password);
+      console.log('LoginScreen: Login successful');
+      // Navigation is handled by root layout
     } catch (error) {
       console.error('Login error:', error);
-      // Error is already handled in AuthContext
+      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Handle sign up form submission
+   */
   const handleSignUp = async () => {
     if (!validateForm()) {
       return;
@@ -96,24 +99,28 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
+      console.log('LoginScreen: Attempting registration');
       await register({
         username,
         email,
         password,
         displayName: username
       });
+      console.log('LoginScreen: Registration successful');
       
-      // Don't show success alert as AuthContext will handle it
-      // and show the modal if needed
+      // Navigation is handled by root layout
       setIsSignUp(false);
     } catch (error) {
       console.error('Registration error:', error);
-      // Error is already handled in AuthContext
+      Alert.alert('Registration Failed', 'Could not create account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Toggle between login and signup forms
+   */
   const toggleSignUp = () => {
     setIsSignUp(!isSignUp);
     // Clear fields when switching modes
@@ -121,6 +128,9 @@ export default function LoginScreen() {
     setConfirmPassword('');
     setErrors({});
   };
+
+  // Determine if loading indicator should be shown
+  const showLoading = authLoading || loading;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -130,12 +140,16 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Logo and app name */}
           <View style={styles.logoContainer}>
             <Image 
               source={require('../../../assets/images/armatillo-placeholder-logo.png')}
               style={styles.logo}
+              accessibilityLabel="Armatillo logo"
             />
             <Text style={styles.appName}>Armatillo</Text>
             <Text style={styles.tagline}>Track your BFRB habits</Text>
@@ -147,8 +161,17 @@ export default function LoginScreen() {
               {isSignUp ? 'Create an Account' : 'Sign in to continue'}
             </Text>
             
-            {isLoading || loading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary.main} style={styles.loading} />
+            {showLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator 
+                  size="large" 
+                  color={theme.colors.primary.main} 
+                  accessibilityLabel={isSignUp ? "Creating account" : "Signing in"}
+                />
+                <Text style={styles.loadingText}>
+                  {isSignUp ? 'Creating your account...' : 'Signing you in...'}
+                </Text>
+              </View>
             ) : (
               <>
                 {isSignUp && (
@@ -159,6 +182,8 @@ export default function LoginScreen() {
                     onChangeText={setUsername}
                     autoCapitalize="none"
                     error={errors.username}
+                    testID="username-input"
+                    accessibilityLabel="Username input"
                   />
                 )}
 
@@ -170,6 +195,8 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   error={errors.email}
+                  testID="email-input"
+                  accessibilityLabel="Email input"
                 />
 
                 <Input 
@@ -179,6 +206,8 @@ export default function LoginScreen() {
                   onChangeText={setPassword}
                   secureTextEntry
                   error={errors.password}
+                  testID="password-input"
+                  accessibilityLabel="Password input"
                 />
 
                 {isSignUp && (
@@ -189,6 +218,8 @@ export default function LoginScreen() {
                     onChangeText={setConfirmPassword}
                     secureTextEntry
                     error={errors.confirmPassword}
+                    testID="confirm-password-input"
+                    accessibilityLabel="Confirm password input"
                   />
                 )}
 
@@ -196,8 +227,9 @@ export default function LoginScreen() {
                   title={isSignUp ? 'Sign Up' : 'Login'}
                   onPress={isSignUp ? handleSignUp : handleLogin}
                   size="large"
-                  loading={loading}
                   style={styles.actionButton}
+                  testID={isSignUp ? "signup-button" : "login-button"}
+                  accessibilityLabel={isSignUp ? "Sign up button" : "Login button"}
                 />
 
                 <Button 
@@ -205,23 +237,12 @@ export default function LoginScreen() {
                   onPress={toggleSignUp}
                   variant="text"
                   size="medium"
+                  testID="toggle-auth-mode-button"
+                  accessibilityLabel={isSignUp ? "Switch to login" : "Switch to sign up"}
                 />
               </>
             )}
           </Card>
-          
-          {/* <View style={styles.privacyContainer}>
-            <Text style={styles.privacyText}>
-              By using this app, you agree to our{' '}
-              <Text style={styles.privacyLink} onPress={() => console.log('Show terms')}>
-                Terms of Service
-              </Text>{' '}
-              and{' '}
-              <Text style={styles.privacyLink} onPress={() => console.log('Show privacy')}>
-                Privacy Policy
-              </Text>
-            </Text>
-          </View> */}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -278,20 +299,14 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.md,
   } as ViewStyle,
-  privacyContainer: {
-    marginTop: 'auto',
-    marginBottom: theme.spacing.md,
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.xl,
   } as ViewStyle,
-  privacyText: {
-    fontSize: theme.typography.fontSize.sm,
+  loadingText: {
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    textAlign: 'center',
   } as TextStyle,
-  privacyLink: {
-    color: theme.colors.primary.main,
-    fontWeight: theme.typography.fontWeight.medium as '500',
-  } as TextStyle,
-  loading: {
-    marginVertical: theme.spacing.xl,
-  } as ViewStyle,
 });

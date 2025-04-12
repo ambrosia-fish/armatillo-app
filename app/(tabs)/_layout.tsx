@@ -1,9 +1,13 @@
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import theme from '@/app/constants/theme';
 
+/**
+ * Tab layout for main app navigation
+ * Authentication is handled at the root level
+ */
 export default function TabLayout() {
   return (
     <Tabs
@@ -16,6 +20,8 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
       }}>
+      
+      
       <Tabs.Screen
         name="progress"
         options={{
@@ -25,9 +31,11 @@ export default function TabLayout() {
               name={focused ? 'time' : 'time-outline'} 
               size={24} 
               color={color} 
+              accessibilityLabel="Progress tab"
             />,
         }}
       />
+      
       <Tabs.Screen
         name="index"
         options={{
@@ -37,9 +45,12 @@ export default function TabLayout() {
               name={focused ? 'home' : 'home-outline'} 
               size={24} 
               color={color} 
+              accessibilityLabel="Home tab"
             />,
         }}
       />
+
+      {/* Settings tab */}
       <Tabs.Screen
         name="settings"
         options={{
@@ -49,6 +60,7 @@ export default function TabLayout() {
               name={focused ? 'settings' : 'settings-outline'} 
               size={24} 
               color={color} 
+              accessibilityLabel="Settings tab"
             />,
         }}
       />
@@ -60,14 +72,34 @@ const styles = StyleSheet.create({
   tabBar: {
     borderTopColor: theme.colors.border.light,
     backgroundColor: theme.colors.background.primary,
+    // Add elevation for Android
+    elevation: 4,
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    // Safe area handling - use different padding calculations based on platform
+    ...(Platform.OS === 'web'
+      ? {
+          // In web, we handle this via CSS in +html.tsx
+          // The height should account for the tab items with appropriate spacing
+          height: 56,
+        }
+      : {
+          // On native platforms, we use the Platform API
+          paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+        }),
   },
   tabLabel: {
     fontSize: 12,
+    marginBottom: Platform.OS === 'ios' ? 0 : 4,
   },
   tabItem: {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 6,
   }
 });
