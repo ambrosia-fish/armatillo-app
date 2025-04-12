@@ -27,20 +27,23 @@ export default function ApprovalPendingModal({
     Linking.openURL('mailto:josef@feztech.io?subject=Armatillo%20App%20Access%20Request');
   };
 
+  // Simplified handler that uses the auth context's logout
+  // This ensures the auth state is properly updated throughout the app
   const handleGoBack = async () => {
     try {
-      // Skip server logout and just clear tokens locally
-      await clearAuthTokens();
-      
-      // Navigate immediately after clearing tokens
-      router.replace('/screens/auth/login');
+      // Use the AuthContext logout which will:
+      // 1. Update the auth state (LOGGING_OUT → UNAUTHENTICATED)
+      // 2. Clear tokens
+      // 3. The redirect prop in _layout.tsx will handle navigation back to login
+      await logout();
       
       // Close the modal
       onClose();
     } catch (error) {
       console.error('ApprovalPendingModal: Error going back', error);
       
-      // Fallback navigation as a last resort
+      // Fallback if logout fails
+      await clearAuthTokens();
       router.replace('/screens/auth/login');
       onClose();
     }
