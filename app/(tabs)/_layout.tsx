@@ -79,17 +79,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    // Safe area handling - use different padding calculations based on platform
-    ...(Platform.OS === 'web'
-      ? {
-          // In web, we handle this via CSS in +html.tsx
-          // The height should account for the tab items with appropriate spacing
-          height: 56,
-        }
-      : {
-          // On native platforms, we use the Platform API
-          paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-        }),
   },
   tabLabel: {
     fontSize: 12,
