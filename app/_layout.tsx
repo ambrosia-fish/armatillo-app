@@ -106,15 +106,13 @@ function RootNavigator() {
   // Define helper functions for redirects to make the code more readable
   const shouldRedirectFromLogin = isAuthenticated && authState !== AuthState.PENDING_APPROVAL;
   const shouldRedirectFromTabs = !isAuthenticated || authState === AuthState.PENDING_APPROVAL;
-  const shouldRedirectFromApprovalModal = authState !== AuthState.PENDING_APPROVAL;
   
   // Log current auth state for debugging
   console.log('RootNavigator: Rendering with auth state:', {
     isAuthenticated,
     authState,
     shouldRedirectFromLogin,
-    shouldRedirectFromTabs,
-    shouldRedirectFromApprovalModal
+    shouldRedirectFromTabs
   });
   
   // Define the navigation structure using redirect props for auth protection
@@ -132,17 +130,6 @@ function RootNavigator() {
         name="(tabs)" 
         options={{ headerShown: false }} 
         redirect={shouldRedirectFromTabs}
-      />
-      
-      {/* Modal Screens */}
-      <Stack.Screen 
-        name="screens/modals/approval-pending-modal" 
-        options={{ 
-          presentation: 'modal',
-          headerShown: false,
-          gestureEnabled: false,
-        }} 
-        redirect={shouldRedirectFromApprovalModal}
       />
       
       {/* Tracking Screens */}

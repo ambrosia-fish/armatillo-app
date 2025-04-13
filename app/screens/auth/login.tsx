@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Image, 
@@ -18,10 +18,10 @@ import { useAuth } from '@/app/context/AuthContext';
 // Import themed components
 import { View, Text, Button, Input, Card } from '@/app/components';
 import theme from '@/app/constants/theme';
-import { errorService } from '@/app/services/ErrorService';
+import ApprovalPendingModal from '../modals/approval-pending-modal';
 
 export default function LoginScreen() {
-  const { login, register, isLoading: authLoading } = useAuth();
+  const { login, register, isLoading: authLoading, isPendingApproval } = useAuth();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +29,18 @@ export default function LoginScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+
+  /**
+   * Show the approval modal when pending approval state is detected
+   */
+  useEffect(() => {
+    if (isPendingApproval) {
+      setShowApprovalModal(true);
+    } else {
+      setShowApprovalModal(false);
+    }
+  }, [isPendingApproval]);
 
   /**
    * Validate form inputs
@@ -245,6 +257,12 @@ export default function LoginScreen() {
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Approval Pending Modal */}
+      <ApprovalPendingModal 
+        visible={showApprovalModal} 
+        onClose={() => setShowApprovalModal(false)} 
+      />
     </SafeAreaView>
   );
 }
