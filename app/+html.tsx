@@ -67,6 +67,52 @@ body {
   overflow: hidden;
   position: fixed;
 }
+
+/* Fix for tab bar in PWA mode */
+@media (display-mode: standalone) {
+  body {
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+  }
+  
+  /* Ensure tab bar extends to the bottom edge with proper padding */
+  .tab-bar-container {
+    padding-bottom: env(safe-area-inset-bottom, 30px) !important;
+  }
+}
+
+/* Safe area detection for browsers that support it */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Force tab bar labels to be visible in Safari */
+.tab-bar-container span, 
+.tab-bar-container div[role="tab"] span,
+.react-navigation__bottom-tabs span {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: static !important;
+  color: rgb(72, 82, 131) !important; /* Explicitly set to primary color */
+  font-size: 12px !important;
+  padding-top: 4px !important;
+  text-align: center !important;
+  min-height: 16px !important;
+}
+
+/* Fix container height */
+.tab-bar-container, 
+nav.css-175oi2r, 
+div[role="tablist"],
+.react-navigation__bottom-tabs {
+  min-height: 80px !important;
+  padding-bottom: env(safe-area-inset-bottom, 30px) !important;
+  display: flex !important;
+  flex-direction: row !important;
+}
 `;
 
 const pwaDetectionScript = `
@@ -75,6 +121,13 @@ if (typeof window !== 'undefined') {
     // iOS standalone mode detection
     if (window.navigator.standalone === true) {
       console.log("App is running in standalone mode (iOS)");
+      document.documentElement.classList.add('pwa-standalone');
+      document.body.classList.add('pwa-standalone');
+    }
+    
+    // Android standalone mode detection
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log("App is running in standalone mode (Android)");
       document.documentElement.classList.add('pwa-standalone');
       document.body.classList.add('pwa-standalone');
     }
