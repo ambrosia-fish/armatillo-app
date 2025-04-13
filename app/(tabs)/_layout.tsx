@@ -23,15 +23,15 @@ export default function TabLayout() {
       
       
       <Tabs.Screen
-        name="progress"
+        name="insights"
         options={{
-          title: 'Progress',
+          title: 'Insights',
           tabBarIcon: ({ color, focused }) => 
             <Ionicons 
               name={focused ? 'time' : 'time-outline'} 
               size={24} 
               color={color} 
-              accessibilityLabel="Progress tab"
+              accessibilityLabel="Insights tab"
             />,
         }}
       />

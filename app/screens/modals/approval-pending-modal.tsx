@@ -20,7 +20,7 @@ export default function ApprovalPendingModal({
   visible,
   onClose
 }: ApprovalPendingModalProps) {
-  const { logout } = useAuth();
+  // const { logout } = useAuth();
   const router = useRouter();
 
   const handleContactRequest = () => {
@@ -35,7 +35,7 @@ export default function ApprovalPendingModal({
       // 1. Update the auth state (LOGGING_OUT → UNAUTHENTICATED)
       // 2. Clear tokens
       // 3. The redirect prop in _layout.tsx will handle navigation back to login
-      await logout();
+      // await logout();
       
       // Close the modal
       onClose();

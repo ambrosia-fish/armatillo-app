@@ -23,9 +23,9 @@ import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
 
 /**
- * Progress screen showing all tracked BFRB instances with a modern UI
+ * Insight screen showing all tracked BFRB instances with a modern UI
  */
-export default function ProgressScreen() {
+export default function InsightScreen() {
   // State management
   const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,9 +42,9 @@ export default function ProgressScreen() {
   
   // Log auth state for debugging
   useEffect(() => {
-    console.log('ProgressScreen: Auth status:', isAuthenticated);
+    console.log('InsightScreen: Auth status:', isAuthenticated);
     if (user) {
-      console.log('ProgressScreen: User:', user.displayName, user.email);
+      console.log('InsightScreen: User:', user.displayName, user.email);
     }
   }, [isAuthenticated, user]);
 
@@ -57,13 +57,13 @@ export default function ProgressScreen() {
       setLoading(true);
       
       if (!isAuthenticated) {
-        console.log('ProgressScreen: Not authenticated, skipping fetch');
+        console.log('InsightScreen: Not authenticated, skipping fetch');
         setLoading(false);
         setRefreshing(false);
         return;
       }
       
-      console.log('ProgressScreen: Fetching instances...');
+      console.log('InsightScreen: Fetching instances...');
       
       // Make sure token is valid before making the request
       await ensureValidToken();
@@ -74,12 +74,12 @@ export default function ProgressScreen() {
       // Check if response is an array
       if (!Array.isArray(response)) {
         const errorMessage = 'Received invalid response format from server';
-        console.error('ProgressScreen: Invalid response format:', response);
+        console.error('InsightScreen: Invalid response format:', response);
         setError(errorMessage);
         return;
       }
       
-      console.log(`ProgressScreen: Fetched ${response.length} instances`);
+      console.log(`InsightScreen: Fetched ${response.length} instances`);
       
       // Normalize and sort instances by time (newest first)
       const normalizedInstances = response.map(normalizeInstance);
@@ -89,9 +89,9 @@ export default function ProgressScreen() {
       
       setInstances(sortedInstances);
     } catch (err) {
-      console.error('ProgressScreen: Error fetching instances:', err);
+      console.error('InsightScreen: Error fetching instances:', err);
       
-      let errorMessage = 'Failed to load your progress data. Please try again.';
+      let errorMessage = 'Failed to load your insight data. Please try again.';
       if (err instanceof Error) {
         errorMessage += '\n\nDetails: ' + err.message;
       }
@@ -110,11 +110,11 @@ export default function ProgressScreen() {
   const handleExportCSV = async () => {
     setExportLoading(true);
     try {
-      console.log('ProgressScreen: Exporting instances to CSV...');
+      console.log('InsightScreen: Exporting instances to CSV...');
       await exportInstancesAsCSV(instances);
-      console.log('ProgressScreen: CSV export completed');
+      console.log('InsightScreen: CSV export completed');
     } catch (err) {
-      console.error('ProgressScreen: Error exporting to CSV:', err);
+      console.error('InsightScreen: Error exporting to CSV:', err);
     } finally {
       setExportLoading(false);
     }
@@ -123,19 +123,19 @@ export default function ProgressScreen() {
   // Load instances when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      console.log('ProgressScreen: Screen focused, refreshing data');
+      console.log('InsightScreen: Screen focused, refreshing data');
       if (isAuthenticated) {
         fetchInstances();
       }
       return () => {
-        console.log('ProgressScreen: Screen unfocused');
+        console.log('InsightScreen: Screen unfocused');
       };
     }, [isAuthenticated])
   );
 
   // Handle pull-to-refresh
   const onRefresh = async () => {
-    console.log('ProgressScreen: Pull-to-refresh triggered');
+    console.log('InsightScreen: Pull-to-refresh triggered');
     setRefreshing(true);
     await fetchInstances();
   };
@@ -159,11 +159,11 @@ export default function ProgressScreen() {
    */
   const viewInstanceDetails = (instance: Instance) => {
     try {
-      console.log('ProgressScreen: Opening details for instance:', instance._id);
+      console.log('InsightScreen: Opening details for instance:', instance._id);
       setSelectedInstanceId(instance._id);
       setModalVisible(true);
     } catch (err) {
-      console.error('ProgressScreen: Error viewing details:', err);
+      console.error('InsightScreen: Error viewing details:', err);
     }
   };
 
@@ -171,7 +171,7 @@ export default function ProgressScreen() {
    * Close the modal
    */
   const closeModal = () => {
-    console.log('ProgressScreen: Closing details modal');
+    console.log('InsightScreen: Closing details modal');
     setModalVisible(false);
     setSelectedInstanceId(null);
   };
@@ -246,7 +246,7 @@ export default function ProgressScreen() {
       <View style={styles.emptyStateIconContainer}>
         <Ionicons name="analytics-outline" size={40} color={theme.colors.text.tertiary} />
       </View>
-      <Text style={styles.emptyStateTitle}>No progress data yet</Text>
+      <Text style={styles.emptyStateTitle}>No insight data yet</Text>
       <Text style={styles.emptyStateMessage}>
         Tracked behaviors will appear here to help you monitor your progress
       </Text>
@@ -279,7 +279,7 @@ export default function ProgressScreen() {
       <View style={styles.outerContainer}>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Progress</Text>
+            <Text style={styles.title}>Insights</Text>
           </View>
           
           {error && <ErrorState />}
@@ -289,7 +289,7 @@ export default function ProgressScreen() {
               <View style={styles.loadingIndicator}>
                 <ActivityIndicator size="large" color={theme.colors.primary.main} />
               </View>
-              <Text style={styles.loadingText}>Loading your progress data...</Text>
+              <Text style={styles.loadingText}>Loading your insight data...</Text>
             </View>
           ) : (
             <FlatList
