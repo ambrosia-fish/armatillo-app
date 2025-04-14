@@ -19,6 +19,7 @@ export { default as AuthGuard } from './AuthGuard';
 
 // Form entry components
 export { default as EmojiPill } from './EmojiPill';
+export { default as CategoryPills } from './CategoryPills';
 export { default as AnswerSelectorModal } from '../screens/modals/answer-selector-modal';
 
 // Existing components

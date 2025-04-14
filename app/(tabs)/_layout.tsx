@@ -17,8 +17,8 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.colors.text.tertiary,
         headerShown: false,
         tabBarStyle: {
-          height: Platform.OS === 'web' ? 60: undefined, // Explicitly taller for web
-          paddingBottom: Platform.OS === 'web' ? 'env(safe-area-inset-bottom, 30px)' : 16,
+          height: Platform.OS === 'web' ? 60: 70, // Explicitly taller for web
+          // paddingBottom: Platform.OS === 'web' ? 'env(safe-area-inset-bottom, 30px)' : ,
           borderTopColor: theme.colors.border.light,
           backgroundColor: theme.colors.background.primary,
           // Add elevation for Android

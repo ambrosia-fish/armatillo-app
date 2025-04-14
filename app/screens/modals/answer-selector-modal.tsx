@@ -14,7 +14,7 @@ import { OptionItem } from '@/app/constants/optionDictionaries';
 import theme from '@/app/constants/theme';
 import EmojiPill from '../../components/EmojiPill';
 import { errorService } from '@/app/services/ErrorService';
-import ModalComponent from '@/app/screens/modals/modal';
+import ModalComponent from './modal';
 
 interface AnswerSelectorModalProps {
   visible: boolean;
@@ -192,7 +192,7 @@ export default function AnswerSelectorModal({
       contentStyle={styles.modalContent}
     >
       {/* Search Input */}
-      <View style={styles.searchContainer}>
+      {/* <View style={styles.searchContainer}>
         <Ionicons 
           name="search" 
           size={20} 
@@ -221,12 +221,12 @@ export default function AnswerSelectorModal({
             />
           </TouchableOpacity>
         )}
-      </View>
+      </View> */}
 
       {/* Custom Option Input */}
       {allowCustom && (
         <View style={styles.customContainer}>
-          <TextInput
+          {/* <TextInput
             style={styles.customInput}
             placeholder="Add a custom option..."
             value={customOption}
@@ -251,7 +251,7 @@ export default function AnswerSelectorModal({
                   : theme.colors.utility.disabled
               } 
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       )}
 

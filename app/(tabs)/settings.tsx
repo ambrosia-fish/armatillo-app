@@ -169,7 +169,7 @@ export default function SettingsScreen() {
               {/* Version Info */}
               <View style={styles.versionContainer}>
                 <Text style={styles.versionText}>
-                  Armatillo v0.1.0 (Beta)
+                  Armatillo v0.1.0 (Pre-Alpha)
                 </Text>
               </View>
             </View>

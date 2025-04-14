@@ -100,6 +100,7 @@ export default function ModalComponent({
       animationType="fade"
       onRequestClose={onClose}
       statusBarTranslucent={true}
+      hardwareAccelerated={true}
     >
       <StatusBar 
         barStyle={Platform.OS === 'ios' ? 'light-content' : 'dark-content'} 
@@ -178,10 +179,7 @@ const styles = StyleSheet.create({
         elevation: 5,
       },
       web: {
-        shadowColor: theme.colors.neutral.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
+        boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.15)',
       },
     }),
   } as ViewStyle,

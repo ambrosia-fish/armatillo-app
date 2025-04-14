@@ -3,11 +3,10 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  Platform,
   ViewStyle,
   TextStyle
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { Picker } from 'react-native-wheel-pick';
 import theme from '@/app/constants/theme';
 import ModalComponent from './modal';
 import { Button } from '@/app/components';
@@ -21,7 +20,7 @@ interface DurationPickerModalProps {
 }
 
 /**
- * Cross-platform duration picker modal with consistent styling
+ * Duration picker modal using react-native-wheel-pick for minutes selection
  */
 export default function DurationPickerModal({
   visible,
@@ -30,55 +29,31 @@ export default function DurationPickerModal({
   selectedDuration,
   setSelectedDuration
 }: DurationPickerModalProps) {
-  // Generate picker options for both web and native
-  const pickerOptions = [
-    { label: "Did Not Engage", value: 0 },
-    ...Array.from({ length: 120 }, (_, i) => ({ 
-      label: `${i + 1} min`, 
-      value: i + 1 
-    }))
+  // Generate minutes data (0-60) with custom labels
+  const minutesData = [
+    'Did Not Engage',
+    ...Array.from({ length: 59 }, (_, i) => `${i + 1} min`),
+    '1 hr+'
   ];
-
-  // Render web picker (select element)
-  const renderWebPicker = () => (
-    <select
-      value={selectedDuration}
-      onChange={(e) => setSelectedDuration(Number(e.target.value))}
-      style={{
-        height: 200,
-        width: '100%',
-        fontSize: 16,
-        backgroundColor: theme.colors.background.primary,
-        color: theme.colors.text.primary,
-        border: 'none',
-      }}
-      aria-label="Duration in minutes"
-    >
-      {pickerOptions.map((option) => (
-        <option key={`duration-${option.value}`} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
-
-  // Render native picker
-  const renderNativePicker = () => (
-    <Picker
-      style={styles.picker}
-      selectedValue={selectedDuration}
-      onValueChange={setSelectedDuration}
-      accessibilityLabel="Duration in minutes"
-    >
-      {pickerOptions.map((option) => (
-        <Picker.Item
-          key={`duration-${option.value}`}
-          label={option.label}
-          value={option.value}
-        />
-      ))}
-    </Picker>
-  );
+  
+  // Handle picker value change
+  const handleValueChange = (value: string) => {
+    if (value === 'Did Not Engage') {
+      setSelectedDuration(0);
+    } else if (value === '1 hr+') {
+      setSelectedDuration(60);
+    } else {
+      const minutes = parseInt(value, 10);
+      setSelectedDuration(isNaN(minutes) ? 0 : minutes);
+    }
+  };
+  
+  // Get the picker value based on selectedDuration
+  const getPickerValue = () => {
+    if (selectedDuration === 0) return 'Did Not Engage';
+    if (selectedDuration >= 60) return '1 hr+';
+    return `${selectedDuration} min`;
+  };
   
   // Modal footer with action buttons
   const modalFooter = (
@@ -106,16 +81,17 @@ export default function DurationPickerModal({
       footer={modalFooter}
       contentStyle={styles.modalContent}
     >
-      <View style={styles.pickerContainer}>
-        {/* Conditionally render web or native picker based on platform */}
-        {Platform.OS === 'web' 
-          ? renderWebPicker() 
-          : renderNativePicker()
-        }
-      </View>
-      
-      <View style={styles.labelContainer}>
-        <Text style={styles.pickerLabel}>Duration (minutes)</Text>
+      <View style={styles.contentContainer}>
+        {/* Minutes Picker */}
+        <View style={styles.pickerContainer}>
+          <Picker
+            style={styles.picker}
+            selectedValue={getPickerValue()}
+            pickerData={minutesData}
+            onValueChange={handleValueChange}
+            textColor={theme.colors.text.primary}
+          />
+        </View>
       </View>
     </ModalComponent>
   );
@@ -127,16 +103,22 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.lg,
   } as ViewStyle,
   
-  pickerContainer: {
-    flexDirection: 'row',
+  contentContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 200,
+    paddingVertical: theme.spacing.md,
+  } as ViewStyle,
+  
+  pickerContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
   
   picker: {
-    flex: 1,
-    height: 200,
+    backgroundColor: 'white',
+    width: 220,
+    height: 180,
   } as ViewStyle,
   
   labelContainer: {

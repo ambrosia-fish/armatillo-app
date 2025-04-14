@@ -1,113 +1,126 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
-import { View, Text } from './Themed';
+import { 
+  TouchableOpacity, 
+  Text, 
+  StyleSheet, 
+  Platform, 
+  ViewStyle, 
+  TextStyle 
+} from 'react-native';
 import theme from '@/app/constants/theme';
-import { errorService } from '@/app/services/ErrorService';
 
 interface EmojiPillProps {
   id: string;
   label: string;
   emoji: string;
-  selected: boolean;
+  selected?: boolean;
   onToggle: (id: string) => void;
-  disabled?: boolean;
 }
 
 /**
- * Pill-shaped component for toggling emoji selections
+ * A selectable pill component that displays an emoji and label
+ * With specialized handling for web rendering
  */
-export default function EmojiPill({
-  id,
-  label,
-  emoji,
-  selected,
-  onToggle,
-  disabled = false,
-}: EmojiPillProps) {
-  /**
-   * Handle item selection with error handling
-   */
-  const handleToggle = () => {
-    try {
-      if (!disabled) {
-        onToggle(id);
-      }
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { 
-          component: 'EmojiPill', 
-          action: 'toggleItem',
-          itemId: id
-        }
-      });
-    }
-  };
-
+const EmojiPill: React.FC<EmojiPillProps> = ({ 
+  id, 
+  label, 
+  emoji, 
+  selected = false, 
+  onToggle 
+}) => {
   return (
     <TouchableOpacity
       style={[
-        styles.pill,
-        selected && styles.selectedPill,
-        disabled && styles.disabledPill,
+        styles.container,
+        selected && styles.containerSelected,
+        Platform.OS === 'web' && styles.webContainer,
+        Platform.OS === 'web' && selected && styles.webContainerSelected
       ]}
-      onPress={handleToggle}
-      disabled={disabled}
+      onPress={() => onToggle(id)}
+      accessibilityLabel={`${selected ? 'Selected' : 'Unselected'} ${label}`}
       accessibilityRole="button"
-      accessibilityLabel={`${label} ${selected ? 'selected' : 'unselected'}`}
-      accessibilityState={{ selected, disabled }}
-      accessibilityHint={`Tap to ${selected ? 'unselect' : 'select'} ${label}`}
+      accessibilityState={{ selected }}
     >
-      <Text style={styles.emoji}>{emoji}</Text>
-      <Text
-        style={[
-          styles.label,
-          selected && styles.selectedLabel,
-          disabled && styles.disabledLabel,
-        ]}
-      >
+      <Text style={[
+        styles.emoji,
+        Platform.OS === 'web' && styles.webEmoji
+      ]}>
+        {emoji}
+      </Text>
+      <Text style={[
+        styles.label,
+        selected && styles.labelSelected,
+        Platform.OS === 'web' && styles.webLabel,
+        Platform.OS === 'web' && selected && styles.webLabelSelected
+      ]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
-}
+};
 
+// Styles with specialized handling for web
 const styles = StyleSheet.create({
-  pill: {
+  container: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: 20, // Pill shape
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    marginRight: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 50,
+    margin: 4,
     borderWidth: 1,
     borderColor: theme.colors.border.light,
   } as ViewStyle,
-  selectedPill: {
-    backgroundColor: theme.colors.primary.light + '30', // 30% opacity
+  
+  containerSelected: {
+    backgroundColor: theme.colors.primary.light + '30',
     borderColor: theme.colors.primary.main,
   } as ViewStyle,
-  disabledPill: {
-    backgroundColor: theme.colors.neutral.lighter,
-    borderColor: theme.colors.border.light,
-    opacity: 0.5,
+  
+  // Web-specific container styles
+  webContainer: {
+    display: 'flex',
+    userSelect: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
   } as ViewStyle,
+  
+  webContainerSelected: {
+    boxShadow: `0 0 0 1px ${theme.colors.primary.main}`,
+  } as ViewStyle,
+  
   emoji: {
-    fontSize: theme.typography.fontSize.md,
-    marginRight: theme.spacing.xs,
+    fontSize: 18,
+    marginRight: 6,
   } as TextStyle,
+  
+  // Web-specific emoji styles
+  webEmoji: {
+    display: 'inline-block',
+    verticalAlign: 'middle',
+  } as TextStyle,
+  
   label: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+  } as TextStyle,
+  
+  labelSelected: {
     color: theme.colors.text.primary,
+    fontWeight: 'bold',
   } as TextStyle,
-  selectedLabel: {
-    color: theme.colors.primary.main,
-    fontWeight: theme.typography.fontWeight.medium as '500',
+  
+  // Web-specific label styles
+  webLabel: {
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   } as TextStyle,
-  disabledLabel: {
-    color: theme.colors.text.disabled,
+  
+  webLabelSelected: {
+    fontWeight: '600',
   } as TextStyle,
 });
+
+export default EmojiPill;
