@@ -16,9 +16,29 @@ export default function TabLayout() {
         tabBarActiveTintColor: theme.colors.primary.main,
         tabBarInactiveTintColor: theme.colors.text.tertiary,
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarItemStyle: styles.tabItem,
+        tabBarStyle: {
+          height: Platform.OS === 'web' ? 60: undefined, // Explicitly taller for web
+          paddingBottom: Platform.OS === 'web' ? 'env(safe-area-inset-bottom, 30px)' : 16,
+          borderTopColor: theme.colors.border.light,
+          backgroundColor: theme.colors.background.primary,
+          // Add elevation for Android
+          elevation: 4,
+          // Add shadow for iOS
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+        },
+        tabBarLabelPosition: 'below-icon', // Explicitly set position
+        tabBarLabelStyle: {
+          fontSize: 12,
+          lineHeight: 16,
+          fontWeight: '500',
+        },
+        tabBarIconStyle: {
+          marginBottom: 2, // Leave space for label
+        },
+        tabBarClassName: "tab-bar-container",
       }}>
       
       
@@ -67,28 +87,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    borderTopColor: theme.colors.border.light,
-    backgroundColor: theme.colors.background.primary,
-    // Add elevation for Android
-    elevation: 4,
-    // Add shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  tabLabel: {
-    fontSize: 12,
-    marginBottom: Platform.OS === 'ios' ? 0 : 4,
-  },
-  tabItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 6,
-  }
-});
