@@ -1,456 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   View, 
-  Text,
   StyleSheet, 
-  TouchableOpacity,
   SafeAreaView,
   StatusBar,
   ScrollView,
-  TextInput,
-  Platform,
-  Switch,
-  DateTimePickerAndroid,
   ActivityIndicator,
-  Alert
+  Platform
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import api from '@/app/services/api';
-
 import theme from '@/app/constants/theme';
 import { 
   Header, 
   Button, 
-  AnswerSelectorModal,
-  CategoryPills
+  AnswerSelectorModal
 } from '@/app/components';
-import {
+import OptionDictionaries from '@/app/constants/optionDictionaries';
+import { 
   TimePickerModal,
   DurationPickerModal
 } from '@/app/screens/modals';
-import { useFormContext } from '@/app/context/FormContext';
-import { errorService, ErrorMessages } from '@/app/services/ErrorService';
 import { navigateBack } from '@/app/utils/navigationUtils';
-import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
+import { useEntryForm } from '../../hooks';
+import {
+  AwarenessTypeSection,
+  UrgeStrengthSection,
+  TimeAndDurationSection,
+  CategorySection,
+  NotesSection
+} from './form-sections';
 
 export default function NewEntryScreen() {
-  const router = useRouter();
-  const { 
-    formData, 
-    updateFormData, 
-    submitForm, 
-    isSubmitting 
-  } = useFormContext();
-  
-  // Time state
-  const [date, setDate] = useState(formData.time || new Date());
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedHours, setSelectedHours] = useState(
-    formData.time ? formData.time.getHours() : new Date().getHours()
-  );
-  const [selectedMinutes, setSelectedMinutes] = useState(
-    formData.time ? formData.time.getMinutes() : new Date().getMinutes()
-  );
-  
-  // Duration state
-  const [duration, setDuration] = useState(
-    formData.duration?.toString() || 'Did not engage'
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
-  const [selectedDuration, setSelectedDuration] = useState(
-    parseInt(formData.duration || '5', 10)
-  );
-
-  // Selected category data
-  const [selectedLocations, setSelectedLocations] = useState(
-    formData.selectedLocations || []
-  );
-  const [selectedActivities, setSelectedActivities] = useState(
-    formData.selectedActivities || []
-  );
-  const [selectedEmotions, setSelectedEmotions] = useState(
-    formData.selectedEmotions || []
-  );
-  const [selectedThoughts, setSelectedThoughts] = useState(
-    formData.selectedThoughts || []
-  );
-  const [selectedSensations, setSelectedSensations] = useState(
-    formData.selectedSensations || []
-  );
-  const [awarenessType, setAwarenessType] = useState(
-    formData.awarenessType || 'automatic'
-  );
-  const [urgeStrength, setUrgeStrength] = useState(
-    formData.urgeStrength?.toString() || '3'
-  );
-  
-  // Notes
-  const [notes, setNotes] = useState(formData.notes || '');
-  
-  // Modal state
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalOptions, setModalOptions] = useState([]);
-  const [modalSelected, setModalSelected] = useState([]);
-  const [currentModalType, setCurrentModalType] = useState('location');
-  
-  // Load form data from context when available
-  useEffect(() => {
-    if (formData.time) {
-      setDate(formData.time);
-      setSelectedHours(formData.time.getHours());
-      setSelectedMinutes(formData.time.getMinutes());
-    }
-    
-    if (formData.duration) {
-      setDuration(formData.duration.toString());
-      setSelectedDuration(parseInt(formData.duration.toString(), 10));
-    }
-    
-    if (formData.selectedLocations) {
-      setSelectedLocations(formData.selectedLocations);
-    }
-    
-    if (formData.selectedActivities) {
-      setSelectedActivities(formData.selectedActivities);
-    }
-    
-    if (formData.selectedEmotions) {
-      setSelectedEmotions(formData.selectedEmotions);
-    }
-    
-    if (formData.selectedThoughts) {
-      setSelectedThoughts(formData.selectedThoughts);
-    }
-    
-    if (formData.selectedSensations) {
-      setSelectedSensations(formData.selectedSensations);
-    }
-    
-    if (formData.awarenessType) {
-      setAwarenessType(formData.awarenessType);
-    }
-    
-    if (formData.urgeStrength) {
-      setUrgeStrength(formData.urgeStrength.toString());
-    }
-    
-    if (formData.notes) {
-      setNotes(formData.notes);
-    }
-  }, [formData]);
-  
-  /**
-   * Open a specific category's selection modal
-   */
-  const openModal = (
-    type, 
-    title, 
-    options, 
-    selectedIds
-  ) => {
-    try {
-      setModalTitle(title);
-      setModalOptions(options);
-      setModalSelected(selectedIds);
-      setCurrentModalType(type);
-      setModalVisible(true);
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'open_selection_modal' }
-      });
-    }
-  };
-
-  /**
-   * Handle selection from the modal
-   */
-  const handleModalSelect = (selectedIds) => {
-    try {
-      switch (currentModalType) {
-        case 'location':
-          setSelectedLocations(selectedIds);
-          break;
-        case 'activity':
-          setSelectedActivities(selectedIds);
-          break;
-        case 'emotion':
-          setSelectedEmotions(selectedIds);
-          break;
-        case 'thought':
-          setSelectedThoughts(selectedIds);
-          break;
-        case 'sensation':
-          setSelectedSensations(selectedIds);
-          break;
-      }
-      setModalVisible(false);
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'handle_modal_selection' }
-      });
-    }
-  };
-
-  /**
-   * Update the date with selected hours and minutes
-   */
-  const updateSelectedTime = () => {
-    try {
-      // Create a new date with selected hours/minutes
-      const newDate = new Date(date);
-      newDate.setHours(selectedHours);
-      newDate.setMinutes(selectedMinutes);
-      setDate(newDate);
-      setShowTimePicker(false);
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'update_selected_time' }
-      });
-    }
-  };
-
-  /**
-   * Handle date change from the date picker (Android only)
-   */
-  const onDateChange = (event, selectedDate) => {
-    try {
-      if (Platform.OS === 'android') {
-        setShowTimePicker(false);
-      }
-
-      if (selectedDate) {
-        setDate(selectedDate);
-        setSelectedHours(selectedDate.getHours());
-        setSelectedMinutes(selectedDate.getMinutes());
-      }
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'change_date' }
-      });
-    }
-  };
-
-  /**
-   * Format the time only (no date)
-   */
-  const formatTime = (date) => {
-    const options = { 
-      hour: 'numeric',
-      minute: 'numeric'
-    };
-    return date.toLocaleString(undefined, options);
-  };
-
-  /**
-   * Show the time picker (platform-specific)
-   */
-  const showTimePickerModal = () => {
-    try {
-      if (Platform.OS === 'android') {
-        DateTimePickerAndroid.open({
-          value: date,
-          mode: 'time',
-          is24Hour: false,
-          onChange: onDateChange,
-        });
-      } else {
-        // Initialize selected hours/minutes from current date
-        setSelectedHours(date.getHours());
-        setSelectedMinutes(date.getMinutes());
-        setShowTimePicker(true);
-      }
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'show_time_picker' }
-      });
-    }
-  };
-
-  /**
-   * Show the duration picker
-   */
-  const showDurationPickerModal = () => {
-    try {
-      // Initialize selected duration from current value
-      setSelectedDuration(parseInt(duration, 10) || 0);
-      setShowDurationPicker(true);
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'show_duration_picker' }
-      });
-    }
-  };
-
-  /**
-   * Update the duration with selected value
-   */
-  const updateSelectedDuration = () => {
-    try {
-      setDuration(selectedDuration.toString());
-      setShowDurationPicker(false);
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'update_selected_duration' }
-      });
-    }
-  };
-
-  /**
-   * Toggle awareness type
-   */
-  const toggleAwarenessType = () => {
-    try {
-      setAwarenessType(prev => prev === 'intentional' ? 'automatic' : 'intentional');
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'toggle_awareness_type' }
-      });
-    }
-  };
-
-  /**
-   * Toggle selection of an item in a category
-   */
-  const toggleCategoryItem = (
-    category,
-    id
-  ) => {
-    try {
-      switch (category) {
-        case 'location':
-          setSelectedLocations(prev => 
-            prev.includes(id) 
-              ? prev.filter(item => item !== id) 
-              : [...prev, id]
-          );
-          break;
-        case 'activity':
-          setSelectedActivities(prev => 
-            prev.includes(id) 
-              ? prev.filter(item => item !== id) 
-              : [...prev, id]
-          );
-          break;
-        case 'emotion':
-          setSelectedEmotions(prev => 
-            prev.includes(id) 
-              ? prev.filter(item => item !== id) 
-              : [...prev, id]
-          );
-          break;
-        case 'thought':
-          setSelectedThoughts(prev => 
-            prev.includes(id) 
-              ? prev.filter(item => item !== id) 
-              : [...prev, id]
-          );
-          break;
-        case 'sensation':
-          setSelectedSensations(prev => 
-            prev.includes(id) 
-              ? prev.filter(item => item !== id) 
-              : [...prev, id]
-          );
-          break;
-      }
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { action: 'toggle_category_item' }
-      });
-    }
-  };
-
-  /**
-   * Handle saving the form and navigating home
-   */
-  const handleSubmit = async () => {
-    // Update form data with all values
-    updateFormData({
-      // Time data
-      time: date,
-      duration: Number(duration) || 5,
-      
-      // Awareness and urge data
-      awarenessType,
-      urgeStrength,
-      
-      // Category data
-      selectedLocations,
-      selectedActivities,
-      selectedEmotions,
-      selectedThoughts,
-      selectedSensations,
-      
-      // Notes
-      notes,
-    });
-    
-    // Prepare payload for API
-    const payload = {
-      time: date.toISOString(),
-      duration: Number(duration) || 5,
-      urgeStrength: Number(urgeStrength) || 3,
-      intentionType: awarenessType,
-      selectedEnvironments: selectedLocations || [],
-      selectedActivities: selectedActivities || [],
-      selectedEmotions: selectedEmotions || [],
-      selectedThoughts: selectedThoughts || [],
-      selectedSensations: selectedSensations || [],
-      notes: notes.trim() || undefined,
-    };
-    
-    // Submit to API with standardized handling
-    await submitForm(
-      async () => {
-        // Store locally for sync later if needed
-        const allData = JSON.stringify(payload);
-        
-        if (Platform.OS === 'web') {
-          // Use localStorage for web
-          localStorage.setItem('bfrb_all_data', allData);
-        } else {
-          // Use SecureStore for native platforms
-          await SecureStore.setItemAsync('bfrb_all_data', allData);
-        }
-        
-        // Submit to API if authentication service is available
-        if (typeof api !== 'undefined' && api.instances && api.instances.createInstance) {
-          return api.instances.createInstance(payload);
-        }
-        
-        return null;
-      },
-      {
-        successMessage: 'Your BFRB instance has been recorded successfully.',
-        errorMessage: 'There was a problem submitting your data. It has been saved locally and will sync when connectivity is restored.',
-        navigationPath: '/',
-        context: { 
-          screen: 'new_entry',
-          payloadSize: JSON.stringify(payload).length 
-        }
-      }
-    );
-  };
+  const form = useEntryForm();
 
   /**
    * Handle cancellation and return to previous screen
@@ -476,344 +56,115 @@ export default function NewEntryScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Awareness Type (Intentional/Automatic) */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Awareness Type</Text>
-          </View>
-          <View style={styles.awarenessContainer}>
-            <View style={styles.toggleLabelContainer}>
-              <Text 
-                style={[
-                  styles.toggleLabel, 
-                  awarenessType === 'automatic' && styles.toggleLabelActive
-                ]}
-              >
-                Automatic
-              </Text>
-              <Switch
-                trackColor={{ 
-                  false: theme.colors.neutral.medium, 
-                  true: theme.colors.primary.light 
-                }}
-                thumbColor={
-                  awarenessType === 'intentional' 
-                    ? theme.colors.primary.main 
-                    : theme.colors.neutral.white
-                }
-                ios_backgroundColor={theme.colors.neutral.medium}
-                onValueChange={toggleAwarenessType}
-                value={awarenessType === 'intentional'}
-                accessible={true}
-                accessibilityLabel="Toggle between automatic and intentional awareness"
-                accessibilityHint="Switches between automatic and intentional awareness types"
-                accessibilityRole="switch"
-              />
-              <Text 
-                style={[
-                  styles.toggleLabel, 
-                  awarenessType === 'intentional' && styles.toggleLabelActive
-                ]}
-              >
-                Intentional
-              </Text>
-            </View>
-          </View>
-        </View>
+        <AwarenessTypeSection
+          awarenessType={form.awarenessType}
+          toggleAwarenessType={form.toggleAwarenessType}
+        />
 
         {/* Urge Strength */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>How strong was the urge?</Text>
-          </View>
-          <View style={styles.urgeStrengthContainer}>
-            {OptionDictionaries.urgeStrengthOptions
-              .filter(option => option.id >= '1' && option.id <= '5')
-              .map((option) => (
-                <TouchableOpacity 
-                  key={option.id}
-                  style={[
-                    styles.urgeStrengthOption,
-                    urgeStrength === option.id && styles.urgeStrengthSelected
-                  ]}
-                  onPress={() => setUrgeStrength(option.id)}
-                  accessibilityLabel={option.label}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: urgeStrength === option.id }}
-                >
-                  <Text style={styles.urgeStrengthEmoji}>{option.emoji}</Text>
-                  <Text 
-                    style={[
-                      styles.urgeStrengthText,
-                      urgeStrength === option.id && styles.urgeStrengthTextSelected
-                    ]}
-                  >
-                    {option.id}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-          </View>
-        </View>
+        <UrgeStrengthSection
+          urgeStrength={form.urgeStrength}
+          setUrgeStrength={form.setUrgeStrength}
+        />
 
-        {/* Time and Duration (side by side) */}
-        <View style={styles.formSection}>
-          <View style={styles.timeAndDurationContainer}>
-            {/* Time Picker */}
-            <View style={styles.timeContainer}>
-              <Text style={styles.inputLabel}>When did it occur?</Text>
-              <TouchableOpacity
-                style={styles.timePickerButton}
-                onPress={showTimePickerModal}
-                accessibilityLabel="Select time"
-                accessibilityHint="Opens time picker"
-                accessibilityRole="button"
-              >
-                <Text style={styles.timeText}>
-                  {formatTime(date)}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Duration Input */}
-            <View style={styles.durationContainer}>
-              <Text style={styles.inputLabel}>How many minutes?</Text>
-              <TouchableOpacity
-                style={styles.durationPickerButton}
-                onPress={showDurationPickerModal}
-                accessibilityLabel="Select duration"
-                accessibilityHint="Opens duration picker"
-                accessibilityRole="button"
-              >
-              <Text style={styles.durationText}>
-                {duration > 0 ? `${duration} min` : "Did Not Engage"}
-              </Text>
-
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        {/* Time and Duration */}
+        <TimeAndDurationSection
+          date={form.date}
+          duration={form.duration}
+          formatTime={form.formatTime}
+          showTimePickerModal={form.showTimePickerModal}
+          showDurationPickerModal={form.showDurationPickerModal}
+        />
 
         {/* Location */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Location</Text>
-          </View>
-          
-          <View style={styles.selectionContainer}>
-            {selectedLocations.length > 0 ? (
-              <CategoryPills
-                categoryType="location"
-                selectedItems={selectedLocations}
-                options={OptionDictionaries.locationOptions}
-                onToggleItem={toggleCategoryItem}
-                onOpenModal={openModal}
-              />
-            ) : (
-              <TouchableOpacity
-                onPress={() => openModal(
-                  'location',
-                  'Select Locations',
-                  OptionDictionaries.locationOptions,
-                  selectedLocations
-                )}
-                style={styles.bigAddButton}
-                accessibilityLabel="Add locations"
-                accessibilityHint="Opens modal to select locations"
-                accessibilityRole="button"
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <CategorySection
+          title="Location"
+          categoryType="location"
+          selectedItems={form.selectedLocations}
+          options={OptionDictionaries.locationOptions}
+          onToggleItem={form.toggleCategoryItem}
+          onOpenModal={form.openModal}
+        />
 
         {/* Activity */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Activity</Text>
-          </View>
-          
-          <View style={styles.selectionContainer}>
-            {selectedActivities.length > 0 ? (
-              <CategoryPills
-                categoryType="activity"
-                selectedItems={selectedActivities}
-                options={OptionDictionaries.activityOptions}
-                onToggleItem={toggleCategoryItem}
-                onOpenModal={openModal}
-              />
-            ) : (
-              <TouchableOpacity
-                onPress={() => openModal(
-                  'activity',
-                  'Select Activities',
-                  OptionDictionaries.activityOptions,
-                  selectedActivities
-                )}
-                style={styles.bigAddButton}
-                accessibilityLabel="Add activities"
-                accessibilityHint="Opens modal to select activities"
-                accessibilityRole="button"
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <CategorySection
+          title="Activity"
+          categoryType="activity"
+          selectedItems={form.selectedActivities}
+          options={OptionDictionaries.activityOptions}
+          onToggleItem={form.toggleCategoryItem}
+          onOpenModal={form.openModal}
+        />
 
         {/* Emotions */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Emotions</Text>
-          </View>
-          
-          <View style={styles.selectionContainer}>
-            {selectedEmotions.length > 0 ? (
-              <CategoryPills
-                categoryType="emotion"
-                selectedItems={selectedEmotions}
-                options={OptionDictionaries.emotionOptions}
-                onToggleItem={toggleCategoryItem}
-                onOpenModal={openModal}
-              />
-            ) : (
-              <TouchableOpacity
-                onPress={() => openModal(
-                  'emotion',
-                  'Select Emotions',
-                  OptionDictionaries.emotionOptions,
-                  selectedEmotions
-                )}
-                style={styles.bigAddButton}
-                accessibilityLabel="Add emotions"
-                accessibilityHint="Opens modal to select emotions"
-                accessibilityRole="button"
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <CategorySection
+          title="Emotions"
+          categoryType="emotion"
+          selectedItems={form.selectedEmotions}
+          options={OptionDictionaries.emotionOptions}
+          onToggleItem={form.toggleCategoryItem}
+          onOpenModal={form.openModal}
+        />
 
         {/* Thought Patterns */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Thought Patterns</Text>
-          </View>
-          
-          <View style={styles.selectionContainer}>
-            {selectedThoughts.length > 0 ? (
-              <CategoryPills
-                categoryType="thought"
-                selectedItems={selectedThoughts}
-                options={OptionDictionaries.thoughtOptions}
-                onToggleItem={toggleCategoryItem}
-                onOpenModal={openModal}
-              />
-            ) : (
-              <TouchableOpacity
-                onPress={() => openModal(
-                  'thought',
-                  'Select Thought Patterns',
-                  OptionDictionaries.thoughtOptions,
-                  selectedThoughts
-                )}
-                style={styles.bigAddButton}
-                accessibilityLabel="Add thought patterns"
-                accessibilityHint="Opens modal to select thought patterns"
-                accessibilityRole="button"
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <CategorySection
+          title="Thought Patterns"
+          categoryType="thought"
+          selectedItems={form.selectedThoughts}
+          options={OptionDictionaries.thoughtOptions}
+          onToggleItem={form.toggleCategoryItem}
+          onOpenModal={form.openModal}
+        />
 
         {/* Physical Sensations */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Physical Sensations</Text>
-          </View>
-          
-          <View style={styles.selectionContainer}>
-            {selectedSensations.length > 0 ? (
-              <CategoryPills
-                categoryType="sensation"
-                selectedItems={selectedSensations}
-                options={OptionDictionaries.sensationOptions}
-                onToggleItem={toggleCategoryItem}
-                onOpenModal={openModal}
-              />
-            ) : (
-              <TouchableOpacity
-                onPress={() => openModal(
-                  'sensation',
-                  'Select Physical Sensations',
-                  OptionDictionaries.sensationOptions,
-                  selectedSensations
-                )}
-                style={styles.bigAddButton}
-                accessibilityLabel="Add physical sensations"
-                accessibilityHint="Opens modal to select physical sensations"
-                accessibilityRole="button"
-              >
-                <Text style={styles.addButtonText}>+</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <CategorySection
+          title="Physical Sensations"
+          categoryType="sensation"
+          selectedItems={form.selectedSensations}
+          options={OptionDictionaries.sensationOptions}
+          onToggleItem={form.toggleCategoryItem}
+          onOpenModal={form.openModal}
+        />
 
         {/* Notes */}
-        <View style={styles.formSection}>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-          </View>
-          <TextInput
-            style={styles.notesInput}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Optional notes about this instance..."
-            placeholderTextColor={theme.colors.text.tertiary}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            accessibilityLabel="Notes field"
-            accessibilityHint="Add any additional notes about this instance"
-          />
-        </View>
+        <NotesSection
+          notes={form.notes}
+          setNotes={form.setNotes}
+        />
       </ScrollView>
 
       {/* iOS-style Time Picker Modal */}
       {(Platform.OS === 'ios' || Platform.OS === 'web') && (
-          <TimePickerModal
-            visible={showTimePicker}
-            onCancel={() => setShowTimePicker(false)}
-            onDone={updateSelectedTime}
-            selectedHours={selectedHours}
-            selectedMinutes={selectedMinutes}
-            setSelectedHours={setSelectedHours}
-            setSelectedMinutes={setSelectedMinutes}
-          />
-        )}
+        <TimePickerModal
+          visible={form.showTimePicker}
+          onCancel={() => form.setShowTimePicker(false)}
+          onDone={form.updateSelectedTime}
+          selectedHours={form.selectedHours}
+          selectedMinutes={form.selectedMinutes}
+          setSelectedHours={form.setSelectedHours}
+          setSelectedMinutes={form.setSelectedMinutes}
+        />
+      )}
       
       {/* iOS-style Duration Picker Modal */}
       {(Platform.OS === 'ios' || Platform.OS === 'web') && (
-          <DurationPickerModal
-            visible={showDurationPicker}
-            onCancel={() => setShowDurationPicker(false)}
-            onDone={updateSelectedDuration}
-            selectedDuration={selectedDuration}
-            setSelectedDuration={setSelectedDuration}
-          />
-        )}
+        <DurationPickerModal
+          visible={form.showDurationPicker}
+          onCancel={() => form.setShowDurationPicker(false)}
+          onDone={form.updateSelectedDuration}
+          selectedDuration={form.selectedDuration}
+          setSelectedDuration={form.setSelectedDuration}
+        />
+      )}
 
       {/* Answer Selector Modal */}
       <AnswerSelectorModal
-        visible={modalVisible}
-        title={modalTitle}
-        options={modalOptions}
-        selectedIds={modalSelected}
-        onSelect={handleModalSelect}
-        onClose={() => setModalVisible(false)}
+        visible={form.modalVisible}
+        title={form.modalTitle}
+        options={form.modalOptions}
+        selectedIds={form.modalSelected}
+        onSelect={form.handleModalSelect}
+        onClose={() => form.setModalVisible(false)}
         allowMultiple={true}
         allowCustom={true}
       />
@@ -821,12 +172,12 @@ export default function NewEntryScreen() {
       {/* Footer Buttons */}
       <View style={styles.footer}>
         <Button
-          title={isSubmitting ? "Submitting..." : "Submit"}
+          title={form.isSubmitting ? "Submitting..." : "Submit"}
           variant="primary"
-          onPress={handleSubmit}
-          disabled={isSubmitting}
+          onPress={form.handleSubmit}
+          disabled={form.isSubmitting}
           style={styles.submitButton}
-          accessibilityLabel={isSubmitting ? "Submitting form" : "Submit form"}
+          accessibilityLabel={form.isSubmitting ? "Submitting form" : "Submit form"}
           accessibilityHint="Submits the form and saves the data"
         />
         
@@ -834,14 +185,14 @@ export default function NewEntryScreen() {
           title="Cancel"
           variant="text"
           onPress={handleCancel}
-          disabled={isSubmitting}
+          disabled={form.isSubmitting}
           style={styles.cancelButton}
           accessibilityLabel="Cancel form"
           accessibilityHint="Cancels the form and returns to previous screen"
         />
         
         {/* Loading indicator */}
-        {isSubmitting && (
+        {form.isSubmitting && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator 
               size="large" 
@@ -868,185 +219,6 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.huge,
     alignItems: 'center',
   },
-  formSection: {
-    marginBottom: theme.spacing.xl,
-    width: '100%',
-    alignItems: 'center',
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xs,
-    position: 'relative',
-    width: '100%',
-  },
-  sectionTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-  },
-  // Selection Container
-  selectionContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    minHeight: 45, // Minimum height to fit at least one pill
-  },
-  // Add buttons
-  bigAddButton: {
-    height: 50,
-    width: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderColor: theme.colors.border.light,
-  },
-  addButtonText: {
-    fontSize: 24,
-    color: theme.colors.primary.main,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  // Awareness Type Styles
-  awarenessContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginVertical: theme.spacing.md,
-  },
-  toggleLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleLabel: {
-    fontSize: theme.typography.fontSize.lg,
-    color: theme.colors.text.secondary,
-    marginHorizontal: theme.spacing.md,
-  },
-  toggleLabelActive: {
-    color: theme.colors.primary.main,
-    fontWeight: theme.typography.fontWeight.bold,
-  },
-  // Urge Strength Styles
-  urgeStrengthContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: theme.spacing.md,
-    width: '90%',
-    marginVertical: theme.spacing.md,
-  },
-  urgeStrengthOption: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: theme.colors.neutral.lighter,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    marginHorizontal: theme.spacing.xs,
-    opacity: 0.7,
-  },
-  urgeStrengthSelected: {
-    backgroundColor: theme.colors.primary.light + '40',
-    borderColor: theme.colors.primary.main,
-    opacity: 1,
-  },
-  urgeStrengthEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  urgeStrengthText: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.text.secondary,
-  },
-  urgeStrengthTextSelected: {
-    color: theme.colors.primary.main,
-  },
-  // Time and Duration Styles (side by side)
-  timeAndDurationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginVertical: theme.spacing.md,
-  },
-  timeContainer: {
-    flex: 1,
-    marginRight: theme.spacing.md,
-  },
-  durationContainer: {
-    flex: 1,
-    marginLeft: theme.spacing.md,
-  },
-  inputLabel: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  timePickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.input,
-    padding: theme.spacing.md,
-    width: '100%',
-  },
-  timeText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-    marginRight: theme.spacing.sm,
-  },
-  durationPickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.input,
-    padding: theme.spacing.md,
-    width: '100%',
-  },
-  durationText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-  },
-  // Notes styles
-  notesInput: {
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border.input,
-    padding: theme.spacing.md,
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.primary,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    width: '100%',
-    marginTop: theme.spacing.sm,
-  },
-  // Footer styles
   footer: {
     padding: theme.spacing.lg,
     borderTopWidth: 1,
@@ -1057,7 +229,6 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   cancelButton: {},
-  // Loading overlay
   loadingOverlay: {
     position: 'absolute',
     top: 0,

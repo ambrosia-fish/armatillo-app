@@ -1,14 +1,6 @@
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity,
-  Platform,
-  ViewStyle,
-  TextStyle
-} from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import theme from '@/app/constants/theme';
 import ModalComponent from './modal';
 import { Button } from '@/app/components';
@@ -23,9 +15,6 @@ interface TimePickerModalProps {
   setSelectedMinutes: (minutes: number) => void;
 }
 
-/**
- * Cross-platform time picker modal with consistent styling
- */
 export default function TimePickerModal({
   visible,
   onCancel,
@@ -35,104 +24,30 @@ export default function TimePickerModal({
   setSelectedHours,
   setSelectedMinutes
 }: TimePickerModalProps) {
-  // Generate hours options for both web and native
-  const hoursOptions = Array.from({ length: 24 }, (_, i) => ({
-    label: i.toString().padStart(2, '0'),
-    value: i
-  }));
+  // Create date object from hours and minutes
+  const [date, setDate] = useState(() => {
+    const newDate = new Date();
+    newDate.setHours(selectedHours);
+    newDate.setMinutes(selectedMinutes);
+    newDate.setSeconds(0);
+    return newDate;
+  });
 
-  // Generate minutes options for both web and native
-  const minutesOptions = Array.from({ length: 60 }, (_, i) => ({
-    label: i.toString().padStart(2, '0'),
-    value: i
-  }));
+  // Update selected time whenever date changes
+  useEffect(() => {
+    if (date) {
+      setSelectedHours(date.getHours());
+      setSelectedMinutes(date.getMinutes());
+    }
+  }, [date, setSelectedHours, setSelectedMinutes]);
 
-  // Render web hours picker
-  const renderWebHoursPicker = () => (
-    <select
-      value={selectedHours}
-      onChange={(e) => setSelectedHours(Number(e.target.value))}
-      style={{
-        height: 200,
-        width: '100%',
-        fontSize: 16,
-        backgroundColor: theme.colors.background.primary,
-        color: theme.colors.text.primary,
-        border: 'none',
-        flex: 1,
-        textAlign: 'center',
-      }}
-      aria-label="Hours"
-    >
-      {hoursOptions.map((option) => (
-        <option key={`hour-${option.value}`} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
+  // Handle time changes
+  const onChange = (event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
 
-  // Render web minutes picker
-  const renderWebMinutesPicker = () => (
-    <select
-      value={selectedMinutes}
-      onChange={(e) => setSelectedMinutes(Number(e.target.value))}
-      style={{
-        height: 200,
-        width: '100%',
-        fontSize: 16,
-        backgroundColor: theme.colors.background.primary,
-        color: theme.colors.text.primary,
-        border: 'none',
-        flex: 1,
-        textAlign: 'center',
-      }}
-      aria-label="Minutes"
-    >
-      {minutesOptions.map((option) => (
-        <option key={`minute-${option.value}`} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
-
-  // Render native hours picker
-  const renderNativeHoursPicker = () => (
-    <Picker
-      style={styles.picker}
-      selectedValue={selectedHours}
-      onValueChange={setSelectedHours}
-      accessibilityLabel="Hours"
-    >
-      {hoursOptions.map((option) => (
-        <Picker.Item
-          key={`hour-${option.value}`}
-          label={option.label}
-          value={option.value}
-        />
-      ))}
-    </Picker>
-  );
-
-  // Render native minutes picker
-  const renderNativeMinutesPicker = () => (
-    <Picker
-      style={styles.picker}
-      selectedValue={selectedMinutes}
-      onValueChange={setSelectedMinutes}
-      accessibilityLabel="Minutes"
-    >
-      {minutesOptions.map((option) => (
-        <Picker.Item
-          key={`minute-${option.value}`}
-          label={option.label}
-          value={option.value}
-        />
-      ))}
-    </Picker>
-  );
-  
   // Modal footer with action buttons
   const modalFooter = (
     <View style={styles.footerContainer}>
@@ -151,6 +66,8 @@ export default function TimePickerModal({
     </View>
   );
 
+  if (!visible) return null;
+
   return (
     <ModalComponent
       visible={visible}
@@ -159,26 +76,15 @@ export default function TimePickerModal({
       footer={modalFooter}
       contentStyle={styles.modalContent}
     >
-      <View style={styles.pickerContainer}>
-        {/* Hours Picker - conditionally render based on platform */}
-        {Platform.OS === 'web' 
-          ? renderWebHoursPicker() 
-          : renderNativeHoursPicker()
-        }
-        
-        <Text style={styles.pickerSeparator}>:</Text>
-        
-        {/* Minutes Picker - conditionally render based on platform */}
-        {Platform.OS === 'web' 
-          ? renderWebMinutesPicker() 
-          : renderNativeMinutesPicker()
-        }
-      </View>
-      
-      <View style={styles.labelContainer}>
-        <Text style={styles.pickerLabel}>Hours</Text>
-        <View style={styles.labelSpacer} />
-        <Text style={styles.pickerLabel}>Minutes</Text>
+      <View style={styles.contentContainer}>
+        <DateTimePicker
+          value={date}
+          mode="time"
+          is24Hour={false}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onChange}
+          style={styles.picker}
+        />
       </View>
     </ModalComponent>
   );
@@ -186,51 +92,25 @@ export default function TimePickerModal({
 
 const styles = StyleSheet.create({
   modalContent: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
+    padding: 0,
   } as ViewStyle,
   
-  pickerContainer: {
-    flexDirection: 'row',
+  contentContainer: {
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 200,
   } as ViewStyle,
   
   picker: {
-    flex: 1,
     height: 200,
-  } as ViewStyle,
-  
-  pickerSeparator: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginHorizontal: theme.spacing.sm,
-    color: theme.colors.text.primary,
-  } as TextStyle,
-  
-  labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing.sm,
-  } as ViewStyle,
-  
-  pickerLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.secondary,
-    width: 80,
-    textAlign: 'center',
-  } as TextStyle,
-  
-  labelSpacer: {
-    width: 20,
+    ...(Platform.OS === 'ios' ? { width: 300 } : {}),
   } as ViewStyle,
   
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    paddingHorizontal: theme.spacing.md,
   } as ViewStyle,
   
   footerButton: {
