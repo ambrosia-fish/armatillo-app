@@ -57,7 +57,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Armatillo</Text>
-        <Text style={styles.subtitle}>BFRB Habit Reversal Tracker</Text>
+        <Text style={styles.subtitle}>Habit Reversal Tracker</Text>
       </View>
       
       {/* Welcome message with user name if available */}
@@ -77,7 +77,7 @@ export default function HomeScreen() {
           resizeMode="contain"
           accessibilityLabel="Armatillo logo"
         />
-        <Text style={styles.aiDisclaimer}>Art is placeholder and AI generated</Text>
+        <Text style={styles.aiDisclaimer}>AI art is placeholder</Text>
       </View>
       
       {/* Centered Add Button with animation */}

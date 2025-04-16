@@ -22,6 +22,9 @@ export { default as EmojiPill } from './EmojiPill';
 export { default as CategoryPills } from './CategoryPills';
 export { default as AnswerSelectorModal } from '../screens/modals/answer-selector-modal';
 
+// Visualization components
+export { default as TriggerPatterns } from './TriggerPatterns';
+
 // Existing components
 export { default as InstanceDetailsModal } from '../screens/modals/instance-details-modal';
 export default {};
