@@ -93,7 +93,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
         </RNView>
       </RNView>
       
-      {/* Render the EmojiPill for trigger instead of text */}
+      {/* Render the EmojiPill for trigger */}
       <RNView style={styles.emojiPillContainer}>
         <EmojiPill
           id={trigger.id}
@@ -116,7 +116,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
         </RNView>
       </RNView>
       
-      {/* Stimulus Controls */}
+      {/* Stimulus Controls - Only show first one if available */}
       {stimulusControls.length > 0 && (
         <RNView style={styles.infoRow}>
           <RNView style={styles.infoItem}>
@@ -128,7 +128,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
         </RNView>
       )}
       
-      {/* Community Supports */}
+      {/* Community Supports - Only show first one if available */}
       {communitySupports.length > 0 && (
         <RNView style={styles.infoRow}>
           <RNView style={styles.infoItem}>
