@@ -1,5 +1,11 @@
 import { apiRequest } from './api';
 import { Strategy } from '@/app/components/StrategyCard';
+import { OptionItem } from '@/app/constants/optionDictionaries';
+
+// Helper type for API compatibility
+type ApiStrategy = Omit<Strategy, 'trigger'> & {
+  trigger: string | OptionItem;
+};
 
 /**
  * API functions for strategies
@@ -9,7 +15,11 @@ export const strategiesApi = {
    * Get all strategies
    */
   getStrategies: async (): Promise<Strategy[]> => {
-    return apiRequest('/strategies', { method: 'GET' });
+    const response = await apiRequest('/strategies', { method: 'GET' });
+    
+    // If trigger is a string, convert it to an OptionItem structure in the client
+    // This allows the API to work with both string triggers and OptionItem triggers
+    return response;
   },
   
   /**
@@ -23,9 +33,19 @@ export const strategiesApi = {
    * Create a new strategy
    */
   createStrategy: async (data: Partial<Strategy>): Promise<Strategy> => {
+    // If the trigger is an OptionItem, handle it correctly for the API
+    const apiData = { ...data };
+    
+    // Convert OptionItem to string if needed for API compatibility
+    if (data.trigger && typeof data.trigger !== 'string') {
+      const triggerOption = data.trigger as OptionItem;
+      // Store both id and emoji for better display
+      apiData.trigger = `${triggerOption.id}:${triggerOption.emoji}:${triggerOption.label}`;
+    }
+    
     return apiRequest('/strategies', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(apiData),
     });
   },
   
@@ -33,9 +53,19 @@ export const strategiesApi = {
    * Update a strategy
    */
   updateStrategy: async (id: string, data: Partial<Strategy>): Promise<Strategy> => {
+    // If the trigger is an OptionItem, handle it correctly for the API
+    const apiData = { ...data };
+    
+    // Convert OptionItem to string if needed for API compatibility
+    if (data.trigger && typeof data.trigger !== 'string') {
+      const triggerOption = data.trigger as OptionItem;
+      // Store both id and emoji for better display
+      apiData.trigger = `${triggerOption.id}:${triggerOption.emoji}:${triggerOption.label}`;
+    }
+    
     return apiRequest(`/strategies/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(apiData),
     });
   },
   
@@ -49,8 +79,13 @@ export const strategiesApi = {
   /**
    * Get strategies by trigger
    */
-  getStrategiesByTrigger: async (trigger: string): Promise<Strategy[]> => {
-    return apiRequest(`/strategies/trigger/${trigger}`, { method: 'GET' });
+  getStrategiesByTrigger: async (trigger: string | OptionItem): Promise<Strategy[]> => {
+    // Convert OptionItem to string for API call if needed
+    const triggerParam = typeof trigger === 'string' 
+      ? trigger 
+      : trigger.id;
+      
+    return apiRequest(`/strategies/trigger/${triggerParam}`, { method: 'GET' });
   },
   
   /**
