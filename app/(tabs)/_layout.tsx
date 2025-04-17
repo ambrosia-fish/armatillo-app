@@ -48,7 +48,7 @@ export default function TabLayout() {
           title: 'Insights',
           tabBarIcon: ({ color, focused }) => 
             <Ionicons 
-              name={focused ? 'time' : 'time-outline'} 
+              name={focused ? 'sunny' : 'sunny-outline'} 
               size={24} 
               color={color} 
               accessibilityLabel="Insights tab"
@@ -70,17 +70,17 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Settings tab */}
+      {/* Strategies tab */}
       <Tabs.Screen
-        name="settings"
+        name="strategies"
         options={{
-          title: 'Settings',
+          title: 'Strategies',
           tabBarIcon: ({ color, focused }) => 
             <Ionicons 
-              name={focused ? 'settings' : 'settings-outline'} 
+              name={focused ? 'shield-checkmark' : 'shield-outline'} 
               size={24} 
               color={color} 
-              accessibilityLabel="Settings tab"
+              accessibilityLabel="Strategies tab"
             />,
         }}
       />
