@@ -25,6 +25,9 @@ export { default as AnswerSelectorModal } from '../screens/modals/answer-selecto
 // Visualization components
 export { default as TriggerPatterns } from './TriggerPatterns';
 
+// Strategy components
+export { default as StrategyCard } from './StrategyCard';
+
 // Existing components
 export { default as InstanceDetailsModal } from '../screens/modals/instance-details-modal';
 export default {};

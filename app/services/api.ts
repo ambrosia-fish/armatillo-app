@@ -4,6 +4,7 @@ import { ensureValidToken } from '../utils/tokenRefresher';
 import { getAuthToken } from '../utils/tokenUtils';
 import config from '../constants/config';
 import { errorService } from './ErrorService';
+import { strategiesApi } from './strategies-api';
 
 export const API_URL = config.apiUrl;
 const API_BASE_PATH = config.apiBasePath;
@@ -56,7 +57,7 @@ const fetchWithTimeout = async (
  * @param retryCount - Current retry count (for internal use)
  * @returns Promise that resolves to API response
  */
-const apiRequest = async (
+export const apiRequest = async (
   endpoint: string, 
   options: RequestInit = {}, 
   retryCount: number = 0
@@ -299,7 +300,8 @@ export const authApi = {
 
 const api = {
   instances: instancesApi,
-  auth: authApi
+  auth: authApi,
+  strategies: strategiesApi
 };
 
 export default api;

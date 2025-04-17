@@ -72,10 +72,10 @@ export const getLocalIpAddress = async (): Promise<string> => {
     }
     
     // If we couldn't get the IP from NetInfo, fall back to configured value
-    return Constants.expoConfig?.extra?.localIp || '192.168.1.29';
+    return Constants.expoConfig?.extra?.localIp || '192.168.0.101';
   } catch (error) {
     console.warn('Failed to get IP address:', error);
-    return Constants.expoConfig?.extra?.localIp || '192.168.1.29';
+    return Constants.expoConfig?.extra?.localIp || '192.168.0.101';
   }
 };
 
@@ -200,7 +200,7 @@ export const getSyncConfig = (): ApiConfig => {
   if (!config.apiUrl) {
     // For development, use default values
     if (environment === 'development') {
-      const defaultIp = Constants.expoConfig?.extra?.localIp || '192.168.1.29';
+      const defaultIp = Constants.expoConfig?.extra?.localIp || '192.168.0.101';
       
       if (Constants.appOwnership === 'expo') {
         config.apiUrl = `http://${defaultIp}:3000`;

@@ -1,3 +1,4 @@
+// EmojiPill.tsx
 import React from 'react';
 import { 
   TouchableOpacity, 
@@ -15,6 +16,9 @@ interface EmojiPillProps {
   emoji: string;
   selected?: boolean;
   onToggle: (id: string) => void;
+  // Added new props to control spacing
+  noLeftMargin?: boolean;
+  noLeftPadding?: boolean;
 }
 
 /**
@@ -26,13 +30,17 @@ const EmojiPill: React.FC<EmojiPillProps> = ({
   label, 
   emoji, 
   selected = false, 
-  onToggle 
+  onToggle,
+  noLeftMargin = false,
+  noLeftPadding = false
 }) => {
   return (
     <TouchableOpacity
       style={[
         styles.container,
         selected && styles.containerSelected,
+        noLeftMargin && styles.noLeftMargin,
+        noLeftPadding && styles.noLeftPadding,
         Platform.OS === 'web' && styles.webContainer,
         Platform.OS === 'web' && selected && styles.webContainerSelected
       ]}
@@ -76,6 +84,15 @@ const styles = StyleSheet.create({
   containerSelected: {
     backgroundColor: theme.colors.primary.light + '30',
     borderColor: theme.colors.primary.main,
+  } as ViewStyle,
+  
+  // Added new styles for controlling margins and padding
+  noLeftMargin: {
+    marginLeft: 0,
+  } as ViewStyle,
+  
+  noLeftPadding: {
+    paddingLeft: 6, // Reduced from 12
   } as ViewStyle,
   
   // Web-specific container styles
