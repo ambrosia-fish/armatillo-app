@@ -59,6 +59,7 @@ export interface Strategy {
 interface StrategyCardProps {
   strategy: Strategy;
   onPress?: () => void;
+  onEdit?: () => void;
 }
 
 /**
@@ -66,9 +67,10 @@ interface StrategyCardProps {
  * Displays a card with strategy information including name, trigger, and status
  * 
  * @param strategy - Strategy data to display
- * @param onPress - Function to call when the card is pressed
+ * @param onPress - Function to call when the card is pressed to view details
+ * @param onEdit - Function to call when the edit button is pressed
  */
-const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
+const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress, onEdit }) => {
   const { name, trigger, isActive, competingResponses } = strategy;
   
   // Calculate active responses count
@@ -105,10 +107,27 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
           </Text>
         </RNView>
         
-        <TouchableOpacity style={styles.viewButton} onPress={onPress}>
-          <Text style={styles.viewButtonText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.primary.main} />
-        </TouchableOpacity>
+        <RNView style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={styles.viewButton} 
+            onPress={onPress}
+            accessibilityLabel="View details"
+            accessibilityRole="button"
+          >
+            <Text style={styles.viewButtonText}>View</Text>
+            <Ionicons name="eye-outline" size={16} color={theme.colors.primary.main} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.editButton} 
+            onPress={onEdit}
+            accessibilityLabel="Edit strategy"
+            accessibilityRole="button"
+          >
+            <Text style={styles.editButtonText}>Edit</Text>
+            <Ionicons name="pencil-outline" size={16} color={theme.colors.primary.dark} />
+          </TouchableOpacity>
+        </RNView>
       </RNView>
     </Card>
   );
@@ -192,15 +211,34 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.xs,
   } as TextStyle,
   
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  
   viewButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: theme.spacing.md,
   } as ViewStyle,
   
   viewButtonText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.primary.main,
     fontWeight: theme.typography.fontWeight.medium as '500',
+    marginRight: theme.spacing.xs,
+  } as TextStyle,
+  
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  
+  editButtonText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.primary.dark,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    marginRight: theme.spacing.xs,
   } as TextStyle,
 });
 
