@@ -8,6 +8,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
+import NetInfo from '@react-native-community/netinfo';
 
 // Configuration for different environments
 interface ApiConfig {
@@ -58,9 +59,30 @@ export const getEnvironment = (): 'development' | 'staging' | 'production' => {
 };
 
 /**
+ * Gets the device's local IP address
+ * Falls back to provided IP or default value if detection fails
+ */
+export const getLocalIpAddress = async (): Promise<string> => {
+  try {
+    const state = await NetInfo.fetch();
+    
+    // On iOS and Android, we can get the IP address from the NetInfo details
+    if (state.type === 'wifi' && state.details && 'ipAddress' in state.details) {
+      return state.details.ipAddress;
+    }
+    
+    // If we couldn't get the IP from NetInfo, fall back to configured value
+    return Constants.expoConfig?.extra?.localIp || '192.168.1.29';
+  } catch (error) {
+    console.warn('Failed to get IP address:', error);
+    return Constants.expoConfig?.extra?.localIp || '192.168.1.29';
+  }
+};
+
+/**
  * Gets the base API URL based on environment and platform
  */
-export const getApiUrl = (): string => {
+export const getApiUrl = async (): Promise<string> => {
   const environment = getEnvironment();
   
   // If we're running on web, check the current hostname to determine API URL
@@ -90,9 +112,8 @@ export const getApiUrl = (): string => {
   
   // For development, determine URL based on platform
   if (environment === 'development') {
-    // For physical devices using Expo Go, the developer would need to set their local IP here
-    // or preferably via app.config.js or environment variables
-    const localIp = Constants.expoConfig?.extra?.localIp || '192.168.0.101';
+    // Dynamically get the local IP address
+    const localIp = await getLocalIpAddress();
     
     if (Constants.appOwnership === 'expo') {
       return `http://${localIp}:3000`;
@@ -127,7 +148,7 @@ export const getApiUrl = (): string => {
 /**
  * Get the appropriate configuration for the current environment
  */
-export const getConfig = (): ApiConfig => {
+export const getConfig = async (): Promise<ApiConfig> => {
   const environment = getEnvironment();
   
   // Choose the base config based on environment
@@ -147,7 +168,56 @@ export const getConfig = (): ApiConfig => {
   
   // Set the API URL if it's not already set
   if (!config.apiUrl) {
-    config.apiUrl = getApiUrl();
+    config.apiUrl = await getApiUrl();
+  }
+  
+  return config;
+};
+
+/**
+ * Get synchronized config (non-async version for initial loading)
+ * This uses defaults without waiting for IP detection
+ */
+export const getSyncConfig = (): ApiConfig => {
+  const environment = getEnvironment();
+  
+  // Choose the base config based on environment
+  let config: ApiConfig;
+  switch (environment) {
+    case 'production':
+      config = { ...prodConfig };
+      break;
+    case 'staging':
+      config = { ...stagingConfig };
+      break;
+    case 'development':
+    default:
+      config = { ...devConfig };
+      break;
+  }
+  
+  // Set a default API URL if it's not already set
+  if (!config.apiUrl) {
+    // For development, use default values
+    if (environment === 'development') {
+      const defaultIp = Constants.expoConfig?.extra?.localIp || '192.168.1.29';
+      
+      if (Constants.appOwnership === 'expo') {
+        config.apiUrl = `http://${defaultIp}:3000`;
+      } else if (Platform.OS === 'ios') {
+        config.apiUrl = 'http://localhost:3000';
+      } else if (Platform.OS === 'android') {
+        config.apiUrl = 'http://10.0.2.2:3000';
+      } else if (Platform.OS === 'web') {
+        config.apiUrl = 'http://localhost:3000';
+      } else {
+        config.apiUrl = 'https://armatillo-api-development.up.railway.app';
+      }
+    } else if (environment === 'staging') {
+      config.apiUrl = stagingConfig.apiUrl;
+    } else {
+      config.apiUrl = prodConfig.apiUrl;
+    }
   }
   
   return config;
@@ -191,16 +261,28 @@ export const appInfo = {
   // Add other app metadata as needed
 };
 
+// Initialize with sync config and update async
+let currentConfig = getSyncConfig();
+
+// Update config asynchronously - this runs when the module is imported
+getConfig().then(asyncConfig => {
+  currentConfig = { ...currentConfig, ...asyncConfig };
+}).catch(error => {
+  console.warn('Failed to get async config:', error);
+});
+
 // Default export with all config options
 const config = {
   getEnvironment,
+  getLocalIpAddress,
   getApiUrl,
   getConfig,
+  getSyncConfig,
   authConfig,
   crashRecoveryConfig,
   appInfo,
   // Main config will be based on current environment
-  ...getConfig(),
+  ...currentConfig,
 };
 
 export default config;
