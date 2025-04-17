@@ -57,7 +57,7 @@ export default function StrategiesScreen() {
       return match;
     }
     
-    // If not found, create a default car option (as in your sketch)
+    // If not found, create a default car option
     return {
       id: 'car',
       label: 'Car',
@@ -192,50 +192,10 @@ export default function StrategiesScreen() {
     fetchStrategies();
   };
 
-  // Handle opening modal for creating new strategy
-  const handleAddStrategy = () => {
-    setSelectedStrategy(undefined);
-    setModalVisible(true);
-  };
-
-  // Handle opening modal for viewing existing strategy
+  // Handle view strategy
   const handleViewStrategy = (strategy: Strategy) => {
     setSelectedStrategy(strategy);
     setModalVisible(true);
-  };
-
-  // Handle saving strategy (create or update)
-  const handleSaveStrategy = async (strategy: Partial<Strategy>) => {
-    try {
-      if (selectedStrategy?._id) {
-        // Update existing strategy
-        await strategiesApi.updateStrategy(selectedStrategy._id, strategy);
-      } else {
-        // Create new strategy
-        await strategiesApi.createStrategy(strategy);
-      }
-      
-      setModalVisible(false);
-      fetchStrategies(); // Refresh strategies list
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        level: 'error',
-        source: 'api',
-        context: { 
-          component: 'StrategiesScreen', 
-          method: 'handleSaveStrategy'
-        }
-      });
-      
-      // For demo purposes, close modal and simulate success
-      setModalVisible(false);
-      fetchStrategies();
-      
-      Alert.alert(
-        'Demo Mode',
-        'Changes saved in demo mode only (not persisted).'
-      );
-    }
   };
 
   return (
@@ -259,14 +219,6 @@ export default function StrategiesScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>My Strategies</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={handleAddStrategy}
-              accessibilityLabel="Add new strategy"
-              accessibilityRole="button"
-            >
-              <Ionicons name="add" size={24} color={theme.colors.primary.main} />
-            </TouchableOpacity>
           </View>
 
           {/* Loading State */}
@@ -287,16 +239,8 @@ export default function StrategiesScreen() {
               />
               <Text style={styles.emptyTitle}>No Strategies Yet</Text>
               <Text style={styles.emptyText}>
-                Add your first strategy to manage your triggers and behaviors
+                No strategies have been created yet
               </Text>
-              <TouchableOpacity 
-                style={styles.emptyButton}
-                onPress={handleAddStrategy}
-                accessibilityLabel="Add your first strategy"
-                accessibilityRole="button"
-              >
-                <Text style={styles.emptyButtonText}>Add Your First Strategy</Text>
-              </TouchableOpacity>
             </View>
           )}
 
@@ -316,12 +260,13 @@ export default function StrategiesScreen() {
       </SafeAreaView>
 
       {/* Strategy Modal */}
-      <StrategyModal
-        visible={modalVisible}
-        strategy={selectedStrategy}
-        onClose={() => setModalVisible(false)}
-        onSave={handleSaveStrategy}
-      />
+      {selectedStrategy && (
+        <StrategyModal
+          visible={modalVisible}
+          strategy={selectedStrategy}
+          onClose={() => setModalVisible(false)}
+        />
+      )}
     </View>
   );
 }
@@ -355,12 +300,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeight.bold as '700',
     color: theme.colors.text.primary,
   } as TextStyle,
-  
-  addButton: {
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.circle,
-    backgroundColor: 'rgba(72, 82, 131, 0.1)',
-  } as ViewStyle,
   
   loadingContainer: {
     flex: 1,
@@ -397,20 +336,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.xl,
-  } as TextStyle,
-  
-  emptyButton: {
-    backgroundColor: theme.colors.primary.main,
-    borderRadius: theme.borderRadius.sm,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    marginTop: theme.spacing.md,
-  } as ViewStyle,
-  
-  emptyButtonText: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium as '500',
-    color: theme.colors.primary.contrast,
   } as TextStyle,
   
   strategyList: {
