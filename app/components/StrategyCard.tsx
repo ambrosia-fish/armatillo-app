@@ -7,7 +7,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '@/app/constants/theme';
-import { Text, View, Card } from '@/app/components';
+import { Text, View, Card, EmojiPill } from '@/app/components';
+import { OptionItem } from '@/app/constants/optionDictionaries';
 
 export interface CompetingResponse {
   _id: string;
@@ -44,7 +45,7 @@ export interface Strategy {
   _id: string;
   name: string;
   description?: string;
-  trigger: string;
+  trigger: OptionItem; // Changed from string to OptionItem
   isActive: boolean;
   competingResponses: CompetingResponse[];
   stimulusControls: StimulusControl[];
@@ -62,16 +63,19 @@ interface StrategyCardProps {
 
 /**
  * StrategyCard Component
- * Displays a card with strategy information including name, trigger, and status
+ * Displays a card with strategy information including name, trigger (as EmojiPill), and status
  * 
  * @param strategy - Strategy data to display
  * @param onPress - Function to call when the card is pressed to view details
  */
 const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
-  const { name, trigger, isActive, competingResponses } = strategy;
+  const { name, trigger, isActive, competingResponses, stimulusControls, communitySupports } = strategy;
   
   // Calculate active responses count
   const activeResponsesCount = competingResponses.filter(response => response.isActive).length;
+  
+  // Dummy function for EmojiPill since we don't need to toggle it in the card
+  const handleEmojiPillToggle = () => {};
   
   return (
     <Card
@@ -89,21 +93,52 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
         </RNView>
       </RNView>
       
-      <RNView style={styles.triggerContainer}>
-        <Ionicons name="flash-outline" size={16} color={theme.colors.text.secondary} />
-        <Text style={styles.triggerText}>Trigger: {trigger}</Text>
+      {/* Render the EmojiPill for trigger instead of text */}
+      <RNView style={styles.emojiPillContainer}>
+        <EmojiPill
+          id={trigger.id}
+          label={trigger.label}
+          emoji={trigger.emoji}
+          selected={true}
+          onToggle={handleEmojiPillToggle}
+        />
       </RNView>
       
+      {/* Competing Responses */}
       <RNView style={styles.infoRow}>
         <RNView style={styles.infoItem}>
-          <Ionicons name="swap-horizontal-outline" size={16} color={theme.colors.text.secondary} />
-          <Text style={styles.infoText}>
+          <Text style={styles.infoLabel}>Competing Response:</Text>
+          <Text style={styles.infoValue}>
             {competingResponses.length > 0 
-              ? `${activeResponsesCount}/${competingResponses.length} responses` 
-              : 'No responses'}
+              ? `(${activeResponsesCount}/${competingResponses.length})` 
+              : '(0)'}
           </Text>
         </RNView>
       </RNView>
+      
+      {/* Stimulus Controls */}
+      {stimulusControls.length > 0 && (
+        <RNView style={styles.infoRow}>
+          <RNView style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Stimulus Control:</Text>
+            <Text style={styles.infoValue}>
+              {stimulusControls[0].description}
+            </Text>
+          </RNView>
+        </RNView>
+      )}
+      
+      {/* Community Supports */}
+      {communitySupports.length > 0 && (
+        <RNView style={styles.infoRow}>
+          <RNView style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Support:</Text>
+            <Text style={styles.infoValue}>
+              {communitySupports[0].name}
+            </Text>
+          </RNView>
+        </RNView>
+      )}
     </Card>
   );
 };
@@ -112,13 +147,14 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: theme.spacing.sm,
     marginHorizontal: theme.spacing.md,
+    padding: theme.spacing.md,
   } as ViewStyle,
   
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   } as ViewStyle,
   
   name: {
@@ -156,23 +192,15 @@ const styles = StyleSheet.create({
     color: theme.colors.text.tertiary,
   } as TextStyle,
   
-  triggerContainer: {
+  emojiPillContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: theme.spacing.md,
   } as ViewStyle,
   
-  triggerText: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
-    marginLeft: theme.spacing.xs,
-  } as TextStyle,
-  
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
   } as ViewStyle,
   
   infoItem: {
@@ -180,10 +208,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   } as ViewStyle,
   
-  infoText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.tertiary,
-    marginLeft: theme.spacing.xs,
+  infoLabel: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    color: theme.colors.text.secondary,
+    marginRight: theme.spacing.xs,
+  } as TextStyle,
+  
+  infoValue: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
   } as TextStyle,
 });
 
