@@ -72,8 +72,8 @@ export default function StrategiesScreen() {
     setModalVisible(true);
   };
 
-  // Handle opening modal for editing existing strategy
-  const handleEditStrategy = (strategy: Strategy) => {
+  // Handle opening modal for viewing existing strategy
+  const handleViewStrategy = (strategy: Strategy) => {
     setSelectedStrategy(strategy);
     setModalVisible(true);
   };
@@ -176,7 +176,7 @@ export default function StrategiesScreen() {
                 <StrategyCard 
                   key={strategy._id} 
                   strategy={strategy} 
-                  onPress={() => handleEditStrategy(strategy)}
+                  onPress={() => handleViewStrategy(strategy)}
                 />
               ))}
             </View>
