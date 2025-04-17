@@ -84,15 +84,6 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
       accessibilityLabel={`Strategy ${name}`}
       accessibilityHint="Tap to view strategy details"
     >
-      <RNView style={styles.header}>
-        <Text style={styles.name}>{name}</Text>
-        <RNView style={[styles.statusBadge, isActive ? styles.activeBadge : styles.inactiveBadge]}>
-          <Text style={[styles.statusText, isActive ? styles.activeText : styles.inactiveText]}>
-            {isActive ? 'Active' : 'Inactive'}
-          </Text>
-        </RNView>
-      </RNView>
-      
       {/* Render the EmojiPill for trigger */}
       <RNView style={styles.emojiPillContainer}>
         <EmojiPill
@@ -105,38 +96,33 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy, onPress }) => {
       </RNView>
       
       {/* Competing Responses */}
-      <RNView style={styles.infoRow}>
-        <RNView style={styles.infoItem}>
+      {competingResponses.length > 0 && (
+        <RNView style={styles.infoRow}>
           <Text style={styles.infoLabel}>Competing Response:</Text>
           <Text style={styles.infoValue}>
-            {competingResponses.length > 0 
-              ? `(${activeResponsesCount}/${competingResponses.length})` 
-              : '(0)'}
+            {competingResponses[0].description}
+            {competingResponses.length > 1 && ` (${activeResponsesCount}/${competingResponses.length})`}
           </Text>
         </RNView>
-      </RNView>
+      )}
       
       {/* Stimulus Controls - Only show first one if available */}
       {stimulusControls.length > 0 && (
         <RNView style={styles.infoRow}>
-          <RNView style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Stimulus Control:</Text>
-            <Text style={styles.infoValue}>
-              {stimulusControls[0].description}
-            </Text>
-          </RNView>
+          <Text style={styles.infoLabel}>Stimulus Control:</Text>
+          <Text style={styles.infoValue}>
+            {stimulusControls[0].description}
+          </Text>
         </RNView>
       )}
       
       {/* Community Supports - Only show first one if available */}
       {communitySupports.length > 0 && (
         <RNView style={styles.infoRow}>
-          <RNView style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Support:</Text>
-            <Text style={styles.infoValue}>
-              {communitySupports[0].name}
-            </Text>
-          </RNView>
+          <Text style={styles.infoLabel}>Support:</Text>
+          <Text style={styles.infoValue}>
+            {communitySupports[0].name}
+          </Text>
         </RNView>
       )}
     </Card>
@@ -150,48 +136,6 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
   } as ViewStyle,
   
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  } as ViewStyle,
-  
-  name: {
-    fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-    color: theme.colors.text.primary,
-    flex: 1,
-  } as TextStyle,
-  
-  statusBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    marginLeft: theme.spacing.sm,
-  } as ViewStyle,
-  
-  activeBadge: {
-    backgroundColor: 'rgba(107, 168, 119, 0.2)',
-  } as ViewStyle,
-  
-  inactiveBadge: {
-    backgroundColor: 'rgba(125, 132, 161, 0.2)',
-  } as ViewStyle,
-  
-  statusText: {
-    fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.medium as '500',
-  } as TextStyle,
-  
-  activeText: {
-    color: theme.colors.utility.success,
-  } as TextStyle,
-  
-  inactiveText: {
-    color: theme.colors.text.tertiary,
-  } as TextStyle,
-  
   emojiPillContainer: {
     flexDirection: 'row',
     marginBottom: theme.spacing.md,
@@ -199,13 +143,8 @@ const styles = StyleSheet.create({
   
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: theme.spacing.sm,
-  } as ViewStyle,
-  
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
   } as ViewStyle,
   
   infoLabel: {
@@ -213,11 +152,13 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeight.medium as '500',
     color: theme.colors.text.secondary,
     marginRight: theme.spacing.xs,
+    minWidth: 150,
   } as TextStyle,
   
   infoValue: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.primary,
+    flex: 1,
   } as TextStyle,
 });
 
