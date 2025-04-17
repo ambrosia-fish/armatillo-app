@@ -18,6 +18,7 @@ import StrategyCard, { Strategy } from '@/app/components/StrategyCard';
 import StrategyModal from '@/app/screens/modals/strategy-modal';
 import { strategiesApi } from '@/app/services/strategies-api';
 import { errorService } from '@/app/services/ErrorService';
+import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 
 /**
  * Strategies Screen Component
@@ -35,12 +36,55 @@ export default function StrategiesScreen() {
     fetchStrategies();
   }, []);
 
+  // Helper function to map trigger strings to OptionItems
+  const mapTriggerStringToOptionItem = (triggerString: string): OptionItem => {
+    // Try to find a matching option in our option dictionaries
+    const allOptions = [
+      ...OptionDictionaries.emotionOptions,
+      ...OptionDictionaries.locationOptions,
+      ...OptionDictionaries.activityOptions,
+      ...OptionDictionaries.thoughtOptions,
+      ...OptionDictionaries.sensationOptions
+    ];
+    
+    // Look for a match by ID or label
+    const match = allOptions.find(option => 
+      option.id.toLowerCase() === triggerString.toLowerCase() || 
+      option.label.toLowerCase() === triggerString.toLowerCase()
+    );
+    
+    if (match) {
+      return match;
+    }
+    
+    // If not found, create a default car option (as in your sketch)
+    return {
+      id: 'car',
+      label: 'Car',
+      emoji: '🚗'
+    };
+  };
+
   // Fetch strategies from API
   const fetchStrategies = async () => {
     try {
       setLoading(true);
+      // Fetch data from API
       const data = await strategiesApi.getStrategies();
-      setStrategies(data);
+      
+      // Transform data to use OptionItem for trigger if needed
+      const transformedData = data.map(strategy => {
+        // If trigger is a string, convert it to an OptionItem
+        if (typeof strategy.trigger === 'string') {
+          return {
+            ...strategy,
+            trigger: mapTriggerStringToOptionItem(strategy.trigger)
+          };
+        }
+        return strategy;
+      });
+      
+      setStrategies(transformedData);
     } catch (error) {
       errorService.handleError(error instanceof Error ? error : String(error), {
         level: 'error',
@@ -50,9 +94,91 @@ export default function StrategiesScreen() {
           method: 'fetchStrategies' 
         }
       });
+      
+      // If API fails, show some demo data for development
+      const demoStrategies = [
+        {
+          _id: '1',
+          name: 'Work Stress Strategy',
+          trigger: OptionDictionaries.emotionOptions.find(o => o.id === 'stressed') || {
+            id: 'stressed',
+            label: 'Stressed',
+            emoji: '😥'
+          },
+          isActive: true,
+          competingResponses: [
+            {
+              _id: '101',
+              description: 'Take a 5-minute break',
+              isActive: true
+            },
+            {
+              _id: '102',
+              description: 'Deep breathing exercise',
+              isActive: true
+            }
+          ],
+          stimulusControls: [
+            {
+              _id: '201',
+              description: 'Wear stress ball',
+              isActive: true
+            }
+          ],
+          communitySupports: [
+            {
+              _id: '301',
+              name: 'John (Coworker)',
+              isActive: true
+            }
+          ],
+          notifications: [],
+          user_id: 'user1',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          _id: '2',
+          name: 'Driving Anxiety',
+          trigger: OptionDictionaries.locationOptions.find(o => o.id === 'car') || {
+            id: 'car',
+            label: 'Car',
+            emoji: '🚗'
+          },
+          isActive: false,
+          competingResponses: [
+            {
+              _id: '103',
+              description: 'Listen to calming music',
+              isActive: true
+            }
+          ],
+          stimulusControls: [
+            {
+              _id: '202',
+              description: 'Band-Aids',
+              isActive: true
+            }
+          ],
+          communitySupports: [
+            {
+              _id: '302',
+              name: 'Sammy',
+              isActive: true
+            }
+          ],
+          notifications: [],
+          user_id: 'user1',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+      
+      setStrategies(demoStrategies);
+      
       Alert.alert(
-        'Error',
-        'Unable to load strategies. Please try again later.'
+        'Demo Mode',
+        'Using demo data since the API is not available.'
       );
     } finally {
       setLoading(false);
@@ -100,9 +226,14 @@ export default function StrategiesScreen() {
           method: 'handleSaveStrategy'
         }
       });
+      
+      // For demo purposes, close modal and simulate success
+      setModalVisible(false);
+      fetchStrategies();
+      
       Alert.alert(
-        'Error',
-        'Failed to save strategy. Please try again.'
+        'Demo Mode',
+        'Changes saved in demo mode only (not persisted).'
       );
     }
   };
