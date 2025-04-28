@@ -53,11 +53,33 @@ export default function HomeScreen() {
     }
   };
 
+  /**
+   * Navigate to the settings screen
+   */
+  const navigateToSettings = () => {
+    try {
+      console.log('HomeScreen: Navigating to settings');
+      router.push('/screens/settings/settings-screen');
+    } catch (error) {
+      console.error('HomeScreen: Settings navigation error', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Armatillo</Text>
         <Text style={styles.subtitle}>Habit Reversal Tracker</Text>
+        <TouchableOpacity 
+          style={styles.settingsButton}
+          onPress={navigateToSettings}
+          activeOpacity={0.7}
+          accessibilityLabel="Settings"
+          accessibilityRole="button"
+          accessibilityHint="Navigate to settings screen"
+        >
+          <Ionicons name="settings-outline" size={24} color={theme.colors.text.secondary} />
+        </TouchableOpacity>
       </View>
       
       {/* Welcome message with user name if available */}
@@ -109,6 +131,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
     marginBottom: 20,
+    position: 'relative',
+    width: '100%',
   } as ViewStyle,
   title: {
     fontSize: 28,
@@ -123,6 +147,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.text.secondary,
   } as TextStyle,
+  settingsButton: {
+    position: 'absolute',
+    right: 0,
+    top: 4,
+    padding: 8,
+    borderRadius: 20,
+  } as ViewStyle,
   welcomeContainer: {
     paddingVertical: 12,
     paddingHorizontal: 16,

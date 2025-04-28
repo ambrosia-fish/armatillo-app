@@ -1,31 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Modal,
   StyleSheet,
   TouchableOpacity,
+  Modal,
+  View as RNView,
+  Platform,
   ScrollView,
   ActivityIndicator,
   TextStyle,
-  ViewStyle,
-  Animated,
-  Dimensions,
-  View as RNView
+  ViewStyle
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/app/services/api';
-import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 import { ensureValidToken } from '@/app/utils/tokenRefresher';
 import Button from '@/app/components/Button';
 import { View, Text } from '@/app/components/Themed';
 import theme from '@/app/constants/theme';
 import { errorService } from '@/app/services/ErrorService';
 import { Instance } from '@/app/types/Instance';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Type for Ionicons names
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+import EmojiPill from '@/app/components/EmojiPill';
+import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 
 interface InstanceDetailsModalProps {
   visible?: boolean;
@@ -34,105 +28,72 @@ interface InstanceDetailsModalProps {
   onClose: () => void;
 }
 
-/**
- * Modal component to display detailed information about a BFRB instance
- * 
- * @param props - Component properties
- * @returns Rendered modal with instance details
- */
+// Helper titles for the category sections
+const categoryTitles = {
+  environments: 'Where were you?',
+  activities: 'What were you doing?',
+  emotions: 'How were you feeling?',
+  thoughts: 'What were you thinking?',
+  sensations: 'What were you experiencing?'
+};
+
 const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
   visible,
-  isVisible, // For backward compatibility
+  isVisible,
   instanceId,
   onClose
 }) => {
-  // Support both isVisible (old) and visible (new) props
   const isModalVisible = visible !== undefined ? visible : isVisible || false;
-  
   const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fadeAnim] = useState(new Animated.Value(0));
 
-  /**
-   * Handle modal close with error handling
-   */
-  const handleClose = () => {
-    try {
-      onClose();
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { component: 'InstanceDetailsModal', action: 'close' }
-      });
-    }
-  };
-
-  /**
-   * Fetch instance details from API
-   */
-  const fetchInstance = async () => {
-    if (!instanceId) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      await ensureValidToken();
-      const data = await api.instances.getInstance(instanceId);
-      
-      // Normalize instance data to standardized format
-      const normalizedData: Instance = {
-        ...data,
-        // Ensure time field exists (use createdAt as fallback)
-        time: data.time || data.createdAt,
-        // Ensure intentionType exists
-        intentionType: data.intentionType || (data.automatic !== undefined 
-          ? (data.automatic ? 'automatic' : 'intentional') 
-          : 'automatic'),
-        // Ensure duration exists
-        duration: data.duration || 5,
-      };
-      
-      setInstance(normalizedData);
-      
-      // Animate content in
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true
-      }).start();
-      
-    } catch (err) {
-      const errorMessage = 'Failed to load instance details';
-      setError(errorMessage);
-      
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'api',
-        context: { 
-          component: 'InstanceDetailsModal', 
-          action: 'fetchInstance',
-          instanceId 
-        }
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch instance details when modal becomes visible
   useEffect(() => {
+    const fetchInstance = async () => {
+      if (!instanceId) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        console.log("Fetching instance with ID:", instanceId);
+        
+        await ensureValidToken();
+        const data = await api.instances.getInstance(instanceId);
+        console.log("Received instance data:", JSON.stringify(data));
+        
+        const normalizedData = {
+          ...data,
+          time: data.time || data.createdAt,
+          intentionType: data.intentionType || (data.automatic !== undefined 
+            ? (data.automatic ? 'automatic' : 'intentional') : 'automatic'),
+          duration: data.duration || 5,
+          selectedEnvironments: data.selectedEnvironments || [],
+          selectedActivities: data.selectedActivities || [],
+          selectedEmotions: data.selectedEmotions || [],
+          selectedThoughts: data.selectedThoughts || [],
+          selectedSensations: data.selectedSensations || [],
+        };
+        
+        console.log("Normalized instance data:", JSON.stringify(normalizedData));
+        setInstance(normalizedData);
+      } catch (err) {
+        console.error("Error fetching instance:", err);
+        setError('Failed to load instance details');
+        errorService.handleError(err instanceof Error ? err : String(err), {
+          level: 'error',
+          source: 'api',
+          context: { component: 'InstanceDetailsModal', action: 'fetchInstance', instanceId }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (isModalVisible && instanceId) {
-      fadeAnim.setValue(0);
       fetchInstance();
     }
   }, [isModalVisible, instanceId]);
 
-  /**
-   * Format date to human-readable string (e.g., Monday, April 7)
-   */
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -141,363 +102,207 @@ const InstanceDetailsModal: React.FC<InstanceDetailsModalProps> = ({
         month: 'long', 
         day: 'numeric'
       });
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { component: 'InstanceDetailsModal', action: 'formatDate', date: dateString }
-      });
+    } catch {
       return 'Invalid date';
     }
   };
 
-  /**
-   * Format time to display only hours and minutes (e.g., 7:30 PM)
-   */
   const formatTimeOnly = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (err) {
+      return new Date(dateString).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch {
       return "Unknown time";
     }
   };
-
-  /**
-   * Handle retry when there's an error
-   */
-  const handleRetry = () => {
-    try {
-      setError(null);
-      fetchInstance();
-    } catch (err) {
-      errorService.handleError(err instanceof Error ? err : String(err), {
-        level: 'error',
-        source: 'ui',
-        context: { component: 'InstanceDetailsModal', action: 'retry' }
-      });
-    }
+  
+  // Get the corresponding option data from the dictionary for a selected ID
+  const getOptionItemFromId = (optionsList: OptionItem[], id: string): OptionItem | undefined => {
+    return optionsList.find(item => item.id === id);
   };
-
-  /**
-   * Get appropriate icon for different categories
-   */
-  const getCategoryIcon = (category: string): IoniconsName => {
-    switch (category.toLowerCase()) {
-      case 'location':
-      case 'environment':
-        return 'location';
-      case 'activity':
-        return 'bicycle';
+  
+  // Render a category's selected options as pills
+  const renderCategoryPills = (category: string) => {
+    if (!instance) return null;
+    
+    let selectedIds: string[] = [];
+    let optionsList: OptionItem[] = [];
+    
+    // Map category name to the corresponding property of instance and options dictionary
+    switch(category) {
+      case 'environments':
+        selectedIds = instance.selectedEnvironments || [];
+        optionsList = OptionDictionaries.locationOptions;
+        break;
+      case 'activities':
+        selectedIds = instance.selectedActivities || [];
+        optionsList = OptionDictionaries.activityOptions;
+        break;
       case 'emotions':
-        return 'heart';
-      case 'thought patterns':
-        return 'cloud';
-      case 'physical sensations':
-        return 'body';
-      case 'sensory triggers':
-        return 'flash';
-      case 'awareness type':
-        return instance?.intentionType === 'automatic' ? 'flash' : 'hand-left';
-      case 'urge strength':
-        return 'thermometer';
+        selectedIds = instance.selectedEmotions || [];
+        optionsList = OptionDictionaries.emotionOptions;
+        break;
+      case 'thoughts':
+        selectedIds = instance.selectedThoughts || [];
+        optionsList = OptionDictionaries.thoughtOptions;
+        break;
+      case 'sensations':
+        selectedIds = instance.selectedSensations || [];
+        optionsList = OptionDictionaries.sensationOptions;
+        break;
       default:
-        return 'information-circle';
+        return null;
     }
-  };
-
-  /**
-   * Render a pill for a category item
-   */
-  const renderPill = (text: string, emoji: string, index: number) => (
-    <View key={index} style={styles.pill}>
-      <Text style={styles.pillText}>
-        {emoji} {text}
-      </Text>
-    </View>
-  );
-
-  /**
-   * Render the awareness type section
-   */
-  const renderAwarenessSection = () => {
-    if (!instance) return null;
     
-    const iconName = instance.intentionType === 'automatic' ? 'flash' : 'hand-left';
-    const value = instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional';
+    if (selectedIds.length === 0) return null;
+    
+    const categoryTitle = categoryTitles[category as keyof typeof categoryTitles] || category;
     
     return (
-      <View style={styles.gridItem}>
-        <View style={styles.categoryHeader}>
-          <Ionicons name={iconName} size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
-          <Text style={styles.categoryTitle}>Awareness Type</Text>
-        </View>
-        <View style={styles.awarenessPillContainer}>
-          <View style={styles.awarenessPill}>
-            <Ionicons name={iconName} size={16} color={theme.colors.primary.main} style={styles.pillIcon} />
-            <Text style={styles.pillText}>{value}</Text>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  /**
-   * Render the urge strength section with horizontal meter
-   */
-  const renderUrgeStrengthSection = () => {
-    if (!instance) return null;
-    
-    // Default to 3 if undefined
-    const strength = instance.urgeStrength !== undefined ? Number(instance.urgeStrength) : 3;
-    
-    // Calculate fill percentage from left (1-5 scale)
-    const fillPercent = ((strength - 1) / 4) * 100;
-    
-    return (
-      <View style={styles.urgeStrengthSection}>
-        <View style={styles.categoryHeader}>
-          <Ionicons name="thermometer" size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
-          <Text style={styles.categoryTitle}>Urge Strength</Text>
-        </View>
-        <View style={styles.urgeContainer}>
-          <View style={styles.horizontalUrgeBar}>
-            <View 
-              style={[
-                styles.horizontalUrgeFill, 
-                { width: `${fillPercent}%` }
-              ]} 
-            />
-            {/* Scale markers */}
-            <View style={[styles.urgeMarker, { left: '0%' }]}>
-              <Text style={styles.urgeMarkerText}>1</Text>
-            </View>
-            <View style={[styles.urgeMarker, { left: '25%' }]}>
-              <Text style={styles.urgeMarkerText}>2</Text>
-            </View>
-            <View style={[styles.urgeMarker, { left: '50%' }]}>
-              <Text style={styles.urgeMarkerText}>3</Text>
-            </View>
-            <View style={[styles.urgeMarker, { left: '75%' }]}>
-              <Text style={styles.urgeMarkerText}>4</Text>
-            </View>
-            <View style={[styles.urgeMarker, { left: '100%' }]}>
-              <Text style={styles.urgeMarkerText}>5</Text>
-            </View>
-            
-            {/* Current value marker */}
-            {/* <View style={[styles.currentUrgeMarker, { left: `${fillPercent}%` }]}>
-              <Text style={styles.currentUrgeText}>{strength}</Text>
-            </View> */}
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  /**
-   * Render a standard category section with pills
-   */
-  const renderCategorySection = (
-    title: string,
-    items?: string[],
-    optionsList?: OptionItem[],
-    iconName?: IoniconsName
-  ) => {
-    const itemsToRender = items || [];
-    const icon = iconName || getCategoryIcon(title);
-    
-    return (
-      <View style={styles.gridItem}>
-        <View style={styles.categoryHeader}>
-          <Ionicons name={icon} size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
-          <Text style={styles.categoryTitle}>{title}</Text>
-        </View>
+      <View style={styles.categorySection}>
+        <Text style={styles.sectionTitle}>{categoryTitle}</Text>
         <View style={styles.pillsContainer}>
-          {itemsToRender.length > 0 ? (
-            itemsToRender.map((id, index) => {
-              const option = optionsList?.find(opt => opt.id === id) || { label: id, emoji: '📝' };
-              return renderPill(option.label, option.emoji, index);
-            })
-          ) : (
-            <Text style={styles.noneText}>None</Text>
-          )}
+          {selectedIds.map((id) => {
+            const option = getOptionItemFromId(optionsList, id);
+            return option ? (
+              <View key={id} style={styles.pillWrapper}>
+                <EmojiPill
+                  id={id}
+                  label={option.label}
+                  emoji={option.emoji}
+                  selected={true}
+                  onToggle={() => {}} // No toggle action needed in view mode
+                />
+              </View>
+            ) : null;
+          })}
         </View>
       </View>
     );
   };
 
-  // Render empty state
-  const renderEmptyState = () => (
-    <View style={styles.centeredContainer}>
-      <View style={styles.iconContainer}>
-        <Ionicons name="document-outline" size={32} color={theme.colors.primary.main} />
-      </View>
-      <Text style={styles.emptyStateTitle}>No Details Found</Text>
-      <Text style={styles.emptyStateText}>The requested information is not available</Text>
-    </View>
-  );
-
-  // Render loading state
-  const renderLoadingState = () => (
-    <View style={styles.centeredContainer}>
-      <ActivityIndicator size="large" color={theme.colors.primary.main} />
-      <Text style={styles.loadingText}>Loading details...</Text>
-    </View>
-  );
-
-  // Render error state
-  const renderErrorState = () => (
-    <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle" size={32} color={theme.colors.utility.error} />
-      <Text style={styles.errorText}>{error}</Text>
-      <Button
-        title="Retry"
-        variant="primary"
-        onPress={handleRetry}
-        style={styles.retryButton}
-      />
-    </View>
-  );
-
-  // Render the instance details content
-  const renderInstanceContent = () => {
-    if (!instance) return null;
-    
-    return (
-      <>
-        {/* Date header */}
-        <View style={styles.dateHeaderContainer}>
-          <Ionicons name="calendar" size={20} color={theme.colors.text.secondary} style={styles.inlineIcon} />
-          <Text style={styles.dateHeaderText}>{formatDate(instance.time)}</Text>
-        </View>
-        
-        {/* Time info row */}
-        <View style={styles.timeInfoRow}>
-          <View style={styles.timeInfoItem}>
-            <Ionicons name="time" size={18} color={theme.colors.text.secondary} style={styles.inlineIcon} />
-            <Text style={styles.timeInfoText}>{formatTimeOnly(instance.time)}</Text>
-          </View>
-          
-          <View style={styles.timeInfoItem}>
-            <Ionicons name="hourglass" size={18} color={theme.colors.text.secondary} style={styles.inlineIcon} />
-            <Text style={styles.timeInfoText}>
-              {instance.duration} {instance.duration === 1 ? 'min' : 'mins'}
-            </Text>
-          </View>
-        </View>
-        
-        {/* Urge Strength Section - Now above the grid */}
-        {renderUrgeStrengthSection()}
-        
-        {/* Categories in 3x2 grid layout */}
-        <View style={styles.categoriesGrid}>
-          {/* Left column */}
-          <View style={styles.gridColumn}>
-            {renderAwarenessSection()}
-            
-            {renderCategorySection(
-              "Activity", 
-              instance.selectedActivities,
-              OptionDictionaries.activityOptions,
-              "bicycle"
-            )}
-            
-            {renderCategorySection(
-              "Thought Patterns", 
-              instance.selectedThoughts,
-              OptionDictionaries.thoughtOptions,
-              "cloud"
-            )}
-          </View>
-          
-          {/* Right column */}
-          <View style={styles.gridColumn}>
-            {renderCategorySection(
-              "Location", 
-              instance.selectedEnvironments,
-              OptionDictionaries.locationOptions || OptionDictionaries.environmentOptions,
-              "location"
-            )}
-            
-            {renderCategorySection(
-              "Emotions", 
-              instance.selectedEmotions,
-              OptionDictionaries.emotionOptions,
-              "heart"
-            )}
-            
-            {renderCategorySection(
-              "Physical Sensations", 
-              instance.selectedSensations,
-              OptionDictionaries.sensationOptions,
-              "body"
-            )}
-          </View>
-        </View>
-        
-        {/* Notes - always visible */}
-        <View style={styles.notesSection}>
-          <View style={styles.notesTitleRow}>
-            <Ionicons name="document-text" size={20} color={theme.colors.primary.main} style={styles.categoryIcon} />
-            <Text style={styles.categoryTitle}>Notes</Text>
-          </View>
-          <View style={styles.notesContainer}>
-            {instance.notes ? (
-              <Text style={styles.notesText}>{instance.notes}</Text>
-            ) : (
-              <Text style={styles.noneText}>No notes for this instance</Text>
-            )}
-          </View>
-        </View>
-      </>
-    );
-  };
+  if (!isModalVisible) return null;
 
   return (
     <Modal
-      animationType="slide"
-      transparent={true}
       visible={isModalVisible}
-      onRequestClose={handleClose}
-      accessibilityLabel="Instance details modal"
-      statusBarTranslucent={true}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
     >
       <RNView style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity 
-              onPress={handleClose}
-              style={styles.closeButton}
-              accessibilityLabel="Close modal"
-              accessibilityRole="button"
-            >
-              <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={styles.title}>Instance Details</Text>
-            <View style={styles.headerSpacer} />
+            <RNView style={{ width: 24 }} />
           </View>
-
-          {/* Main content */}
-          <View style={styles.contentWrapper}>
-            {loading ? renderLoadingState() : 
-            error ? renderErrorState() : 
-            !instance ? renderEmptyState() : (
-              <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim }]}>
-                <ScrollView 
-                  style={styles.scrollView}
-                  contentContainerStyle={styles.contentContainer}
-                  showsVerticalScrollIndicator={true}
-                >
-                  {renderInstanceContent()}
-                </ScrollView>
-              </Animated.View>
+          
+          {/* Content */}
+          <ScrollView style={styles.contentContainer} contentContainerStyle={styles.scrollContent}>
+            {loading ? (
+              <View style={styles.centered}>
+                <ActivityIndicator size="large" color={theme.colors.primary.main} />
+                <Text style={styles.loadingText}>Loading details...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.centered}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : !instance ? (
+              <View style={styles.centered}>
+                <Text>No data available</Text>
+              </View>
+            ) : (
+              <>
+                {/* Date */}
+                <Text style={styles.dateText}>
+                  {formatDate(instance.time)}
+                </Text>
+                
+                {/* Time and Duration */}
+                <View style={styles.timeRow}>
+                  <Text style={styles.timeText}>
+                    Time: {formatTimeOnly(instance.time)}
+                  </Text>
+                  <Text style={styles.timeText}>
+                    Duration: {instance.duration} mins
+                  </Text>
+                </View>
+                
+                {/* Urge Strength - Using discrete blocks */}
+                <Text style={styles.sectionTitle}>Urge Strength</Text>
+                <View style={styles.urgeStrengthContainer}>
+                  {[1, 2, 3, 4, 5].map((level) => {
+                    const isActive = (Number(instance.urgeStrength) || 1) >= level;
+                    return (
+                      <View 
+                        key={`urge-level-${level}`}
+                        style={[
+                          styles.urgeBlock,
+                          isActive && styles.urgeBlockActive,
+                          // Gradually darker shades for higher levels
+                          isActive && level === 2 && styles.urgeBlockLevel2,
+                          isActive && level === 3 && styles.urgeBlockLevel3,
+                          isActive && level === 4 && styles.urgeBlockLevel4,
+                          isActive && level === 5 && styles.urgeBlockLevel5,
+                        ]}
+                      />
+                    );
+                  })}
+                </View>
+                <View style={styles.urgeStrengthLabels}>
+                  <Text style={styles.urgeLabel}>Very Weak</Text>
+                  <Text style={styles.urgeLabel}>Very Strong</Text>
+                </View>
+                
+                {/* Awareness Type */}
+                <Text style={styles.sectionTitle}>Awareness Type</Text>
+                <View style={styles.pillWrapper}>
+                  {instance.intentionType && (
+                    <EmojiPill
+                      id={instance.intentionType}
+                      label={instance.intentionType === 'automatic' ? 'Automatic' : 'Intentional'}
+                      emoji={instance.intentionType === 'automatic' ? '🤖' : '🧠'}
+                      selected={true}
+                      onToggle={() => {}}
+                    />
+                  )}
+                </View>
+                
+                {/* Category Pills for Environments, Activities, Emotions, Thoughts, Sensations */}
+                {renderCategoryPills('environments')}
+                {renderCategoryPills('activities')}
+                {renderCategoryPills('emotions')}
+                {renderCategoryPills('thoughts')}
+                {renderCategoryPills('sensations')}
+                
+                {/* Notes */}
+                <Text style={styles.sectionTitle}>Notes</Text>
+                <View style={styles.notesContainer}>
+                  <Text style={styles.notesText}>
+                    {instance.notes || 'No notes for this instance'}
+                  </Text>
+                </View>
+              </>
             )}
+          </ScrollView>
+          
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Button
+              title="Close"
+              onPress={onClose}
+              containerStyle={styles.closeBtn}
+            />
           </View>
         </View>
       </RNView>
-      <StatusBar style="dark" />
     </Modal>
   );
 };
@@ -508,18 +313,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 16,
   } as ViewStyle,
-  modalContainer: {
-    width: SCREEN_WIDTH * 0.95,
-    height: SCREEN_HEIGHT * 0.8,
-    backgroundColor: theme.colors.background.primary,
+  modalContent: {
+    backgroundColor: 'white',
     borderRadius: 16,
+    width: '100%',
+    maxHeight: '80%',
     overflow: 'hidden',
-    shadowColor: theme.colors.neutral.dark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: { elevation: 5 },
+    }),
   } as ViewStyle,
   header: {
     flexDirection: 'row',
@@ -528,268 +338,148 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-  } as ViewStyle,
-  headerSpacer: {
-    width: 24,
+    borderBottomColor: '#e0e0e0',
   } as ViewStyle,
   closeButton: {
     padding: 4,
   } as ViewStyle,
   title: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold as '700',
-    color: theme.colors.text.primary,
-  } as TextStyle,
-  contentWrapper: {
-    flex: 1,
-  } as ViewStyle,
-  animatedContainer: {
-    flex: 1,
-  } as ViewStyle,
-  scrollView: {
-    flex: 1,
-  } as ViewStyle,
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 32,
-  } as ViewStyle,
-  
-  // Date header
-  dateHeaderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-  } as ViewStyle,
-  dateHeaderText: {
-    fontSize: 16,
-    fontWeight: '600' as '600',
-    color: theme.colors.text.primary,
-  } as TextStyle,
-  
-  // Time info row
-  timeInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  } as ViewStyle,
-  timeInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  } as ViewStyle,
-  timeInfoText: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-  } as TextStyle,
-  inlineIcon: {
-    marginRight: 6,
-  } as ViewStyle,
-  
-  // Urge Strength Section - New horizontal styles
-  urgeStrengthSection: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-  } as ViewStyle,
-  urgeContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  } as ViewStyle,
-  horizontalUrgeBar: {
-    height: 24,
-    width: '100%',
-    backgroundColor: theme.colors.neutral.lighter,
-    borderRadius: 12,
-    overflow: 'visible',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  } as ViewStyle,
-  horizontalUrgeFill: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: theme.colors.primary.light,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-  } as ViewStyle,
-  urgeMarker: {
-    position: 'absolute',
-    top: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateX: -6 }],
-  } as ViewStyle,
-  urgeMarkerText: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-  } as TextStyle,
-  currentUrgeMarker: {
-    position: 'absolute',
-    top: -12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.primary.main,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateX: -12 }],
-  } as ViewStyle,
-  currentUrgeText: {
-    fontSize: 12,
-    fontWeight: 'bold' as 'bold',
-    color: 'white',
-  } as TextStyle,
-  
-  // Grid layout
-  categoriesGrid: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  } as ViewStyle,
-  gridColumn: {
-    flex: 1,
-    paddingHorizontal: 4,
-  } as ViewStyle,
-  gridItem: {
-    marginBottom: 16,
-  } as ViewStyle,
-  
-  // Category headers and content
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  } as ViewStyle,
-  categoryIcon: {
-    marginRight: 8,
-  } as ViewStyle,
-  categoryTitle: {
-    fontSize: 15,
-    fontWeight: '600' as '600',
-    color: theme.colors.text.primary,
-  } as TextStyle,
-  
-  // Awareness section
-  awarenessPillContainer: {
-    alignItems: 'flex-start',
-  } as ViewStyle,
-  awarenessPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary.light + '40',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.primary.main,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  } as ViewStyle,
-  pillIcon: {
-    marginRight: 4,
-  } as ViewStyle,
-  
-  // Pills
-  pillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  } as ViewStyle,
-  pill: {
-    backgroundColor: theme.colors.primary.light + '40',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.primary.main,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    margin: 2,
-    marginBottom: 6,
-  } as ViewStyle,
-  pillText: {
-    fontSize: 14,
-    color: theme.colors.primary.main,
-    fontWeight: '500' as '500',
-  } as TextStyle,
-  noneText: {
-    fontSize: 14,
-    color: theme.colors.text.tertiary,
-    fontStyle: 'italic',
-    paddingVertical: 4,
-  } as TextStyle,
-  
-  // Notes section
-  notesSection: {
-    marginTop: 16,
-  } as ViewStyle,
-  notesTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  } as ViewStyle,
-  notesContainer: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    backgroundColor: 'rgba(240, 242, 245, 0.6)',
-    minHeight: 60,
-  } as ViewStyle,
-  notesText: {
-    fontSize: 14,
-    color: theme.colors.text.primary,
-    lineHeight: 20,
-  } as TextStyle,
-  
-  // Empty, Loading, and Error states
-  centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  } as ViewStyle,
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: `${theme.colors.primary.main}10`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  } as ViewStyle,
-  emptyStateTitle: {
     fontSize: 18,
-    fontWeight: 'bold' as 'bold',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
+    fontWeight: 'bold',
+    color: '#000',
   } as TextStyle,
-  emptyStateText: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
-  } as TextStyle,
+  contentContainer: {
+    maxHeight: '70%',
+  } as ViewStyle,
+  scrollContent: {
+    padding: 16,
+  } as ViewStyle,
+  centered: {
+    padding: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+  } as ViewStyle,
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
+    color: '#666',
   } as TextStyle,
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  } as ViewStyle,
   errorText: {
-    color: theme.colors.utility.error,
-    marginVertical: 12,
+    color: 'red',
     textAlign: 'center',
-    fontSize: 14,
   } as TextStyle,
-  retryButton: {
-    marginTop: 8,
+  dateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#000',
+  } as TextStyle,
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  } as ViewStyle,
+  timeText: {
+    fontSize: 14,
+    color: '#333',
+  } as TextStyle,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#000',
+  } as TextStyle,
+  // Urge strength blocks styles
+  urgeStrengthContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 8,
+    gap: 6, // Space between blocks
+  } as ViewStyle,
+  urgeBlock: {
+    flex: 1,
+    height: 24,
+    backgroundColor: '#F0F0F5',
+    borderRadius: 4,
+  } as ViewStyle,
+  urgeBlockActive: {
+    backgroundColor: '#FFC3C3', // Lightest shade for level 1
+  } as ViewStyle,
+  urgeBlockLevel2: {
+    backgroundColor: '#FFA8A8',
+  } as ViewStyle,
+  urgeBlockLevel3: {
+    backgroundColor: '#FF8A8A',
+  } as ViewStyle,
+  urgeBlockLevel4: {
+    backgroundColor: '#FF6B6B',
+  } as ViewStyle,
+  urgeBlockLevel5: {
+    backgroundColor: '#FF5252', // Darkest shade for level 5
+  } as ViewStyle,
+  urgeStrengthLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 24,
+  } as ViewStyle,
+  urgeLabel: {
+    fontSize: 12,
+    color: '#666',
+  } as TextStyle,
+  pillContainer: {
+    marginBottom: 24,
+  } as ViewStyle,
+  pill: {
+    backgroundColor: '#E8EBFA',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#6E7BC4',
+    alignSelf: 'flex-start',
+  } as ViewStyle,
+  pillText: {
+    fontSize: 14,
+    color: '#6E7BC4',
+  } as TextStyle,
+  notesContainer: {
+    backgroundColor: '#F0F0F5',
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 60,
+    marginBottom: 16,
+  } as ViewStyle,
+  notesText: {
+    fontSize: 14,
+    color: '#333',
+  } as TextStyle,
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  } as ViewStyle,
+  closeBtn: {
+    width: 150,
+  } as ViewStyle,
+  // New styles for category pills
+  categorySection: {
+    marginBottom: 20,
+  } as ViewStyle,
+  pillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -4, // To offset the margin on the pills
+  } as ViewStyle,
+  pillWrapper: {
+    // This wrapper prevents the pill from extending across full width
+    display: 'flex',
+    flexDirection: 'row',
+    margin: 4,
   } as ViewStyle,
 });
 

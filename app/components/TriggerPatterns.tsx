@@ -12,10 +12,12 @@ import {
 import { Text } from '@/app/components';
 import { useAuth } from '@/app/context/AuthContext';
 import api from '@/app/services/api';
+import strategiesApi from '@/app/services/strategies-api';
 import theme from '@/app/constants/theme';
 import { ensureValidToken } from '@/app/utils/tokenRefresher';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
 import TriggerPill from '@/app/components/TriggerPill';
+import { router } from 'expo-router';
 
 interface TriggerCount {
   emoji: string;
@@ -113,10 +115,31 @@ const TriggerPatterns: React.FC<TriggerPatternsProps> = ({
           );
         });
         
-        // Convert map to array, filter by minimum count, and sort by count (descending)
+        // Convert map to array, filter by minimum count
         let filteredTriggers = Array.from(triggerMap.values())
-          .filter(item => item.count >= minCount)
-          .sort((a, b) => b.count - a.count);
+          .filter(item => item.count >= minCount);
+        
+        // Fetch all strategies to filter out triggers that already have strategies
+        const strategies = await strategiesApi.getStrategies();
+        
+        // Filter out triggers that already have associated strategies
+        filteredTriggers = filteredTriggers.filter(trigger => {
+          // Check if any strategy has this trigger
+          return !strategies.some(strategy => {
+            // Check if strategy.trigger is a string
+            if (typeof strategy.trigger === 'string') {
+              return strategy.trigger === trigger.id;
+            }
+            // Check if strategy.trigger is an object with id property
+            else if (strategy.trigger && typeof strategy.trigger === 'object') {
+              return strategy.trigger.id === trigger.id;
+            }
+            return false;
+          });
+        });
+        
+        // Sort by count (descending)
+        filteredTriggers = filteredTriggers.sort((a, b) => b.count - a.count);
         
         // Enable animation for the layout change
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -167,7 +190,23 @@ const TriggerPatterns: React.FC<TriggerPatternsProps> = ({
   // Handler for pill clicks
   const handlePillToggle = (id: string) => {
     console.log('TriggerCloud: Pill clicked:', id);
-    // In the future, this could navigate to a strategy creation screen
+    
+    // Find the trigger details using the id
+    const trigger = triggerCounts.find(item => item.id === id);
+    
+    if (trigger) {
+      // Navigate to new strategy screen with the trigger data in the exact format needed
+      router.push({
+        pathname: '/screens/tracking/new-strategy-screen',
+        params: { 
+          trigger: JSON.stringify({
+            id: trigger.id,
+            label: trigger.label,
+            emoji: trigger.emoji
+          })
+        }
+      });
+    }
   };
   
   // Render loading state
@@ -205,7 +244,7 @@ const TriggerPatterns: React.FC<TriggerPatternsProps> = ({
           <Text style={styles.sectionTitle}>Trigger Patterns</Text>
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              Continue to log your target habit until we have more data
+              No new trigger patterns found. Continue logging your habit to discover new patterns.
             </Text>
           </View>
         </View>

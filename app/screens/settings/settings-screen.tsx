@@ -8,19 +8,22 @@ import {
   ViewStyle, 
   TextStyle, 
   StatusBar,
-  SafeAreaView,
   Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter, Stack } from 'expo-router';
 import { useAuth } from '@/app/context/AuthContext';
 import theme from '@/app/constants/theme';
 import { View, Text } from '@/app/components';
+import Header from '@/app/components/Header';
 
 /**
  * Settings Screen Component
  * Displays user profile and application settings
  */
 export default function SettingsScreen() {
+  const router = useRouter();
   const { user, logout, isLoading, authState } = useAuth();
   const [logoutRequested, setLogoutRequested] = useState(false);
 
@@ -78,10 +81,27 @@ export default function SettingsScreen() {
     }
   };
 
+  /**
+   * Navigate back to previous screen
+   */
+  const handleBackPress = () => {
+    router.back();
+  };
+
   return (
     <View style={styles.outerContainer}>
+      {/* Hide the native header */}
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
+      
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
       <SafeAreaView style={styles.container}>
+        <Header 
+          title="Settings"
+          showBackButton={true}
+          onLeftPress={handleBackPress}
+        />
         <ScrollView 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}

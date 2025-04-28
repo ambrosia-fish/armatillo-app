@@ -143,6 +143,13 @@ function RootNavigator() {
         options={{ headerShown: false }}
         redirect={!isAuthenticated}
       />
+      
+      {/* Strategy Screens */}
+      <Stack.Screen 
+        name="screens/tracking/new-strategy-screen" 
+        options={{ headerShown: false }}
+        redirect={!isAuthenticated}
+      />
     </Stack>
   );
 }

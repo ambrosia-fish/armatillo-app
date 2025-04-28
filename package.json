@@ -42,7 +42,8 @@
     "react-native-screens": "~4.4.0",
     "react-native-timer-picker": "^2.1.1",
     "react-native-web": "~0.19.13",
-    "react-native-wheel-pick": "^1.2.4"
+    "react-native-wheel-pick": "^1.2.4",
+    "@react-native-community/netinfo": "11.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
