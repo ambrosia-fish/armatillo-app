@@ -10,7 +10,8 @@ import {
   SafeAreaView,
   RefreshControl,
   View as RNView,
-  Text as RNText
+  Text as RNText,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -21,7 +22,7 @@ import { Strategy } from '@/app/components/StrategyCard';
 import { strategiesApi } from '@/app/services/strategies-api';
 import { errorService } from '@/app/services/ErrorService';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
-
+import { Stack } from 'expo-router'; // Add this import
 // Default trigger to use when none is found
 const DEFAULT_TRIGGER: OptionItem = {
   id: 'unknown',
@@ -142,33 +143,47 @@ export default function UseStrategyScreen() {
   };
 
   // Handle strategy selection
-  const handleSelectStrategy = (strategy: Strategy) => {
-    try {
-      console.log('Strategy selected:', strategy.name);
-      // Log the strategy that was selected
-      errorService.handleError('Strategy selection feature in development', {
-        source: 'ui',
-        level: 'info',
-        context: { 
-          component: 'UseStrategyScreen', 
-          action: 'select_strategy',
-          strategyId: strategy._id,
-          strategyName: strategy.name
+const handleSelectStrategy = async (strategy: Strategy) => {
+  try {
+    console.log('Strategy selected:', strategy.name);
+    
+    // Increment the use count
+    await strategiesApi.incrementStrategyUseCount(strategy._id);
+    
+    // Log success (but not as an error)
+    console.log(`Incremented use count for strategy: ${strategy.name}`);
+    
+    // Show success notification
+    Alert.alert(
+      "Good Job!",
+      `You've selected the "${strategy.name}" strategy.`,
+      [
+        { 
+          text: "OK", 
+          onPress: () => {
+            // Navigate all the way back to home (index) after dismissing the alert
+            router.push('/');
+          }
         }
-      });
-      // Future implementation will use this strategy to create a new tracking instance
-    } catch (error) {
-      errorService.handleError(error instanceof Error ? error : String(error), {
-        source: 'ui',
-        level: 'error',
-        context: { 
-          component: 'UseStrategyScreen', 
-          action: 'select_strategy_error',
-          strategyId: strategy._id
-        }
-      });
-    }
-  };
+      ]
+    );
+    
+  } catch (error) {
+    // Still handle actual errors appropriately
+    errorService.handleError(error instanceof Error ? error : String(error), {
+      source: 'ui',
+      level: 'error',
+      context: { 
+        component: 'UseStrategyScreen', 
+        action: 'select_strategy_error',
+        strategyId: strategy._id
+      }
+    });
+    
+    // Even if there's an error, try to navigate home
+    router.push('/');
+  }
+};
 
   /**
    * Return to previous screen
@@ -245,6 +260,7 @@ export default function UseStrategyScreen() {
   return (
     <View style={styles.outerContainer}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
+      <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.container}>
         <Header 
           title="Select a Strategy" 
