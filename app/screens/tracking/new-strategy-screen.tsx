@@ -96,7 +96,9 @@ const NewStrategyScreen = () => {
   
       // Use the field names expected by the API
       const strategyData = {
-        // Let the backend use the trigger as the name
+        // Explicitly set the name to the trigger's label
+        name: selectedTrigger.label,
+        // Also send the trigger ID as required by the API
         trigger: selectedTrigger.id,
         competingResponses: [{
           title: competingResponse.title.trim(), 
