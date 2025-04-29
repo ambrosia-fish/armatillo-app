@@ -14,15 +14,15 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 
 import theme from '@/app/constants/theme';
-import { View, Text, Card, Header } from '@/app/components';
+import { View, Text, Card, Header, EmojiPill } from '@/app/components';
 import { Strategy } from '@/app/components/StrategyCard';
 import { strategiesApi } from '@/app/services/strategies-api';
 import { errorService } from '@/app/services/ErrorService';
 import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
-import { Stack } from 'expo-router'; // Add this import
+
 // Default trigger to use when none is found
 const DEFAULT_TRIGGER: OptionItem = {
   id: 'unknown',
@@ -143,47 +143,47 @@ export default function UseStrategyScreen() {
   };
 
   // Handle strategy selection
-const handleSelectStrategy = async (strategy: Strategy) => {
-  try {
-    console.log('Strategy selected:', strategy.name);
-    
-    // Increment the use count
-    await strategiesApi.incrementStrategyUseCount(strategy._id);
-    
-    // Log success (but not as an error)
-    console.log(`Incremented use count for strategy: ${strategy.name}`);
-    
-    // Show success notification
-    Alert.alert(
-      "Good Job!",
-      `You've selected the "${strategy.name}" strategy.`,
-      [
-        { 
-          text: "OK", 
-          onPress: () => {
-            // Navigate all the way back to home (index) after dismissing the alert
-            router.push('/');
+  const handleSelectStrategy = async (strategy: Strategy) => {
+    try {
+      console.log('Strategy selected:', strategy.name);
+      
+      // Increment the use count
+      await strategiesApi.incrementStrategyUseCount(strategy._id);
+      
+      // Log success
+      console.log(`Incremented use count for strategy: ${strategy.name}`);
+      
+      // Show success notification
+      Alert.alert(
+        "Good Job!",
+        `You've selected the "${strategy.name}" strategy.`,
+        [
+          { 
+            text: "OK", 
+            onPress: () => {
+              // Navigate all the way back to home (index)
+              router.push('/');
+            }
           }
+        ]
+      );
+      
+    } catch (error) {
+      // Still handle actual errors appropriately
+      errorService.handleError(error instanceof Error ? error : String(error), {
+        source: 'ui',
+        level: 'error',
+        context: { 
+          component: 'UseStrategyScreen', 
+          action: 'select_strategy_error',
+          strategyId: strategy._id
         }
-      ]
-    );
-    
-  } catch (error) {
-    // Still handle actual errors appropriately
-    errorService.handleError(error instanceof Error ? error : String(error), {
-      source: 'ui',
-      level: 'error',
-      context: { 
-        component: 'UseStrategyScreen', 
-        action: 'select_strategy_error',
-        strategyId: strategy._id
-      }
-    });
-    
-    // Even if there's an error, try to navigate home
-    router.push('/');
-  }
-};
+      });
+      
+      // Even if there's an error, try to navigate home
+      router.push('/');
+    }
+  };
 
   /**
    * Return to previous screen
@@ -202,45 +202,144 @@ const handleSelectStrategy = async (strategy: Strategy) => {
 
   // Custom strategy card component with "Use this Strategy!" button
   const StrategySelectionCard = ({ strategy }: { strategy: Strategy }) => {
+    // Calculate active responses count
+    const activeResponsesCount = strategy.competingResponses?.filter(response => response.isActive)?.length || 0;
+    const activeControlsCount = strategy.stimulusControls?.filter(control => control.isActive)?.length || 0;
+    const activeSupportsCount = strategy.communitySupports?.filter(support => support.isActive)?.length || 0;
+    
+    // Ensure trigger is valid
+    const validTrigger = strategy.trigger && typeof strategy.trigger === 'object' && strategy.trigger.id ? 
+      strategy.trigger : DEFAULT_TRIGGER;
+    
+    // Dummy function for EmojiPill since we don't need to toggle it in the card
+    const handleEmojiPillToggle = () => {};
+    
     return (
       <Card
-        containerStyle={styles.cardContainer}
+        containerStyle={[
+          styles.cardContainer,
+          !strategy.isActive && styles.inactiveCard
+        ]}
         accessibilityLabel={`Strategy ${strategy.name}`}
-        accessibilityHint="Tap to view details about this strategy"
+        accessibilityHint="View this strategy"
       >
-        {/* Render the strategy content */}
-        <RNView style={styles.emojiPillContainer}>
-          <View style={styles.pillWrapper}>
-            <RNText style={styles.emoji}>{strategy.trigger.emoji}</RNText>
-            <RNText style={styles.triggerLabel}>{strategy.trigger.label}</RNText>
-          </View>
+        {/* Header with Title and Status */}
+        <RNView style={styles.cardHeader}>
+          <RNView style={styles.titleContainer}>
+            <Text style={styles.cardTitle} numberOfLines={1}>{strategy.name}</Text>
+            {strategy.isActive ? (
+              <RNView style={styles.statusBadge}>
+                <Ionicons name="checkmark-circle" size={12} color={theme.colors.utility.success} />
+                <Text style={styles.statusText}>Active</Text>
+              </RNView>
+            ) : (
+              <RNView style={[styles.statusBadge, styles.inactiveBadge]}>
+                <Ionicons name="ellipse-outline" size={12} color={theme.colors.text.tertiary} />
+                <Text style={[styles.statusText, styles.inactiveText]}>Inactive</Text>
+              </RNView>
+            )}
+          </RNView>
+        </RNView>
+
+        {/* Trigger Row */}
+        <RNView style={styles.triggerRow}>
+          <RNView style={styles.triggerLabel}>
+            <Ionicons 
+              name="alert-circle-outline" 
+              size={16} 
+              color={theme.colors.primary.main} 
+              style={styles.triggerIcon} 
+            />
+            <Text style={styles.triggerText}>Trigger:</Text>
+          </RNView>
+          <RNView style={styles.emojiPillContainer}>
+            <EmojiPill
+              id={validTrigger.id}
+              label={validTrigger.label}
+              emoji={validTrigger.emoji}
+              selected={true}
+              onToggle={handleEmojiPillToggle}
+            />
+          </RNView>
         </RNView>
         
-        <RNView style={styles.infoRow}>
-          <Text style={styles.strategyName}>{strategy.name}</Text>
+        {/* Divider */}
+        <RNView style={styles.divider} />
+        
+        {/* Info Items */}
+        <RNView style={styles.infoContainer}>
+          {/* Competing Responses */}
+          {strategy.competingResponses && strategy.competingResponses.length > 0 && (
+            <RNView style={styles.infoItem}>
+              <RNView style={styles.infoIconContainer}>
+                <Ionicons name="swap-horizontal-outline" size={16} color={theme.colors.primary.main} />
+              </RNView>
+              <RNView style={styles.infoContent}>
+                <Text style={styles.infoItemLabel}>Competing Response:</Text>
+                <RNView style={styles.valueRow}>
+                  <Text style={styles.infoValue} numberOfLines={1}>
+                    {strategy.competingResponses[0].title}
+                  </Text>
+                  {strategy.competingResponses.length > 1 && (
+                    <RNView style={styles.countBadge}>
+                      <Text style={styles.countText}>
+                        {`${activeResponsesCount}/${strategy.competingResponses.length}`}
+                      </Text>
+                    </RNView>
+                  )}
+                </RNView>
+              </RNView>
+            </RNView>
+          )}
+          
+          {/* Stimulus Controls */}
+          {strategy.stimulusControls && strategy.stimulusControls.length > 0 && (
+            <RNView style={styles.infoItem}>
+              <RNView style={styles.infoIconContainer}>
+                <Ionicons name="shield-outline" size={16} color={theme.colors.primary.main} />
+              </RNView>
+              <RNView style={styles.infoContent}>
+                <Text style={styles.infoItemLabel}>Stimulus Control:</Text>
+                <RNView style={styles.valueRow}>
+                  <Text style={styles.infoValue} numberOfLines={1}>
+                    {strategy.stimulusControls[0].title}
+                  </Text>
+                  {strategy.stimulusControls.length > 1 && (
+                    <RNView style={styles.countBadge}>
+                      <Text style={styles.countText}>
+                        {`${activeControlsCount}/${strategy.stimulusControls.length}`}
+                      </Text>
+                    </RNView>
+                  )}
+                </RNView>
+              </RNView>
+            </RNView>
+          )}
+          
+          {/* Community Supports */}
+          {strategy.communitySupports && strategy.communitySupports.length > 0 && (
+            <RNView style={styles.infoItem}>
+              <RNView style={styles.infoIconContainer}>
+                <Ionicons name="people-outline" size={16} color={theme.colors.primary.main} />
+              </RNView>
+              <RNView style={styles.infoContent}>
+                <Text style={styles.infoItemLabel}>Support:</Text>
+                <RNView style={styles.valueRow}>
+                  <Text style={styles.infoValue} numberOfLines={1}>
+                    {strategy.communitySupports[0].name}
+                  </Text>
+                  {strategy.communitySupports.length > 1 && (
+                    <RNView style={styles.countBadge}>
+                      <Text style={styles.countText}>
+                        {`${activeSupportsCount}/${strategy.communitySupports.length}`}
+                      </Text>
+                    </RNView>
+                  )}
+                </RNView>
+              </RNView>
+            </RNView>
+          )}
         </RNView>
-        
-        {/* Competing Responses */}
-        {strategy.competingResponses && strategy.competingResponses.length > 0 && (
-          <RNView style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Competing Response:</Text>
-            <Text style={styles.infoValue}>
-              {strategy.competingResponses[0].title}
-              {strategy.competingResponses.length > 1 && 
-                ` (${strategy.competingResponses.filter(r => r.isActive).length}/${strategy.competingResponses.length})`}
-            </Text>
-          </RNView>
-        )}
-        
-        {/* Stimulus Controls */}
-        {strategy.stimulusControls && strategy.stimulusControls.length > 0 && (
-          <RNView style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Stimulus Control:</Text>
-            <Text style={styles.infoValue}>
-              {strategy.stimulusControls[0].title}
-            </Text>
-          </RNView>
-        )}
         
         {/* Use Strategy Button */}
         <TouchableOpacity
@@ -260,7 +359,10 @@ const handleSelectStrategy = async (strategy: Strategy) => {
   return (
     <View style={styles.outerContainer}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
+      
+      {/* Hide the default navigation header */}
       <Stack.Screen options={{ headerShown: false }} />
+      
       <SafeAreaView style={styles.container}>
         <Header 
           title="Select a Strategy" 
@@ -402,68 +504,155 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.sm,
     marginHorizontal: theme.spacing.md,
     padding: theme.spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.primary.main,
   } as ViewStyle,
   
-  emojiPillContainer: {
+  inactiveCard: {
+    borderLeftColor: theme.colors.text.tertiary,
+    opacity: 0.8,
+  } as ViewStyle,
+  
+  cardHeader: {
     flexDirection: 'row',
-    marginBottom: theme.spacing.md,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
   } as ViewStyle,
   
-  pillWrapper: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.neutral.lighter,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.borderRadius.sm,
+    flex: 1,
   } as ViewStyle,
   
-  emoji: {
-    fontSize: 16,
-    marginRight: theme.spacing.xs,
-  } as TextStyle,
-  
-  triggerLabel: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.medium as '500',
-  } as TextStyle,
-  
-  strategyName: {
+  cardTitle: {
     fontSize: theme.typography.fontSize.lg,
     fontWeight: theme.typography.fontWeight.semiBold as '600',
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
+    marginRight: theme.spacing.sm,
+    flex: 1,
   } as TextStyle,
   
-  infoRow: {
+  statusBadge: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    backgroundColor: 'rgba(75, 181, 67, 0.1)',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 12,
+  } as ViewStyle,
+  
+  inactiveBadge: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+  } as ViewStyle,
+  
+  statusText: {
+    fontSize: theme.typography.fontSize.xs,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    color: theme.colors.utility.success,
+    marginLeft: 2,
+  } as TextStyle,
+  
+  inactiveText: {
+    color: theme.colors.text.tertiary,
+  } as TextStyle,
+  
+  triggerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  } as ViewStyle,
+  
+  triggerLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: theme.spacing.sm,
+  } as ViewStyle,
+  
+  triggerIcon: {
+    marginRight: 4,
+  },
+  
+  triggerText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    color: theme.colors.text.secondary,
+  } as TextStyle,
+  
+  emojiPillContainer: {
+    alignSelf: 'flex-start',
+  } as ViewStyle,
+  
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border.light,
+    marginBottom: theme.spacing.md,
+  } as ViewStyle,
+  
+  infoContainer: {
     marginBottom: theme.spacing.sm,
   } as ViewStyle,
   
-  infoLabel: {
-    fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium as '500',
+  infoItem: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+  } as ViewStyle,
+  
+  infoIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(82, 130, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.sm,
+  } as ViewStyle,
+  
+  infoContent: {
+    flex: 1,
+  } as ViewStyle,
+  
+  infoItemLabel: {
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
-    marginRight: theme.spacing.xs,
-    minWidth: 150,
+    marginBottom: 2,
   } as TextStyle,
+  
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
   
   infoValue: {
     fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium as '500',
     color: theme.colors.text.primary,
     flex: 1,
   } as TextStyle,
   
+  countBadge: {
+    backgroundColor: theme.colors.primary.light,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: theme.spacing.xs,
+  } as ViewStyle,
+  
+  countText: {
+    fontSize: theme.typography.fontSize.xs,
+    fontWeight: theme.typography.fontWeight.medium as '500',
+    color: theme.colors.primary.main,
+  } as TextStyle,
+  
   useButton: {
-    backgroundColor: theme.colors.primary.dark,
-    borderRadius: theme.borderRadius.sm,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    backgroundColor: theme.colors.primary.dark,
+    borderRadius: theme.borderRadius.sm,
   } as ViewStyle,
   
   useButtonText: {
