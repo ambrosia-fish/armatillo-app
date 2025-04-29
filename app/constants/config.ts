@@ -10,6 +10,8 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import NetInfo from '@react-native-community/netinfo';
 
+const current_IP = '192.168.0.219'
+
 // Configuration for different environments
 interface ApiConfig {
   apiUrl: string;
@@ -72,10 +74,10 @@ export const getLocalIpAddress = async (): Promise<string> => {
     }
     
     // If we couldn't get the IP from NetInfo, fall back to configured value
-    return Constants.expoConfig?.extra?.localIp || '192.168.0.101';
+    return Constants.expoConfig?.extra?.localIp || current_IP;
   } catch (error) {
     console.warn('Failed to get IP address:', error);
-    return Constants.expoConfig?.extra?.localIp || '192.168.0.101';
+    return Constants.expoConfig?.extra?.localIp || current_IP;
   }
 };
 
@@ -200,7 +202,7 @@ export const getSyncConfig = (): ApiConfig => {
   if (!config.apiUrl) {
     // For development, use default values
     if (environment === 'development') {
-      const defaultIp = Constants.expoConfig?.extra?.localIp || '192.168.0.101';
+      const defaultIp = Constants.expoConfig?.extra?.localIp || current_IP;
       
       if (Constants.appOwnership === 'expo') {
         config.apiUrl = `http://${defaultIp}:3000`;
