@@ -24,12 +24,16 @@ export default function NewOptionsScreen() {
   /**
    * Navigate to the appropriate screen based on the selected option
    */
-  const handleOptionSelect = (option: 'fresh' | 'template' | 'tweak') => {
+  const handleOptionSelect = (option: 'fresh' | 'template' | 'tweak' | 'strategy') => {
     try {
       switch (option) {
         case 'fresh':
           // Navigate to the new entry screen (starting fresh)
           router.push('/screens/tracking/new-entry-screen');
+          break;
+        case 'strategy':
+          // Navigate to the strategy selection screen
+          router.push('/screens/tracking/use-strategy-screen');
           break;
         case 'template':
           // Template feature not yet implemented
@@ -107,6 +111,35 @@ export default function NewOptionsScreen() {
             <Text style={styles.optionTitle}>Start Fresh</Text>
             <Text style={styles.optionDescription}>
               Create a new tracking instance from scratch with no pre-filled information
+            </Text>
+          </View>
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={theme.colors.text.tertiary}
+          />
+        </TouchableOpacity>
+
+        {/* Use Strategy Option */}
+        <TouchableOpacity
+          style={styles.optionCard}
+          onPress={() => handleOptionSelect('strategy')}
+          activeOpacity={0.7}
+          accessibilityLabel="Use Strategy"
+          accessibilityRole="button"
+          accessibilityHint="Create a tracking instance using existing strategies"
+        >
+          <View style={styles.optionIconContainer}>
+            <Ionicons 
+              name="bookmarks" 
+              size={32} 
+              color={theme.colors.primary.main} 
+            />
+          </View>
+          <View style={styles.optionTextContainer}>
+            <Text style={styles.optionTitle}>Use Strategy</Text>
+            <Text style={styles.optionDescription}>
+              Create a tracking instance based on your existing strategies
             </Text>
           </View>
           <Ionicons 
