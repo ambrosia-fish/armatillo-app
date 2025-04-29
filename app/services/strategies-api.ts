@@ -15,6 +15,7 @@ export interface Strategy {
   description: string;
   isActive: boolean;
   trigger: string | TriggerObject; 
+  useCount?: number; // Added useCount field
   competingResponses: Array<{
     _id: string;
     title: string;
@@ -155,6 +156,13 @@ export const strategiesApi = {
    */
   toggleStrategyStatus: async (id: string): Promise<Strategy> => {
     return apiRequest(`/strategies/${id}/toggle-status`, { method: 'PUT' });
+  },
+  
+  /**
+   * Increment strategy use count
+   */
+  incrementStrategyUseCount: async (id: string): Promise<Strategy> => {
+    return apiRequest(`/strategies/${id}/increment-use-count`, { method: 'PUT' });
   },
   
   /**
