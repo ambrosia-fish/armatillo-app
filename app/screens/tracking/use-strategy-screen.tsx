@@ -417,9 +417,6 @@ export default function UseStrategyScreen() {
           {/* Strategy List */}
           {!loading && strategies.length > 0 && (
             <View style={styles.strategyList}>
-              <Text style={styles.subtitle}>
-                Select a strategy to use for your tracking instance
-              </Text>
               {strategies.map((strategy) => (
                 <StrategySelectionCard 
                   key={strategy._id} 
