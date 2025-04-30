@@ -85,9 +85,11 @@ export default function HomeScreen() {
       {/* Welcome message with user name if available */}
       {user && user.displayName && (
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>
-            Welcome back, {user.displayName}
-          </Text>
+          <View style={styles.welcomePill}>
+            <Text style={styles.welcomeText}>
+              Welcome back, {user.displayName}
+            </Text>
+          </View>
         </View>
       )}
       
@@ -155,17 +157,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   } as ViewStyle,
   welcomeContainer: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: 12,
     alignItems: 'center',
+  } as ViewStyle,
+  welcomePill: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignSelf: 'center',
   } as ViewStyle,
   welcomeText: {
     fontSize: 16,
-    color: theme.colors.text.primary,
+    color: theme.colors.primary.dark,
     fontWeight: '500',
   } as TextStyle,
   logoContainer: {
