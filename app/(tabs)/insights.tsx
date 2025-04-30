@@ -16,7 +16,7 @@ import { View, Text } from '@/app/components';
 import HistoryScreen from '@/app/screens/tracking/history-screen';
 
 /**
- * Insights tab showing trigger patterns and navigation to history and strategies
+ * Insights tab showing trigger patterns and navigation to history and progress
  */
 export default function Insights() {
   const [error, setError] = useState<string | null>(null);
@@ -91,27 +91,27 @@ export default function Insights() {
               />
             </TouchableOpacity>
             
-            {/* Strategies Button (disabled) */}
+            {/* Progress Button (disabled) */}
             <TouchableOpacity
               style={[styles.optionCard, styles.disabledCard]}
               activeOpacity={0.7}
               disabled={true}
-              accessibilityLabel="Strategies (Coming Soon)"
+              accessibilityLabel="Progress (Coming Soon)"
               accessibilityRole="button"
               accessibilityState={{ disabled: true }}
-              accessibilityHint="Feature coming soon: Personalized strategies"
+              accessibilityHint="Feature coming soon: View your progress and data visualization"
             >
               <View style={[styles.optionIconContainer, styles.disabledIcon]}>
                 <Ionicons 
-                  name="bulb-outline" 
+                  name="stats-chart-outline" 
                   size={32} 
                   color={theme.colors.utility.disabled} 
                 />
               </View>
               <View style={[styles.optionTextContainer, styles.disabledTextContainer]}>
-                <Text style={[styles.optionTitle, styles.disabledText]}>Strategies</Text>
+                <Text style={[styles.optionTitle, styles.disabledText]}>Progress</Text>
                 <Text style={[styles.optionDescription, styles.disabledText]}>
-                  Personalized strategies based on your insights
+                  View your progress and data visualization
                 </Text>
                 <View style={styles.comingSoonBadge}>
                   <Text style={styles.comingSoonText}>Coming Soon</Text>
