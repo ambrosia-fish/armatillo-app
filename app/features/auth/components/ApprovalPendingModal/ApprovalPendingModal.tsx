@@ -2,11 +2,12 @@ import { StyleSheet, ViewStyle, TextStyle, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Text, View, Button } from '../../components';
-import theme from '../../constants/theme';
-import { useAuth } from '../../context/AuthContext';
+import { Text, View } from '@/app/components/common/Themed';
+import Button from '@/app/components/common/Button';
+import theme from '@/app/styles/theme';
+import { useAuth } from '@/app/store/contexts/AuthContext';
 import { clearAuthTokens } from '../../utils/tokenUtils';
-import ModalComponent from './modal';
+import ModalComponent from '@/app/components/common/Modals/BaseModal';
 
 interface ApprovalPendingModalProps {
   visible: boolean;
