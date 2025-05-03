@@ -2,7 +2,7 @@ import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, Platform } from 'react-native';
-import theme from '@/app/constants/theme';
+import theme from '@/app/styles/theme';
 
 /**
  * Tab layout for main app navigation
