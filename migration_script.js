@@ -112,7 +112,13 @@ const moveFiles = () => {
       if (!fs.existsSync(toDir)) {
         fs.mkdirSync(toDir, { recursive: true });
       }
-      fs.renameSync(from, to);
+      
+      // Read the file content and update imports before writing
+      let content = fs.readFileSync(from, 'utf8');
+      content = updateImports(content, from, to);
+      
+      fs.writeFileSync(to, content);
+      fs.unlinkSync(from);
       console.log(`Moved: ${from} -> ${to}`);
     } else {
       console.warn(`Source file not found: ${from}`);
@@ -120,24 +126,157 @@ const moveFiles = () => {
   });
 };
 
+// Update import paths in files
+const updateImports = (content, oldPath, newPath) => {
+  // Common import updates
+  content = content.replace(/@\/app\/constants\/theme/g, '@/app/styles/theme');
+  content = content.replace(/@\/app\/constants\/config/g, '@/app/config/env.config');
+  content = content.replace(/@\/app\/constants\/optionDictionaries/g, '@/app/constants/options');
+  content = content.replace(/@\/app\/services\/api/g, '@/app/services/api/base');
+  content = content.replace(/@\/app\/services\/strategies-api/g, '@/app/services/api/strategies');
+  content = content.replace(/@\/app\/services\/ErrorService/g, '@/app/services/error/ErrorService');
+  content = content.replace(/@\/app\/utils\/storage/g, '@/app/services/storage/StorageService');
+  content = content.replace(/@\/app\/utils\/tokenUtils/g, '@/app/features/auth/utils/tokenUtils');
+  content = content.replace(/@\/app\/utils\/tokenRefresher/g, '@/app/features/auth/utils/tokenRefresher');
+  content = content.replace(/@\/app\/context\/AuthContext/g, '@/app/store/contexts/AuthContext');
+  content = content.replace(/@\/app\/context\/FormContext/g, '@/app/store/contexts/FormContext');
+  content = content.replace(/@\/app\/hooks\/useEntryForm/g, '@/app/features/tracking/hooks/useEntryForm');
+  content = content.replace(/@\/app\/types\/Instance/g, '@/app/types/instance.types');
+  
+  // Update component imports
+  content = content.replace(/@\/app\/components\//g, '@/app/components/');
+  content = content.replace(/'\.\.\/Button'/g, '\'../../../components/common/Button\'');
+  content = content.replace(/'\.\.\/Header'/g, '\'../../../components/layout/Header\'');
+  content = content.replace(/'\.\.\/Card'/g, '\'../../../components/common/Card\'');
+  
+  return content;
+};
+
 // Create index files
 const createIndexFiles = () => {
   const indexFiles = [
+    // Common components
     { path: 'app/components/common/AuthGuard/index.ts', content: 'export { default } from \'./AuthGuard\';\n' },
-    { path: 'app/components/common/Button/index.ts', content: 'export { default } from \'./Button\';\n' },
+    { path: 'app/components/common/Button/index.ts', content: 'export { default, ButtonVariant, ButtonSize } from \'./Button\';\n' },
     { path: 'app/components/common/Card/index.ts', content: 'export { default } from \'./Card\';\n' },
     { path: 'app/components/common/Input/index.ts', content: 'export { default } from \'./Input\';\n' },
     { path: 'app/components/common/Themed/index.ts', content: 'export * from \'./Themed\';\n' },
+    { path: 'app/components/common/Modals/BaseModal/index.ts', content: 'export { default } from \'./BaseModal\';\n' },
+    { path: 'app/components/common/Modals/AnswerSelectorModal/index.ts', content: 'export { default } from \'./AnswerSelectorModal\';\n' },
+    { path: 'app/components/common/Modals/index.ts', content: `export { default as BaseModal } from './BaseModal';
+export { default as AnswerSelectorModal } from './AnswerSelectorModal';
+` },
+    { path: 'app/components/common/index.ts', content: `export { default as AuthGuard } from './AuthGuard';
+export { default as Button } from './Button';
+export { default as Card } from './Card';
+export { default as Input } from './Input';
+export * from './Themed';
+export * from './Modals';
+` },
+    
+    // Form components
     { path: 'app/components/forms/CategoryPills/index.ts', content: 'export { default } from \'./CategoryPills\';\n' },
     { path: 'app/components/forms/EmojiPill/index.ts', content: 'export { default } from \'./EmojiPill\';\n' },
     { path: 'app/components/forms/TriggerPill/index.ts', content: 'export { default } from \'./TriggerPill\';\n' },
+    { path: 'app/components/forms/index.ts', content: `export { default as CategoryPills } from './CategoryPills';
+export { default as EmojiPill } from './EmojiPill';
+export { default as TriggerPill } from './TriggerPill';
+` },
+    
+    // Layout components
     { path: 'app/components/layout/Header/index.ts', content: 'export { default } from \'./Header\';\n' },
-    // Add more index files as needed
+    { path: 'app/components/layout/index.ts', content: 'export { default as Header } from \'./Header\';\n' },
+    
+    // Main components index
+    { path: 'app/components/index.ts', content: `export * from './common';
+export * from './forms';
+export * from './layout';
+` },
+    
+    // Features indices
+    { path: 'app/features/auth/index.ts', content: `export * from './screens';
+export * from './components';
+export * from './utils';
+` },
+    { path: 'app/features/tracking/index.ts', content: `export * from './screens';
+export * from './components';
+export * from './hooks';
+` },
+    { path: 'app/features/strategies/index.ts', content: `export * from './screens';
+export * from './components';
+` },
+    { path: 'app/features/settings/index.ts', content: `export * from './screens';
+` },
+    
+    // Services indices
+    { path: 'app/services/api/index.ts', content: `export * from './base';
+export * from './strategies';
+` },
+    { path: 'app/services/error/index.ts', content: `export * from './ErrorService';
+` },
+    { path: 'app/services/storage/index.ts', content: `export * from './StorageService';
+` },
+    { path: 'app/services/index.ts', content: `export * from './api';
+export * from './error';
+export * from './storage';
+` },
+    
+    // Store indices
+    { path: 'app/store/contexts/index.ts', content: `export * from './AuthContext';
+export * from './FormContext';
+` },
+    { path: 'app/store/index.ts', content: `export * from './contexts';
+` },
+    
+    // Other indices
+    { path: 'app/config/index.ts', content: `export { default } from './env.config';
+` },
+    { path: 'app/constants/index.ts', content: `export { default as OptionDictionaries } from './options';
+` },
+    { path: 'app/styles/index.ts', content: `export { default as theme } from './theme';
+` },
+    { path: 'app/types/index.ts', content: `export * from './instance.types';
+` },
+    { path: 'app/utils/index.ts', content: `export * from './export.utils';
+export * from './form.utils';
+export * from './navigation.utils';
+` },
   ];
   
   indexFiles.forEach(({ path, content }) => {
+    const dir = path.substring(0, path.lastIndexOf('/'));
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(path, content);
     console.log(`Created index file: ${path}`);
+  });
+};
+
+// Clean up empty directories
+const cleanupDirectories = () => {
+  const dirsToClean = [
+    'app/components',
+    'app/constants',
+    'app/context',
+    'app/screens/auth',
+    'app/screens/modals',
+    'app/screens/settings',
+    'app/screens/tracking/form-sections',
+    'app/screens/tracking',
+    'app/screens',
+    'app/types',
+    'app/utils',
+    'assets/fonts',
+    'assets/images',
+    'assets'
+  ];
+  
+  dirsToClean.forEach(dir => {
+    if (fs.existsSync(dir) && fs.readdirSync(dir).length === 0) {
+      fs.rmdirSync(dir);
+      console.log(`Removed empty directory: ${dir}`);
+    }
   });
 };
 
@@ -146,4 +285,9 @@ console.log('Starting file reorganization...');
 createDirectories();
 moveFiles();
 createIndexFiles();
+cleanupDirectories();
 console.log('File reorganization complete!');
+console.log('\nNext steps:');
+console.log('1. Update remaining import paths in your files');
+console.log('2. Test the application to ensure everything works correctly');
+console.log('3. Commit the changes');
