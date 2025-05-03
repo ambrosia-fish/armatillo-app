@@ -12,9 +12,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { OptionItem } from '@/app/constants/options';
 import theme from '@/app/styles/theme';
-import EmojiPill from '../../components/EmojiPill';
+import EmojiPill from '@/app/components/forms/EmojiPill';
 import { errorService } from '@/app/services/error/ErrorService';
-import ModalComponent from './modal';
+import ModalComponent from '../BaseModal';
 
 interface AnswerSelectorModalProps {
   visible: boolean;
