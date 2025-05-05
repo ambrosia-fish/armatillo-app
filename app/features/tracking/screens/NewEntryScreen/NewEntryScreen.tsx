@@ -15,19 +15,17 @@ import {
   AnswerSelectorModal
 } from '@/app/components';
 import OptionDictionaries from '@/app/constants/options';
-import { 
-  TimePickerModal,
-  DurationPickerModal
-} from '@/app/features/tracking';
 import { navigateBack } from '@/app/utils/navigation.utils';
-import {
-  AwarenessTypeSection,
-  UrgeStrengthSection,
-  TimeAndDurationSection,
-  CategorySection,
-  NotesSection,
-  useEntryForm,
-} from '@/app/features/tracking';
+
+// Direct imports instead of from index.ts to break the cycle
+import TimePickerModal from '@/app/features/tracking/components/TimePickerModal/TimePickerModal';
+import DurationPickerModal from '@/app/features/tracking/components/DurationPickerModal/DurationPickerModal';
+import AwarenessTypeSection from '@/app/features/tracking/components/FormSections/AwarenessTypeSection/AwarenessTypeSection';
+import UrgeStrengthSection from '@/app/features/tracking/components/FormSections/UrgeStrengthSection/UrgeStrengthSection';
+import TimeAndDurationSection from '@/app/features/tracking/components/FormSections/TimeAndDurationSection/TimeAndDurationSection';
+import CategorySection from '@/app/features/tracking/components/FormSections/CategorySection/CategorySection';
+import NotesSection from '@/app/features/tracking/components/FormSections/NotesSection/NotesSection';
+import useEntryForm from '@/app/features/tracking/hooks/useEntryForm';
 
 export default function NewEntryScreen() {
   const form = useEntryForm();
