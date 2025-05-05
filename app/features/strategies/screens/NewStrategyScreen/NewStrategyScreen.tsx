@@ -13,10 +13,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, Text, Button } from '@/app/components';
-import EmojiPill from '@/app/components/EmojiPill';
+import EmojiPill from '@/app/components/forms/EmojiPill';
 import theme from '@/app/styles/theme';
 import strategiesApi from '@/app/services/api/strategies';
-import { navigateBack } from '@/app/utils/navigationUtils';
+import { navigateBack } from '@/app/utils';
 
 const NewStrategyScreen = () => {
   const navigation = useNavigation();

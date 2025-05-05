@@ -9,11 +9,11 @@ import {
   TextStyle
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/app/context/AuthContext';
+import { useAuth } from '@/app/store/contexts';
 import { TriggerPatterns } from '@/app/components';
-import theme from '@/app/constants/theme';
+import theme from '@/app/styles/theme';
 import { View, Text } from '@/app/components';
-import HistoryScreen from '@/app/screens/tracking/history-screen';
+import HistoryScreen from '@/app/features/tracking/screens/HistoryScreen/HistoryScreen'
 
 /**
  * Insights tab showing trigger patterns and navigation to history and progress

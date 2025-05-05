@@ -13,12 +13,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/app/services/api/base';
 import { ensureValidToken } from '@/app/features/auth/utils/tokenRefresher';
-import Button from '@/app/components/Button';
-import { View, Text } from '@/app/components/Themed';
+import Button from '@/app/components/common/Button';
+import { View, Text } from '@/app/components/common/Themed';
+import EmojiPill from '@/app/components/forms/EmojiPill';
 import theme from '@/app/styles/theme';
 import { errorService } from '@/app/services/error/ErrorService';
 import { Instance } from '@/app/types/instance.types';
-import EmojiPill from '@/app/components/EmojiPill';
 import OptionDictionaries, { OptionItem } from '@/app/constants/options';
 
 interface InstanceDetailsModalProps {

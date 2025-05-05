@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Share, Platform, Alert } from 'react-native';
 import OptionDictionaries from '@/app/constants/options';
-import { errorService } from '../services/ErrorService';
+import { errorService } from '../services';
 
 // Instance type definition
 export interface Instance {

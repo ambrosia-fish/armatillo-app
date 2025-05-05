@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from './context/AuthContext';
-import theme from './constants/theme';
+import { useAuth } from '@/app/store/contexts';
+import theme from './styles/theme';
 
 export default function NotFoundScreen() {
   const router = useRouter();

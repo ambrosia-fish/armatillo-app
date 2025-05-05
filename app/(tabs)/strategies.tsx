@@ -12,13 +12,12 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import theme from '@/app/constants/theme';
+import theme from '@/app/styles/theme';
 import { View, Text } from '@/app/components';
 import StrategyCard, { Strategy } from '@/app/components/StrategyCard';
-import StrategyModal from '@/app/screens/modals/strategy-modal';
-import { strategiesApi } from '@/app/services/strategies-api';
-import { errorService } from '@/app/services/ErrorService';
-import OptionDictionaries, { OptionItem } from '@/app/constants/optionDictionaries';
+import { StrategyModal } from '@/app/features/strategies';
+import { errorService, strategiesApi } from '@/app/services/';
+import OptionDictionaries, { OptionItem } from '@/app/constants/options';
 
 // Default trigger to use when none is found
 const DEFAULT_TRIGGER: OptionItem = {

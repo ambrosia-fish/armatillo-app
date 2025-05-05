@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { Picker } from 'react-native-wheel-pick';
 import theme from '@/app/styles/theme';
-import ModalComponent from './modal';
 import { Button } from '@/app/components';
+import { BaseModal as ModalComponent } from '@/app/components/common/Modals';
 
 interface DurationPickerModalProps {
   visible: boolean;

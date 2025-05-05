@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '@/app/styles/theme';
 import { OptionItem } from '@/app/constants/options';
-import EmojiPill from './EmojiPill';
+import EmojiPill from '../EmojiPill';
 
 type CategoryType = 'location' | 'activity' | 'emotion' | 'thought' | 'sensation';
 

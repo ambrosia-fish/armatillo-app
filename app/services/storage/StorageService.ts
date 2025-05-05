@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { errorService } from '../services/ErrorService';
+import { errorService } from '@/app/services/error';
 import { Platform } from 'react-native';
 
 /**

@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { errorService } from './services/ErrorService';
-import theme from './constants/theme';
+import { errorService } from '@/app/services/';
+import theme from './styles/theme';
 import { Button } from './components';
 
 interface Props {

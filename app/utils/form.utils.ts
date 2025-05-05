@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
-import { errorService } from '../services/ErrorService';
+import { errorService } from '../services';
 
 /**
  * Interface for form submission options

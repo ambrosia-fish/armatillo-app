@@ -16,7 +16,7 @@ import strategiesApi from '@/app/services/api/strategies';
 import theme from '@/app/styles/theme';
 import { ensureValidToken } from '@/app/features/auth/utils/tokenRefresher';
 import OptionDictionaries, { OptionItem } from '@/app/constants/options';
-import TriggerPill from '@/app/components/TriggerPill';
+import TriggerPill from '@/app/components/forms/TriggerPill';
 import { router } from 'expo-router';
 
 interface TriggerCount {

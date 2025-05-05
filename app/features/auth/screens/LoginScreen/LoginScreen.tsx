@@ -18,7 +18,7 @@ import { useAuth } from '@/app/store/contexts/AuthContext';
 // Import themed components
 import { View, Text, Button, Input, Card } from '@/app/components';
 import theme from '@/app/styles/theme';
-import ApprovalPendingModal from '../modals/approval-pending-modal';
+import ApprovalPendingModal from '../../components/ApprovalPendingModal/ApprovalPendingModal';
 
 export default function LoginScreen() {
   const { login, register, isLoading: authLoading, isPendingApproval } = useAuth();
@@ -159,7 +159,7 @@ export default function LoginScreen() {
           {/* Logo and app name */}
           <View style={styles.logoContainer}>
             <Image 
-              source={require('../../../assets/images/armatillo-placeholder-logo.png')}
+              source={require('@/app/assets/images/armatillo-placeholder-logo.png')}
               style={styles.logo}
               accessibilityLabel="Armatillo logo"
             />

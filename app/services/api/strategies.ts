@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiRequest } from '@/app/services/api';
 import { OptionItem } from '@/app/constants/options';
 
 // Trigger object interface

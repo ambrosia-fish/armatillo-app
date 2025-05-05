@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import theme from '@/app/styles/theme';
-import ModalComponent from './modal';
 import { Button } from '@/app/components';
+import { BaseModal as ModalComponent } from '@/app/components/common/Modals';
 
 interface TimePickerModalProps {
   visible: boolean;

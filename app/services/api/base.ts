@@ -1,10 +1,10 @@
 import { Platform } from 'react-native';
-import storage, { STORAGE_KEYS } from '../utils/storage';
-import { ensureValidToken } from '../utils/tokenRefresher';
-import { getAuthToken } from '../utils/tokenUtils';
-import config from '../constants/config';
-import { errorService } from './ErrorService';
-import { strategiesApi } from './strategies-api';
+import { STORAGE_KEYS } from '@/app/services/storage';
+import { ensureValidToken } from '@/app/features/auth/utils';
+import { getAuthToken } from '@/app/features/auth/utils';
+import config from '@/app/config';
+import { errorService } from '@/app/services/error';
+import { strategiesApi } from './strategies';
 
 export const API_URL = config.apiUrl;
 const API_BASE_PATH = config.apiBasePath;

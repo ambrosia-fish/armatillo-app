@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View, Text, ViewStyle, TextStyle } from 'react-native';
 import { Redirect } from 'expo-router';
-import { useAuth } from './context/AuthContext';
-import theme from './constants/theme';
+import { useAuth } from '@/app/store/contexts/';
+import theme from './styles/theme';
 
 /**
  * Root index route - handles redirection based on auth state

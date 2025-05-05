@@ -1,2 +1,2 @@
-export * from './base';
+export { default as api } from './base';
 export * from './strategies';

@@ -18,7 +18,7 @@ import api from '@/app/services/api/base';
 import { InstanceDetailsModal } from '@/app/components';
 import { useFocusEffect } from '@react-navigation/native';
 import { ensureValidToken } from '@/app/features/auth/utils/tokenRefresher';
-import { exportInstancesAsCSV } from '@/app/utils/csvExport';
+import { exportInstancesAsCSV } from '@/app/utils/export.utils';
 import { Instance, normalizeInstance } from '@/app/types/instance.types';
 import theme from '@/app/styles/theme';
 import { View, Text } from '@/app/components';

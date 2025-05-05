@@ -16,8 +16,7 @@ import { useRouter, Stack } from 'expo-router';
 import { useAuth } from '@/app/store/contexts/AuthContext';
 import theme from '@/app/styles/theme';
 import { View, Text } from '@/app/components';
-import Header from '@/app/components/Header';
-
+import { Header } from '@/app/components';
 /**
  * Settings Screen Component
  * Displays user profile and application settings

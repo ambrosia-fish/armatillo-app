@@ -18,16 +18,16 @@ import OptionDictionaries from '@/app/constants/options';
 import { 
   TimePickerModal,
   DurationPickerModal
-} from '@/app/screens/modals';
-import { navigateBack } from '@/app/utils/navigationUtils';
-import { useEntryForm } from '../../hooks';
+} from '@/app/features/tracking';
+import { navigateBack } from '@/app/utils/navigation.utils';
 import {
   AwarenessTypeSection,
   UrgeStrengthSection,
   TimeAndDurationSection,
   CategorySection,
-  NotesSection
-} from './form-sections';
+  NotesSection,
+  useEntryForm,
+} from '@/app/features/tracking';
 
 export default function NewEntryScreen() {
   const form = useEntryForm();

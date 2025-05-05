@@ -1,8 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from './storage';
-import storage from './storage';
-import config from '../constants/config';
-import { errorService } from '../services/ErrorService';
+import {storage, STORAGE_KEYS } from '@/app/services/storage';
+import config from '@/app/config';
+import { errorService } from '@/app/services/error';
 import { Platform } from 'react-native';
 
 export const DEFAULT_TOKEN_EXPIRATION = config.authConfig.tokenExpiration;

@@ -5,12 +5,10 @@ import { Stack, SplashScreen, Slot, useRouter } from 'expo-router';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native';
-
 import { useColorScheme } from './hooks/useColorScheme';
-import { FormProvider } from './context/FormContext';
-import { AuthProvider, useAuth, AuthState } from './context/AuthContext';
+import {  AuthProvider, useAuth, AuthState, FormProvider } from '@/app/store/contexts/';
 import ErrorBoundary from './ErrorBoundary';
-import theme from './constants/theme';
+import theme from './styles/theme';
 
 export { ErrorBoundary };
 
@@ -24,7 +22,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   // Always declare all hooks at the top level
   const [fontsLoaded, fontError] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require('@/app/assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
   

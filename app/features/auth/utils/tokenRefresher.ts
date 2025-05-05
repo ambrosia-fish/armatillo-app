@@ -1,8 +1,6 @@
-import { Platform } from 'react-native';
-import { STORAGE_KEYS } from './storage';
 import { isTokenExpired, getRefreshToken, storeAuthTokens, getAuthToken } from './tokenUtils';
-import config from '../constants/config';
-import { errorService } from '../services/ErrorService';
+import config from '@/app/config';
+import { errorService } from '@/app/services/error';
 
 // Global refresh promise to prevent multiple refreshes
 let refreshPromise: Promise<boolean> | null = null;

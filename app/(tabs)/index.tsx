@@ -3,9 +3,9 @@ import { StyleSheet, TouchableOpacity, Image, ViewStyle, TextStyle, ImageStyle, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import theme from '@/app/constants/theme';
+import theme from '@/app/styles/theme';
 import { View, Text } from '@/app/components';
-import { useAuth } from '@/app/context/AuthContext';
+import { useAuth } from '@/app/store/contexts';
 
 /**
  * Home screen component that displays the app logo and add new entry button
@@ -96,7 +96,7 @@ export default function HomeScreen() {
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image 
-          source={require('../../assets/images/armatillo-placeholder-logo.png')} 
+          source={require('@/app/assets/images/armatillo-placeholder-logo.png')} 
           style={styles.logo}
           resizeMode="contain"
           accessibilityLabel="Armatillo logo"

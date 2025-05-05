@@ -2,66 +2,6 @@
   "expo": {
     "name": "Armatillo",
     "slug": "Armatillo",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./app/assets/images/icon.png",
-    "scheme": "armatillo",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./app/assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.armatillo.app"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./app/assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.armatillo.app"
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./app/assets/images/favicon.png",
-      "name": "Armatillo",
-      "shortName": "Armatillo",
-      "description": "Track habits during habit reversal training for BFRBs",
-      "lang": "en",
-      "scope": "/",
-      "themeColor": "#ffffff",
-      "backgroundColor": "#ffffff",
-      "startUrl": "/",
-      "display": "standalone",
-      "orientation": "portrait",
-      "splashImageDuration": 1000,
-      "barStyle": "black-translucent",
-      "publicPath": "/"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-secure-store"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "excludedRoutes": [
-      "components/index",
-      "hooks/useColorScheme",
-      "screens/modals/index",
-      "services/ErrorService",
-      "types/Instance",
-      "utils/csvExport",
-      "constants/config"
-    ],
-    "extra": {
-      "router": {
-        "origin": false
-      }
-    }
+    "version": "1.0.0"
   }
 }

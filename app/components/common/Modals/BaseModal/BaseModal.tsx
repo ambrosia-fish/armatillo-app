@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Text, View } from '../../components';
-import theme from '../../constants/theme';
+import { Text, View } from '@/app/components';
+import theme from '@/app/styles/theme';
 
 export interface ModalProps {
   /**

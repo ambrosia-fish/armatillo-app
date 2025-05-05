@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { handleFormSubmission } from '../utils/formUtils';
-import { errorService, ErrorMessages } from '../services/ErrorService';
+import { handleFormSubmission } from '@/app/utils';
+import { errorService, ErrorMessages } from '@/app/services/error';
 
 // Add specific typing for tracking screen selections
 interface BFRBFormData {

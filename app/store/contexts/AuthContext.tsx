@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useReducer } from 'react';
 import { Alert, Platform } from 'react-native';
-import storage, { STORAGE_KEYS } from '../utils/storage';
-import { storeAuthTokens, clearAuthTokens } from '../utils/tokenUtils';
-import api from '../services/api';
-import { errorService } from '../services/ErrorService';
-
+import { STORAGE_KEYS } from '@/app/services/storage';
+import { storeAuthTokens, clearAuthTokens } from '@/app/features/auth/utils';
+import api from '@/app/services/api/base';
+import { errorService } from '@/app/services/error';
 /**
  * User interface
  */

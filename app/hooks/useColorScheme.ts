@@ -1,6 +1,6 @@
 import { useColorScheme as _useColorScheme, ColorSchemeName } from 'react-native';
 import { useEffect, useState } from 'react';
-import { errorService } from '../services/ErrorService';
+import { errorService } from '../services';
 
 /**
  * Enhanced useColorScheme hook that provides reliable theme information
