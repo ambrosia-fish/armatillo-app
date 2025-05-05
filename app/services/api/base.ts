@@ -4,7 +4,9 @@ import { ensureValidToken } from '@/app/features/auth/utils';
 import { getAuthToken } from '@/app/features/auth/utils';
 import config from '@/app/config';
 import { errorService } from '@/app/services/error';
-import { strategiesApi } from './strategies';
+
+// Remove the import from strategies.ts
+// import { strategiesApi } from './strategies';
 
 export const API_URL = config.apiUrl;
 const API_BASE_PATH = config.apiBasePath;
@@ -298,10 +300,13 @@ export const authApi = {
   },
 };
 
+// Create empty placeholder for strategiesApi that will be filled later
+export const strategiesApi = {};
+
+// Export base API object without including strategiesApi yet
 const api = {
   instances: instancesApi,
   auth: authApi,
-  strategies: strategiesApi
 };
 
 export default api;
