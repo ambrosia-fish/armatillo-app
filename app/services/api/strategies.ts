@@ -1,4 +1,5 @@
-import { apiRequest } from '@/app/services/api';
+// Direct import from base.ts instead of index.ts
+import { apiRequest } from './base';
 import { OptionItem } from '@/app/constants/options';
 
 // Trigger object interface
