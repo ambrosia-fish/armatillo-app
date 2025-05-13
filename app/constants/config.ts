@@ -10,7 +10,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import NetInfo from '@react-native-community/netinfo';
 
-const current_IP = '192.168.0.219'
+const current_IP = '192.168.0.101'
 
 // Configuration for different environments
 interface ApiConfig {
